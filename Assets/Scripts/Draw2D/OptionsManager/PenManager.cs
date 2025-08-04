@@ -168,13 +168,13 @@ public class PenManager : MonoBehaviour
 
         if (checkpointManager != null && checkpointManager.selectedCheckpoint != null && checkpointManager.isDragging)
         {
-            Debug.Log("Đang move checkpoint ➜ KHÔNG pan/zoom!");
+            // Debug.Log("Đang move checkpoint --> KHÔNG pan/zoom!");
             return;
         }
 
         if (IsTouchOverRoomFloor())
         {
-            Debug.Log("Đang chạm   ➜ KHÔNG zoom/pan!");
+            // Debug.Log("Đang chạm   --> KHÔNG zoom/pan!");
             return;
         }
 
@@ -210,7 +210,7 @@ public class PenManager : MonoBehaviour
         }
 
         // Di chuyển camera bằng chuột hoặc bằng 1 ngón tay
-        Debug.Log("Is room Floor is move" + isRoomFloorBeingDragged);
+        // Debug.Log("Is room Floor is move" + isRoomFloorBeingDragged);
         if (Input.touchCount == 1)
         {
             Touch touch = Input.GetTouch(0);

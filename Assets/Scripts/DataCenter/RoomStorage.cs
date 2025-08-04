@@ -64,4 +64,18 @@ public static class RoomStorage
             roomIDCheck.Add(item.ID);
         }
     }
+
+    public static List<Room> GetAllRooms()
+    {
+        return rooms;
+    }
+    public static Room GetRoomByWall(WallLine wall)
+    {
+        foreach (Room room in RoomStorage.rooms)
+        {
+            if (room.wallLines.Contains(wall))
+                return room;
+        }
+        return null;
+    }
 }

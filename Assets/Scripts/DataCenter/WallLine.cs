@@ -15,19 +15,27 @@ public class WallLine
     public LineType type; // Wall, Door, Window
     public WallLine() { }
     
-    public bool isManualConnection = false;
+    // public bool isManualConnection = false;
+    public bool isVisible = true;
 
-    // Dùng cho cửa sổ:
-    public float distanceHeight = 0f;   // độ cao bắt đầu từ mặt đất
-    public float Height = 0f; // chiều cao của cửa / cửa sổ (độ dày theo trục Y)
+    // Dùng cho toàn bộ Line
+    public float distanceHeight = 0f;   // độ cao bắt đầu từ mặt đất = 0.5m
+    public float Height = 0f; // Chiều cao tường = 2m, chiều cao của cửa / cửa sổ = 1m
 
-    public WallLine(Vector3 start, Vector3 end, LineType type, float baseHeight = 0f, float windowHeight = 0f)
+    // Thêm: Vật liệu mặt trước / sau tường
+    public string materialFront = "Default";
+    public string materialBack = "Default";
+
+    public WallLine(Vector3 start, Vector3 end, LineType type, float baseHeight = 0f, float height = 0f,
+                    string frontMat = "Default", string backMat = "Default")
     {
         this.start = start;
         this.end = end;
         this.type = type;
         this.distanceHeight = baseHeight;
-        this.Height = windowHeight;
+        this.Height = height;
+        this.materialFront = frontMat;
+        this.materialBack = backMat;
     }
     // Constructor clone
     public WallLine(WallLine other)
@@ -37,8 +45,9 @@ public class WallLine
         this.type = other.type;
         this.distanceHeight = other.distanceHeight;
         this.Height = other.Height;
-        
-        this.isManualConnection = other.isManualConnection;
+        this.isVisible = other.isVisible;
+        this.materialFront = other.materialFront;
+        this.materialBack = other.materialBack;
     }
 }
 
@@ -48,21 +57,28 @@ public class WallLine
 [System.Serializable]
 public class Room
 {
+    private static int roomCounter = 0; // Biến đếm số lượng phòng
+
     public string ID { get; private set; }  // ID chỉ đọc từ bên ngoài
     public string groupID;
+    public string roomName;
 
     public List<Vector2> checkpoints = new List<Vector2>(); // polygon chính
-    public List<Vector2> extraCheckpoints = new List<Vector2>(); // điểm lẻ trong phòng
     public List<WallLine> wallLines = new List<WallLine>();
     public List<float> heights = new List<float>();
 
     public Vector2 Compass = new Vector2();
     public float headingCompass; // hướng thực địa của phòng (theo la bàn)
 
+    // Thêm: vật liệu sàn
+    public string floorMaterial = "Default";
+
     public Room()
     {
         ID = GenerateID(); // Tự tạo ID khi khởi tạo
         groupID = ID;
+
+        roomName = "Room" + (++roomCounter);
     }
 
     private string GenerateID()
@@ -80,13 +96,13 @@ public class Room
     {
         ID = other.ID;
         groupID = other.groupID;
-        
+        roomName = other.roomName;
         headingCompass = other.headingCompass;
         Compass = other.Compass;
+        floorMaterial = other.floorMaterial;
 
         checkpoints = new List<Vector2>(other.checkpoints);
-        wallLines = new List<WallLine>(other.wallLines.Select(w => new WallLine(w))); // clone từng wall
-        extraCheckpoints = new List<Vector2>(other.extraCheckpoints);
+        wallLines = new List<WallLine>(other.wallLines.Select(w => new WallLine(w)));
         heights = new List<float>(other.heights);
     }
 }

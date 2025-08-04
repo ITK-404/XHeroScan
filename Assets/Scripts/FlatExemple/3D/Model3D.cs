@@ -260,7 +260,7 @@ public class Model3D : MonoBehaviour
     // Hàm tạo sàn từ các điểm checkpoint
     private void CreateFloor(Room room)
     {
-        if (room.checkpoints != null && room.checkpoints.Count >= 3)
+        if (room.checkpoints != null)
         {
             List<Vector3> floorPoints = new List<Vector3>();
 

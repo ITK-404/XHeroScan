@@ -36,7 +36,7 @@ public static class SaveLoadManager
                     type = w.type,
                     distanceHeight = w.distanceHeight,
                     Height = w.Height,
-                    isManualConnection = w.isManualConnection
+                    // isManualConnection = w.isManualConnection
                 }),
                 compass = new Vector2Serializable(room.Compass),
                 headingCompass = room.headingCompass
@@ -82,7 +82,7 @@ public static class SaveLoadManager
             room.wallLines = path.wallLines.ConvertAll(w =>
             {
                 var line = new WallLine(w.start, w.end, w.type, w.distanceHeight, w.Height);
-                line.isManualConnection = w.isManualConnection; // <--- quan trọng
+                // line.isManualConnection = w.isManualConnection; // <--- quan trọng
                 return line;
             });
 

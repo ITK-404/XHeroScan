@@ -15,7 +15,7 @@ public static class GeometryUtils
 
         foreach (var wall in room.wallLines)
         {
-            if (wall.type != LineType.Wall && !wall.isManualConnection) continue;
+            // if (wall.type != LineType.Wall && !wall.isManualConnection) continue;
 
             Vector2 a = new Vector2(wall.start.x, wall.start.z);
             Vector2 b = new Vector2(wall.end.x, wall.end.z);
@@ -165,8 +165,10 @@ public static class GeometryUtils
             Vector2 p1 = loop[i];
             Vector2 p2 = loop[(i + 1) % loop.Count];
 
-            if ((Vector2.Distance(p1, a) < 0.001f && Vector2.Distance(p2, b) < 0.001f) ||
-                (Vector2.Distance(p1, b) < 0.001f && Vector2.Distance(p2, a) < 0.001f))
+            bool matchForward = Vector2.Distance(p1, a) < 0.01f && Vector2.Distance(p2, b) < 0.01f;
+            bool matchReverse = Vector2.Distance(p1, b) < 0.01f && Vector2.Distance(p2, a) < 0.01f;
+
+            if (matchForward || matchReverse)
                 return true;
         }
         return false;
@@ -224,4 +226,29 @@ public static class GeometryUtils
             area += (double)poly[j].x * poly[i].y - (double)poly[i].x * poly[j].y;
         return Mathf.Abs((float)(area * 0.5));
     }
+    public static bool DoLineSegmentsIntersect(Vector3 p1, Vector3 p2, Vector3 q1, Vector3 q2, out Vector3 intersection)
+    {
+        Vector2 a1 = new Vector2(p1.x, p1.z);
+        Vector2 a2 = new Vector2(p2.x, p2.z);
+        Vector2 b1 = new Vector2(q1.x, q1.z);
+        Vector2 b2 = new Vector2(q2.x, q2.z);
+
+        intersection = Vector3.zero;
+
+        float d = (a2.x - a1.x) * (b2.y - b1.y) - (a2.y - a1.y) * (b2.x - b1.x);
+        if (Mathf.Abs(d) < 1e-6f) return false; // Song song
+
+        float t = ((b1.x - a1.x) * (b2.y - b1.y) - (b1.y - a1.y) * (b2.x - b1.x)) / d;
+        float u = ((b1.x - a1.x) * (a2.y - a1.y) - (b1.y - a1.y) * (a2.x - a1.x)) / d;
+
+        if (t >= 0f && t <= 1f && u >= 0f && u <= 1f)
+        {
+            Vector2 intersect2D = a1 + t * (a2 - a1);
+            intersection = new Vector3(intersect2D.x, 0f, intersect2D.y);
+            return true;
+        }
+
+        return false;
+    }
+
 }

@@ -138,10 +138,13 @@ public class PdfExporter
                     polygon = polygon.Take(polygon.Count - 1).ToList();
                 }
 
-                for (int i = 0; i < polygon.Count; i++)
+                // for (int i = 0; i < polygon.Count; i++)
+                foreach (var wall in room.wallLines.Where(w => w.type == LineType.Wall))
                 {
-                    Vector2 p1 = polygon[i];
-                    Vector2 p2 = polygon[(i + 1) % polygon.Count];
+                    // Vector2 p1 = polygon[i];
+                    // Vector2 p2 = polygon[(i + 1) % polygon.Count];
+                    Vector2 p1 = new Vector2(wall.start.x, wall.start.z);
+                    Vector2 p2 = new Vector2(wall.end.x,   wall.end.z); 
 
                     Vector2 dir = (p2 - p1).normalized;
                     Vector2 perp = new Vector2(-dir.y, dir.x);
@@ -230,97 +233,6 @@ public class PdfExporter
                     // Đo chiều dày tường
                     // DrawDimensionLine(cb, cpa, cpd, 20f, $"{wallThickness:0.0}");
                 }
-                // === Vẽ tường thủ công trước, mỏng như tường chính, nhưng màu nhạt hơn để không đè
-                foreach (var wall in room.wallLines.Where(w => w.isManualConnection))
-                {
-                    Vector2 p1 = new Vector2(wall.start.x, wall.start.z);
-                    Vector2 p2 = new Vector2(wall.end.x, wall.end.z);
-
-                    Vector2 dir = (p2 - p1).normalized;
-                    Vector2 perp = new Vector2(-dir.y, dir.x);
-                    Vector2 offset = perp * wallThickness * 0.5f; // bằng tường chính
-
-                    Vector2 pa = p1 + offset;
-                    Vector2 pb = p2 + offset;
-                    Vector2 pc = p2 - offset;
-                    Vector2 pd = p1 - offset;
-
-                    Vector2 cpa = Convert(pa);
-                    Vector2 cpb = Convert(pb);
-                    Vector2 cpc = Convert(pc);
-                    Vector2 cpd = Convert(pd);
-
-                    // HATCH bên trong tường phụ
-                    Vector2 diagDir = (dir + perp).normalized;
-                    Vector2 hatchSpacingDir = new Vector2(-diagDir.y, diagDir.x);
-
-                    List<Vector2> corners = new() { pa, pb, pc, pd };
-                    float minProj = float.MaxValue;
-                    float maxProj = float.MinValue;
-                    foreach (var corner in corners)
-                    {
-                        float proj = Vector2.Dot(corner, hatchSpacingDir);
-                        minProj = Mathf.Min(minProj, proj);
-                        maxProj = Mathf.Max(maxProj, proj);
-                    }
-
-                    float hatchSpacing = 0.02f;
-
-                    cb.SetLineWidth(wallLineWidth * 0.5f);
-                    cb.SetRGBColorStroke(200, 200, 200); // Màu xám nhạt
-
-                    for (float d = minProj; d <= maxProj; d += hatchSpacing)
-                    {
-                        Vector2 linePoint = hatchSpacingDir * d;
-
-                        List<Vector2> intersections = new();
-                        Vector2 ls = linePoint - diagDir * 1000f;
-                        Vector2 le = linePoint + diagDir * 1000f;
-
-                        Vector2[] rectCorners = new Vector2[] { pa, pb, pc, pd };
-                        for (int edge = 0; edge < 4; edge++)
-                        {
-                            Vector2 r1 = rectCorners[edge];
-                            Vector2 r2 = rectCorners[(edge + 1) % 4];
-                            if (LineSegmentsIntersect(ls, le, r1, r2, out Vector2 ip))
-                            {
-                                intersections.Add(ip);
-                            }
-                        }
-
-                        if (intersections.Count == 2)
-                        {
-                            Vector2 i1 = Convert(intersections[0]);
-                            Vector2 i2 = Convert(intersections[1]);
-                            cb.MoveTo(i1.x, i1.y);
-                            cb.LineTo(i2.x, i2.y);
-                            cb.Stroke();
-                        }
-                    }
-
-                    // Viền tường thủ công
-                    cb.SetLineWidth(wallLineWidth);
-                    cb.SetRGBColorStroke(100, 100, 100); // viền xám đậm hơn nhưng không đen hẳn
-
-                    cb.MoveTo(cpa.x, cpa.y);
-                    cb.LineTo(cpb.x, cpb.y);
-                    cb.LineTo(cpc.x, cpc.y);
-                    cb.LineTo(cpd.x, cpd.y);
-                    cb.ClosePath();
-                    cb.Stroke();
-
-                    // Đo chiều dài tường
-                    Vector2 cp1 = Convert(p1);
-                    Vector2 cp2 = Convert(p2);
-
-                    if (!IsAlreadyDrawn(p1, p2, drawnDimensionLines))
-                    {
-                        DrawDimensionLine(cb, cp1, cp2, -10f, $"{Vector2.Distance(p1, p2):0.00}", drawingCenter,true);
-                    }
-
-                    // Đo chiều dày tường
-                    // DrawDimensionLine(cb, cpa, cpd, 20f, $"{wallThickness:0.0}");
-                }
 
                 // vẽ point chính
                 foreach (var point in polygon)
@@ -329,23 +241,6 @@ public class PdfExporter
 
                     float boxSize = 0.2f;   // Bạn muốn box 0.2f
                     float halfSize = boxSize * scale * 0.35f; // Phải nhân `scale` vì Convert() đã scale!
-
-                    cb.SetRGBColorFill(0, 0, 0);
-
-                    cb.MoveTo(cpoint.x - halfSize, cpoint.y - halfSize);
-                    cb.LineTo(cpoint.x + halfSize, cpoint.y - halfSize);
-                    cb.LineTo(cpoint.x + halfSize, cpoint.y + halfSize);
-                    cb.LineTo(cpoint.x - halfSize, cpoint.y + halfSize);
-                    cb.ClosePath();
-                    cb.Fill();
-                }
-                // === Vẽ các điểm phụ (extraCheckpoints) ===
-                foreach (var point in room.extraCheckpoints)
-                {
-                    Vector2 cpoint = Convert(point);
-
-                    float boxSize = 0.15f;  // nhỏ hơn chút
-                    float halfSize = boxSize * scale * 0.35f;
 
                     cb.SetRGBColorFill(0, 0, 0);
 
@@ -595,7 +490,7 @@ static bool IsAlreadyDrawn(Vector2 a, Vector2 b, HashSet<string> drawnSet)
             float doorLength = Vector2.Distance(p1, p2);
             string doorLabel = $"{doorLength:0.00}";
 
-            DrawDimensionLine(cb, cp1, cp2, -5f, doorLabel, drawingCenter,false);
+            DrawDimensionLine(cb, cp1, cp2, -10f, doorLabel, drawingCenter,true);
         }
 
         else if (type == "window")
@@ -644,7 +539,7 @@ static bool IsAlreadyDrawn(Vector2 a, Vector2 b, HashSet<string> drawnSet)
             float doorLength = Vector2.Distance(p1, p2);
             string doorLabel = $"{doorLength:0.00}";
 
-            DrawDimensionLine(cb, cp1, cp2, -5f, doorLabel, drawingCenter,false);
+            DrawDimensionLine(cb, cp1, cp2, -10f, doorLabel, drawingCenter,true);
         }
 
         cb.SetRGBColorStroke(0, 0, 0); // Reset màu

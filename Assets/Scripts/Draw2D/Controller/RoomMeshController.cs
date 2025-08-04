@@ -108,11 +108,11 @@ public class RoomMeshController : MonoBehaviour
                     room.checkpoints[i] = moved;
                 }
 
-                for (int i = 0; i < room.extraCheckpoints.Count; i++)
-                {
-                    Vector2 pt = room.extraCheckpoints[i];
-                    room.extraCheckpoints[i] = new Vector2(pt.x + delta.x, pt.y + delta.z);
-                }
+                // for (int i = 0; i < room.extraCheckpoints.Count; i++)
+                // {
+                //     Vector2 pt = room.extraCheckpoints[i];
+                //     room.extraCheckpoints[i] = new Vector2(pt.x + delta.x, pt.y + delta.z);
+                // }
 
                 for (int i = 0; i < room.wallLines.Count; i++)
                 {
