@@ -27,6 +27,9 @@ public static class SaveLoadManager
             var path = new SavedPath
             {
                 roomID = room.ID,
+                groupID = room.groupID,                  // lưu groupID
+                roomName = room.roomName,                // lưu name
+                floorMaterial = room.floorMaterial,      // lưu vật liệu sàn
                 points = room.checkpoints.ConvertAll(p => new Vector2Serializable(p)),
                 heights = new List<float>(room.heights),
                 wallLines = room.wallLines.ConvertAll(w => new SavedWallLine
@@ -34,9 +37,11 @@ public static class SaveLoadManager
                     start = w.start,
                     end = w.end,
                     type = w.type,
+                    isVisible = w.isVisible,
                     distanceHeight = w.distanceHeight,
                     Height = w.Height,
-                    // isManualConnection = w.isManualConnection
+                    materialFront = w.materialFront,
+                    materialBack = w.materialBack
                 }),
                 compass = new Vector2Serializable(room.Compass),
                 headingCompass = room.headingCompass
@@ -76,13 +81,17 @@ public static class SaveLoadManager
         {
             Room room = new Room();
             room.SetID(path.roomID);
+            room.groupID = path.groupID;                    // load groupID
+            room.roomName = path.roomName;                  // load name
+            room.floorMaterial = path.floorMaterial;        // load vật liệu sàn
+
             room.checkpoints = path.points.ConvertAll(p => p.ToVector2());
             room.heights = new List<float>(path.heights);
-            // room.wallLines = path.wallLines.ConvertAll(w => new WallLine(w.start, w.end, w.type, w.distanceHeight, w.Height));
+
             room.wallLines = path.wallLines.ConvertAll(w =>
             {
-                var line = new WallLine(w.start, w.end, w.type, w.distanceHeight, w.Height);
-                // line.isManualConnection = w.isManualConnection; // <--- quan trọng
+                var line = new WallLine(w.start, w.end, w.type, w.distanceHeight, w.Height, w.materialFront, w.materialBack);
+                line.isVisible = w.isVisible;
                 return line;
             });
 
@@ -112,6 +121,7 @@ public static class SaveLoadManager
             }
             catch
             {
+                Debug.LogWarning("Bỏ qua file lỗi: " + path);
             }
         }
 

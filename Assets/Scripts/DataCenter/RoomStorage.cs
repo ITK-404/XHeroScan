@@ -78,4 +78,10 @@ public static class RoomStorage
         }
         return null;
     }
+    public static Room GetRoomByWallLine(WallLine wl)
+    {
+        return rooms.FirstOrDefault(r =>
+            r.wallLines.Any(w => w.start == wl.start && w.end == wl.end));
+    }
+
 }

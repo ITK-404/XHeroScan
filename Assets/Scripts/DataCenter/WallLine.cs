@@ -14,8 +14,6 @@ public class WallLine
     public Vector3 end;
     public LineType type; // Wall, Door, Window
     public WallLine() { }
-    
-    // public bool isManualConnection = false;
     public bool isVisible = true;
 
     // Dùng cho toàn bộ Line

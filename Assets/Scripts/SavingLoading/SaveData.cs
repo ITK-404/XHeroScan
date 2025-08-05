@@ -9,29 +9,35 @@ public class SaveData
     public List<SavedPath> paths = new List<SavedPath>();
 }
 
-[Serializable]
+[System.Serializable]
 public class SavedWallLine
 {
     public Vector3 start;
     public Vector3 end;
     public LineType type;
+    public bool isVisible;
     public float distanceHeight;
     public float Height;
-    // public bool isManualConnection;
+    public string materialFront;
+    public string materialBack;
 }
+
 
 [Serializable]
 public class SavedPath
 {
     public string roomID;
+    public string groupID;        
+    public string roomName;       
+    public string floorMaterial;  
     
     public List<Vector2Serializable> points;
     public List<float> heights;
-
     public List<SavedWallLine> wallLines;
     public Vector2Serializable compass;
     public float headingCompass;
 }
+
 
 [Serializable]
 public class Vector2Serializable
