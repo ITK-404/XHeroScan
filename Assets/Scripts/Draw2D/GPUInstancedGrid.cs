@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 public class GPUInstancedGrid : MonoBehaviour
 {
+    public static event Action<int> OnChangedLimitSize;
+
     [Header("Grid Settings")]
     public float cellSize = 0.5f;
 
@@ -14,142 +17,260 @@ public class GPUInstancedGrid : MonoBehaviour
     private Camera cam;
     private List<Matrix4x4> normalMatrices;
     private List<Matrix4x4> thickMatrices;
+
+    private Matrix4x4[] normalMatricesArray;
+    private Matrix4x4[] thickMatricesArray;
+    private int normalCount;
+    private int thickCount;
+
     private MaterialPropertyBlock normalPropertyBlock;
     private MaterialPropertyBlock thickPropertyBlock;
 
-    void Start()
-    {
-        cam = Camera.main;
-        normalPropertyBlock = new MaterialPropertyBlock();
-        thickPropertyBlock = new MaterialPropertyBlock();
-        // Create a simple line mesh if none provided
-        if (lineMesh == null)
-        {
-            lineMesh = CreateLineMesh();
-        }
-
-        // propertyBlock.SetColor("_BaseColor",Color.green);
-        normalPropertyBlock.SetColor("_Color", new Color(0.5f, 0.5f, 0.5f, 1f));
-        thickPropertyBlock.SetColor("_Color", new Color(0, 0, 0, 1f));
-
-        Vector3 camPos = cam.transform.position;
-        minX = -viewRange / 2;
-        maxX = viewRange / 2;
-        minZ = -viewRange / 2;
-        maxZ = viewRange / 2;
-
-        int lineCount = (maxX - minX + 1) * (maxZ - minZ + 1) * 2;
-        // if (normalMatrices == null || normalMatrices.Length != lineCount)
-        // {
-        //     normalMatrices = new Matrix4x4[lineCount / 2];
-        // }
-        //
-        // if (thickMatrices == null || thickMatrices.Length != lineCount)
-        // {
-        //     thickMatrices = new Matrix4x4[lineCount / 2];
-        // }
-        thickMatrices = new List<Matrix4x4>();
-        normalMatrices = new List<Matrix4x4>();
-        Debug.Log("Line Count: " + lineCount);
-        Debug.Log("thick matrices Count: " + thickMatrices.Count);
-        Debug.Log("normal matrices Count: " + normalMatrices.Count);
-    }
+    private HashSet<int> squareOfFive;
 
     private int minX, maxX;
     private int minZ, maxZ;
 
-    void Update()
-    {
-        RenderGridWithInstancing();
-    }
-
-    [SerializeField] private int DEFAULT_TILE_PER_BLOCK = 5;
+    private const int DEFAULT_TILE_PER_BLOCK = 5;
     private const int STEP_SIZE = 10;
     private const int MAX_LIMIT = 50;
 
     private int previousSize = 0;
     private int limitSize = 1;
 
+    private Vector3 previousCameraPosition;
+    private float previousOrthographicSize;
+
+    void Start()
+    {
+        cam = Camera.main;
+        normalPropertyBlock = new MaterialPropertyBlock();
+        thickPropertyBlock = new MaterialPropertyBlock();
+        if (lineMesh == null)
+        {
+            lineMesh = CreateLineMesh();
+        }
+
+        normalPropertyBlock.SetColor("_Color", new Color(0.1f, 0.1f, 0.1f, .4f));
+        thickPropertyBlock.SetColor("_Color", new Color(1f, 1f, 1f, .1f));
+
+        minX = -viewRange / 2;
+        maxX = viewRange / 2;
+        minZ = -viewRange / 2;
+        maxZ = viewRange / 2;
+
+        int lineCount = (maxX - minX + 1) * (maxZ - minZ + 1) * 2;
+
+        thickMatrices = new List<Matrix4x4>();
+        normalMatrices = new List<Matrix4x4>();
+
+        squareOfFive = new HashSet<int>()
+        {
+            1, 5, 25, 125, 625
+        };
+        InitializeArrays();
+    }
+
+    private void InitializeArrays()
+    {
+        int count = (viewRange + 1) * (viewRange + 1) * 2;
+        normalMatricesArray = new Matrix4x4[count];
+        thickMatricesArray = new Matrix4x4[count];
+
+        batchPool = new Matrix4x4[poolSize][];
+        batchPoolInUse = new bool[poolSize];
+
+        for (int i = 0; i < poolSize; i++)
+        {
+            batchPool[i] = new Matrix4x4[BATCH_SIZE];
+            batchPoolInUse[i] = false; // Initially all arrays are free
+        }
+    }
+
+    void Update()
+    {
+        // CalculateVisibleBounds();
+        RenderGridWithInstancing();
+        RenderGrid();
+    }
+
+    private void CalculateVisibleBounds()
+    {
+        
+    }
+
     private void RenderGridWithInstancing()
     {
         int normalIndex = 0;
         int thickIndex = 0;
 
-        int verticalCounting = 0;
-        int horizontalCounting = 0;
+
         // Generate matrices for all visible lines
+
         int level = Mathf.FloorToInt(cam.orthographicSize / STEP_SIZE);
-        // tăng theo số mũ
-        limitSize = Mathf.Clamp(level * DEFAULT_TILE_PER_BLOCK, 1, MAX_LIMIT);
 
-        if (previousSize != limitSize)
+        int bestFitLevel = GetBestFitLevel(CalculatorLimitSize(level));
+
+        limitSize = CalculatorLimitSize(bestFitLevel);
+        int previousLevel = Mathf.Min(bestFitLevel - 1, 1);
+        var previousLimitSize = CalculatorLimitSize(previousLevel);
+
+        if (limitSize == 0) return;
+        // đảm bảo limit size là kết quả của 5 mũ n (chỉ check tới n = 5)
+        bool sizeChanged = previousSize != limitSize && squareOfFive.Contains(limitSize);
+        bool cameraMoved = previousCameraPosition != cam.transform.position;
+        bool zoomed = cam.orthographicSize != previousOrthographicSize;
+        if (cameraMoved || sizeChanged || zoomed)
         {
+            OnChangedLimitSize?.Invoke(level);
+            Debug.Log($"Thay đổi grid size {limitSize} {previousLimitSize}");
+            // đảm bảo vẽ một lần
             previousSize = limitSize;
-
-            normalMatrices.Clear();
-            thickMatrices.Clear();
-
-
-            for (int z = minZ; z <= maxZ; z++)
-            {
-                verticalCounting = 0;
-                for (int x = minX; x <= maxX; x++)
-                {
-                    if (horizontalCounting % limitSize == 0)
-                    {
-                        Vector3 hPos = new Vector3(x * cellSize + cellSize * 0.5f, 0, z * cellSize);
-                        normalMatrices.Add(Matrix4x4.TRS(hPos, Quaternion.identity, new Vector3(cellSize, 1, 0.02f)));
-                        // normalMatrices[normalIndex++] =
-                        //     Matrix4x4.TRS(hPos, Quaternion.identity, new Vector3(cellSize, 1, 0.02f));
-                        Debug.DrawLine(hPos - Vector3.right * (0.5f * cellSize),
-                            hPos + Vector3.right * (0.5f * cellSize),
-                            Color.red);
-
-                        // if (horizontalCounting == limitSize)
-                        // {
-                        //     horizontalCounting = 0;
-                        // }
-                    }
-
-
-                    if (verticalCounting % limitSize == 0)
-                    {
-                        Vector3 vPos = new Vector3(x * cellSize, 0, z * cellSize + cellSize * 0.5f);
-
-                        normalMatrices.Add(Matrix4x4.TRS(vPos, Quaternion.Euler(0, 90, 0),
-                            new Vector3(cellSize, 1, 0.02f)));
-
-                        // thickMatrices[thickIndex++] =
-                        //     Matrix4x4.TRS(vPos, Quaternion.Euler(0, 90, 0), new Vector3(cellSize, 1, 0.02f));
-                        Debug.DrawLine(vPos - Vector3.forward * (0.5f * cellSize),
-                            vPos + Vector3.forward * (0.5f * cellSize),
-                            Color.red);
-                    }
-
-                    verticalCounting++;
-                }
-
-                horizontalCounting++;
-            }
+            previousCameraPosition = cam.transform.position;
+            previousOrthographicSize = cam.orthographicSize;
+            DrawGrid(limitSize, previousLimitSize);
         }
 
 
         // Render all lines in batches
-        RenderInstanced(normalMatrices.ToArray(), thickPropertyBlock);
-        RenderInstanced(thickMatrices.ToArray(), thickPropertyBlock);
         // Debug.Log($"Othographics size" + cam.orthographicSize);
     }
 
-    private void RenderInstanced(Matrix4x4[] matrices, MaterialPropertyBlock block)
+    private Matrix4x4[][] batchPool;
+    private bool[] batchPoolInUse;
+    private int poolSize = 30; // Có thể adjust dựa trên needs
+    private const int BATCH_SIZE = 1023;
+
+    private int GetBestFitLevel(int target)
+    {
+        int bestFit = 1; // fallback nếu không có cái nào phù hợp
+
+        foreach (int x in squareOfFive)
+        {
+            if (x <= target)
+            {
+                bestFit = x; // update kết quả nếu phù hợp
+            }
+            else
+            {
+                break; // vì mảng tăng dần → nếu x > target, thì không còn x nào phù hợp nữa
+            }
+        }
+
+        return bestFit;
+    }
+    
+    private Bounds GetCameraBounds()
+    {
+        Vector3 camPos = cam.transform.position;
+        float height = cam.orthographicSize * 2;
+        float width = height * cam.aspect;
+
+        return new Bounds(camPos, new Vector3(width, 100f, height));
+    }
+    
+    private void DrawGrid(int limitSize, int previousLimitSize)
+    {
+        normalCount = 0;
+        thickCount = 0;
+        normalMatrices.Clear();
+        thickMatrices.Clear();
+        
+        int verticalCounting = 0;
+        int horizontalCounting = 0;
+        for (int z = minZ; z <= maxZ; z++)
+        {
+            verticalCounting = 0;
+            for (int x = minX; x <= maxX; x++)
+            {
+                Vector3 hPos = new Vector3(x * cellSize + cellSize * 0.5f, 0, z * cellSize);
+                Vector3 vPos = new Vector3(x * cellSize, 0, z * cellSize + cellSize * 0.5f);
+
+                var hDraw = Matrix4x4.TRS(hPos, Quaternion.identity, new Vector3(cellSize, 1, 0.02f));
+                var vDraw = Matrix4x4.TRS(vPos, Quaternion.Euler(0, 90, 0), new Vector3(cellSize, 1, 0.02f));
+
+                if (horizontalCounting % limitSize == 0)
+                {
+                    normalMatricesArray[normalCount++] = hDraw;
+                    // normalMatrices.Add(hDraw);
+                    Debug.DrawLine(hPos - Vector3.right * (0.5f * cellSize),
+                        hPos + Vector3.right * (0.5f * cellSize),
+                        Color.red);
+                }
+                else if (horizontalCounting % previousLimitSize == 0)
+                {
+                    thickMatricesArray[thickCount++] = hDraw;
+
+                    // thickMatrices.Add(hDraw);
+                }
+
+
+                if (verticalCounting % limitSize == 0)
+                {
+                    normalMatricesArray[normalCount++] = vDraw;
+                    // normalMatrices.Add(vDraw);
+                    Debug.DrawLine(vPos - Vector3.forward * (0.5f * cellSize),
+                        vPos + Vector3.forward * (0.5f * cellSize),
+                        Color.red);
+                }
+                else if (verticalCounting % previousLimitSize == 0)
+                {
+                    thickMatricesArray[thickCount++] = vDraw;
+                    // thickMatrices.Add(vDraw);
+                }
+
+
+                verticalCounting++;
+            }
+
+            horizontalCounting++;
+        }
+    }
+
+    private int CalculatorLimitSize(int level)
+    {
+        return Mathf.Clamp(level * DEFAULT_TILE_PER_BLOCK, 1, MAX_LIMIT);
+    }
+
+    private void RenderGrid()
+    {
+        RenderInstanced(normalMatricesArray, normalCount, normalPropertyBlock);
+        RenderInstanced(thickMatricesArray, thickCount, thickPropertyBlock);
+    }
+
+    private void RenderInstanced(Matrix4x4[] matrices, int totalCount, MaterialPropertyBlock block)
     {
         int batchSize = 1023; // Unity's limit for Graphics.DrawMeshInstanced
-        for (int i = 0; i < matrices.Length; i += batchSize)
+        int startIndex = 0;
+        int batchPoolIndex = 0;
+        List<int> poolInUse = new();
+        for (int i = 0; i < totalCount; i += batchSize)
         {
-            int count = Mathf.Min(batchSize, matrices.Length - i);
-            Matrix4x4[] batch = new Matrix4x4[count];
+            // find free pool
+            batchPoolIndex = -1;
+            for (int j = 0; j < batchPoolInUse.Length; j++)
+            {
+                if (batchPoolInUse[j] == false)
+                {
+                    batchPoolIndex = j;
+                    batchPoolInUse[j] = true;
+                    poolInUse.Add(j);
+                    break;
+                }
+            }
+
+
+            int count = Mathf.Min(batchSize, totalCount - i);
+            Matrix4x4[] batch = batchPoolIndex == -1 ? new Matrix4x4[count] : batchPool[batchPoolIndex];
             System.Array.Copy(matrices, i, batch, 0, count);
 
             Graphics.DrawMeshInstanced(lineMesh, 0, lineMaterial, batch, count, block, ShadowCastingMode.Off, false);
+        }
+
+        // release
+        foreach (var item in poolInUse)
+        {
+            batchPoolInUse[item] = false;
         }
     }
 
