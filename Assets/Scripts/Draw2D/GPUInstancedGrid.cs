@@ -6,6 +6,7 @@ using UnityEngine.Rendering;
 public class GPUInstancedGrid : MonoBehaviour
 {
     public static event Action<int> OnChangedLimitSize;
+
     [Header("Grid Settings")]
     public float cellSize = 0.5f;
 
@@ -21,7 +22,7 @@ public class GPUInstancedGrid : MonoBehaviour
     private Matrix4x4[] thickMatricesArray;
     private int normalCount;
     private int thickCount;
-    
+
     private MaterialPropertyBlock normalPropertyBlock;
     private MaterialPropertyBlock thickPropertyBlock;
 
@@ -72,29 +73,39 @@ public class GPUInstancedGrid : MonoBehaviour
         int count = (viewRange + 1) * (viewRange + 1) * 2;
         normalMatricesArray = new Matrix4x4[count];
         thickMatricesArray = new Matrix4x4[count];
+
+        batchPool = new Matrix4x4[poolSize][];
+        batchPoolInUse = new bool[poolSize];
+
+        for (int i = 0; i < poolSize; i++)
+        {
+            batchPool[i] = new Matrix4x4[BATCH_SIZE];
+            batchPoolInUse[i] = false; // Initially all arrays are free
+        }
     }
 
     void Update()
     {
         RenderGridWithInstancing();
         RenderGrid();
-        
     }
+
     private void CalculateVisibleBounds()
     {
         // Tính toán bounds dựa trên camera position và orthographic size
         Vector3 camPos = cam.transform.position;
         float orthoSize = cam.orthographicSize;
         float aspect = cam.aspect;
-    
+
         // Mở rộng bounds một chút để tránh pop-in
         float buffer = cellSize * 2;
-    
+
         minX = Mathf.FloorToInt((camPos.x - orthoSize * aspect) / cellSize) - Mathf.CeilToInt(buffer / cellSize);
         maxX = Mathf.CeilToInt((camPos.x + orthoSize * aspect) / cellSize) + Mathf.CeilToInt(buffer / cellSize);
         minZ = Mathf.FloorToInt((camPos.z - orthoSize) / cellSize) - Mathf.CeilToInt(buffer / cellSize);
         maxZ = Mathf.CeilToInt((camPos.z + orthoSize) / cellSize) + Mathf.CeilToInt(buffer / cellSize);
     }
+
     private void RenderGridWithInstancing()
     {
         int normalIndex = 0;
@@ -106,7 +117,7 @@ public class GPUInstancedGrid : MonoBehaviour
         int level = Mathf.FloorToInt(cam.orthographicSize / STEP_SIZE);
 
         int bestFitLevel = GetBestFitLevel(CalculatorLimitSize(level));
-       
+
         limitSize = CalculatorLimitSize(bestFitLevel);
         int previousLevel = Mathf.Min(bestFitLevel - 1, 1);
         var previousLimitSize = CalculatorLimitSize(previousLevel);
@@ -127,7 +138,10 @@ public class GPUInstancedGrid : MonoBehaviour
         // Debug.Log($"Othographics size" + cam.orthographicSize);
     }
 
-   
+    private Matrix4x4[][] batchPool;
+    private bool[] batchPoolInUse;
+    private int poolSize = 30; // Có thể adjust dựa trên needs
+    private const int BATCH_SIZE = 1023;
 
     private int GetBestFitLevel(int target)
     {
@@ -154,7 +168,7 @@ public class GPUInstancedGrid : MonoBehaviour
         thickCount = 0;
         normalMatrices.Clear();
         thickMatrices.Clear();
-        
+
         int verticalCounting = 0;
         int horizontalCounting = 0;
         for (int z = minZ; z <= maxZ; z++)
@@ -205,28 +219,51 @@ public class GPUInstancedGrid : MonoBehaviour
             horizontalCounting++;
         }
     }
-    
+
     private int CalculatorLimitSize(int level)
     {
         return Mathf.Clamp(level * DEFAULT_TILE_PER_BLOCK, 1, MAX_LIMIT);
     }
-    
+
     private void RenderGrid()
     {
-        RenderInstanced(normalMatricesArray,normalCount, normalPropertyBlock);
-        RenderInstanced(thickMatricesArray,thickCount, thickPropertyBlock);
+        RenderInstanced(normalMatricesArray, normalCount, normalPropertyBlock);
+        RenderInstanced(thickMatricesArray, thickCount, thickPropertyBlock);
     }
-    
-    private void RenderInstanced(Matrix4x4[] matrices,int totalCount, MaterialPropertyBlock block)
+
+    private void RenderInstanced(Matrix4x4[] matrices, int totalCount, MaterialPropertyBlock block)
     {
         int batchSize = 1023; // Unity's limit for Graphics.DrawMeshInstanced
+        int startIndex = 0;
+        int batchPoolIndex = 0;
+        List<int> poolInUse = new();
         for (int i = 0; i < totalCount; i += batchSize)
         {
+            // find free pool
+            batchPoolIndex = -1;
+            for (int j = 0; j < batchPoolInUse.Length; j++)
+            {
+                if (batchPoolInUse[j] == false)
+                {
+                    batchPoolIndex = j;
+                    batchPoolInUse[j] = true;
+                    poolInUse.Add(j);
+                    break;
+                }
+            }
+
+
             int count = Mathf.Min(batchSize, totalCount - i);
-            Matrix4x4[] batch = new Matrix4x4[count];
+            Matrix4x4[] batch = batchPoolIndex == -1 ? new Matrix4x4[count] : batchPool[batchPoolIndex];
             System.Array.Copy(matrices, i, batch, 0, count);
 
             Graphics.DrawMeshInstanced(lineMesh, 0, lineMaterial, batch, count, block, ShadowCastingMode.Off, false);
+        }
+
+        // release
+        foreach (var item in poolInUse)
+        {
+            batchPoolInUse[item] = false;
         }
     }
 
