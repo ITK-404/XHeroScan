@@ -38,6 +38,9 @@ public class GPUInstancedGrid : MonoBehaviour
     private int previousSize = 0;
     private int limitSize = 1;
 
+    private Vector3 previousCameraPosition;
+    private float previousOrthographicSize;
+
     void Start()
     {
         cam = Camera.main;
@@ -86,24 +89,14 @@ public class GPUInstancedGrid : MonoBehaviour
 
     void Update()
     {
+        // CalculateVisibleBounds();
         RenderGridWithInstancing();
         RenderGrid();
     }
 
     private void CalculateVisibleBounds()
     {
-        // Tính toán bounds dựa trên camera position và orthographic size
-        Vector3 camPos = cam.transform.position;
-        float orthoSize = cam.orthographicSize;
-        float aspect = cam.aspect;
-
-        // Mở rộng bounds một chút để tránh pop-in
-        float buffer = cellSize * 2;
-
-        minX = Mathf.FloorToInt((camPos.x - orthoSize * aspect) / cellSize) - Mathf.CeilToInt(buffer / cellSize);
-        maxX = Mathf.CeilToInt((camPos.x + orthoSize * aspect) / cellSize) + Mathf.CeilToInt(buffer / cellSize);
-        minZ = Mathf.FloorToInt((camPos.z - orthoSize) / cellSize) - Mathf.CeilToInt(buffer / cellSize);
-        maxZ = Mathf.CeilToInt((camPos.z + orthoSize) / cellSize) + Mathf.CeilToInt(buffer / cellSize);
+        
     }
 
     private void RenderGridWithInstancing()
@@ -124,12 +117,17 @@ public class GPUInstancedGrid : MonoBehaviour
 
         if (limitSize == 0) return;
         // đảm bảo limit size là kết quả của 5 mũ n (chỉ check tới n = 5)
-        if (previousSize != limitSize && squareOfFive.Contains(limitSize))
+        bool sizeChanged = previousSize != limitSize && squareOfFive.Contains(limitSize);
+        bool cameraMoved = previousCameraPosition != cam.transform.position;
+        bool zoomed = cam.orthographicSize != previousOrthographicSize;
+        if (cameraMoved || sizeChanged || zoomed)
         {
             OnChangedLimitSize?.Invoke(level);
             Debug.Log($"Thay đổi grid size {limitSize} {previousLimitSize}");
             // đảm bảo vẽ một lần
             previousSize = limitSize;
+            previousCameraPosition = cam.transform.position;
+            previousOrthographicSize = cam.orthographicSize;
             DrawGrid(limitSize, previousLimitSize);
         }
 
@@ -161,14 +159,23 @@ public class GPUInstancedGrid : MonoBehaviour
 
         return bestFit;
     }
+    
+    private Bounds GetCameraBounds()
+    {
+        Vector3 camPos = cam.transform.position;
+        float height = cam.orthographicSize * 2;
+        float width = height * cam.aspect;
 
+        return new Bounds(camPos, new Vector3(width, 100f, height));
+    }
+    
     private void DrawGrid(int limitSize, int previousLimitSize)
     {
         normalCount = 0;
         thickCount = 0;
         normalMatrices.Clear();
         thickMatrices.Clear();
-
+        
         int verticalCounting = 0;
         int horizontalCounting = 0;
         for (int z = minZ; z <= maxZ; z++)
