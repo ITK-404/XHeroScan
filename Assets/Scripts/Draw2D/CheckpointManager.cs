@@ -78,6 +78,8 @@ public class CheckpointManager : MonoBehaviour
 
     void Update()
     {
+        // AutoDetectRoomsNoGeometryUtils();
+
         if (EventSystem.current.IsPointerOverGameObject())
         {
             isPreviewing = false;
@@ -294,6 +296,7 @@ public class CheckpointManager : MonoBehaviour
         {
             // -> Có cập-nhật phòng
             if (!firstPointInsideRoom && firstPoint) Destroy(firstPoint); // point 1 ngoài -> xoá
+            // RoomLoopDetector.DetectAndUpdateRooms(this);
 
             foreach (var r in roomsToSplit.Distinct()) DetectAndSplitRoomIfNecessary(r);
             RedrawAllRooms();
@@ -950,7 +953,7 @@ public class CheckpointManager : MonoBehaviour
         RebuildSplitRoom(rooms, palette);
     }
 
-    void RebuildSplitRoom(List<Room> rooms, Color[] colors = null)
+    public void RebuildSplitRoom(List<Room> rooms, Color[] colors = null)
     {
         if (rooms == null || rooms.Count == 0)
         {

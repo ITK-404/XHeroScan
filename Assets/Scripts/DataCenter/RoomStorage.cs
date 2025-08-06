@@ -83,8 +83,12 @@ public static class RoomStorage
         return rooms.FirstOrDefault(r =>
             r.wallLines.Any(w => w.start == wl.start && w.end == wl.end));
     }
-    public static void RemoveRoomByID(string id)
+    public static void RemoveRoom(string id)
     {
         rooms.RemoveAll(r => r.ID == id);
+    }
+    public static void Clear()
+    {
+        rooms.Clear();
     }
 }
