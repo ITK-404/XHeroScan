@@ -38,9 +38,6 @@ public class GPUInstancedGrid : MonoBehaviour
     private int previousSize = 0;
     private int limitSize = 1;
 
-    private Vector3 previousCameraPosition;
-    private float previousOrthographicSize;
-
     void Start()
     {
         cam = Camera.main;
@@ -118,17 +115,14 @@ public class GPUInstancedGrid : MonoBehaviour
         if (limitSize == 0) return;
         // đảm bảo limit size là kết quả của 5 mũ n (chỉ check tới n = 5)
         bool sizeChanged = previousSize != limitSize && squareOfFive.Contains(limitSize);
-        bool cameraMoved = previousCameraPosition != cam.transform.position;
-        bool zoomed = cam.orthographicSize != previousOrthographicSize;
-        if (cameraMoved || sizeChanged || zoomed)
+        if (sizeChanged)
         {
-            OnChangedLimitSize?.Invoke(level);
-            Debug.Log($"Thay đổi grid size {limitSize} {previousLimitSize}");
+            OnChangedLimitSize?.Invoke(limitSize);
             // đảm bảo vẽ một lần
-            previousSize = limitSize;
-            previousCameraPosition = cam.transform.position;
-            previousOrthographicSize = cam.orthographicSize;
+            if(sizeChanged)
+                previousSize = limitSize;
             DrawGrid(limitSize, previousLimitSize);
+            Debug.Log($"Thay đổi grid size {limitSize} {previousLimitSize}");
         }
 
 
@@ -237,7 +231,7 @@ public class GPUInstancedGrid : MonoBehaviour
         RenderInstanced(normalMatricesArray, normalCount, normalPropertyBlock);
         RenderInstanced(thickMatricesArray, thickCount, thickPropertyBlock);
     }
-
+    
     private void RenderInstanced(Matrix4x4[] matrices, int totalCount, MaterialPropertyBlock block)
     {
         int batchSize = 1023; // Unity's limit for Graphics.DrawMeshInstanced
@@ -248,7 +242,7 @@ public class GPUInstancedGrid : MonoBehaviour
         {
             // find free pool
             batchPoolIndex = -1;
-            for (int j = 0; j < batchPoolInUse.Length; j++)
+            for (int j = startIndex; j < batchPoolInUse.Length; j++)
             {
                 if (batchPoolInUse[j] == false)
                 {
@@ -257,6 +251,8 @@ public class GPUInstancedGrid : MonoBehaviour
                     poolInUse.Add(j);
                     break;
                 }
+
+                startIndex++;
             }
 
 
