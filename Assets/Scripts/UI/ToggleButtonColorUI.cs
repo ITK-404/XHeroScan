@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using UnityEngine;
 
 public class ToggleButtonColorUI : ToggleButtonUIBase
 {
@@ -13,7 +12,10 @@ public class ToggleButtonColorUI : ToggleButtonUIBase
     public override void ChangeState(State newState)
     {
         base.ChangeState(newState);
-        
+        if (toggleColorList == null)
+        {
+            toggleColorList = GetComponentsInChildren<ToggleColorBase>();
+        }
         foreach (var toggleColor in toggleColorList)
         {
             toggleColor.Toggle(newState == State.Active);
