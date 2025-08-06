@@ -173,6 +173,7 @@ public static class GeometryUtils
         }
         return false;
     }
+    // Giữ nguyên bản gốc 2 tham số
     public static bool PointInPolygon(Vector2 point, List<Vector2> polygon)
     {
         int crossings = 0;
@@ -187,6 +188,32 @@ public static class GeometryUtils
         }
         return (crossings % 2 == 1);
     }
+
+    // Overload mới có includeEdge
+    public static bool PointInPolygon(Vector2 point, List<Vector2> polygon, bool includeEdge)
+    {
+        if (!includeEdge)
+            return PointInPolygon(point, polygon); // gọi hàm gốc
+
+        // Cho phép điểm nằm trên cạnh cũng được tính là "nằm trong"
+        for (int i = 0; i < polygon.Count; i++)
+        {
+            Vector2 a = polygon[i];
+            Vector2 b = polygon[(i + 1) % polygon.Count];
+            if (PointOnSegment(point, a, b, 0.001f)) return true;
+        }
+
+        return PointInPolygon(point, polygon); // fallback kiểm tra trong polygon
+    }
+
+    public static bool PointOnSegment(Vector2 p, Vector2 a, Vector2 b, float eps = 0.001f)
+    {
+        float lengthAB = Vector2.Distance(a, b);
+        float lengthAP = Vector2.Distance(a, p);
+        float lengthPB = Vector2.Distance(p, b);
+        return Mathf.Abs((lengthAP + lengthPB) - lengthAB) < eps;
+    }
+
     public static bool IsSamePolygonFlexible(List<Vector2> a, List<Vector2> b, float tol = 0.001f)
     {
         if (a.Count != b.Count) return false;
@@ -226,4 +253,14 @@ public static class GeometryUtils
             area += (double)poly[j].x * poly[i].y - (double)poly[i].x * poly[j].y;
         return Mathf.Abs((float)(area * 0.5));
     }
+    public static bool PolygonContainsPolygon(List<Vector2> outer, List<Vector2> inner)
+{
+    // Tất cả điểm inner phải nằm trong outer
+    foreach (var p in inner)
+    {
+        if (!PointInPolygon(p, outer, true)) return false;
+    }
+    return true;
+}
+
 }

@@ -33,7 +33,8 @@ public class LoadRoomScan : MonoBehaviour
 
             GameObject item = Instantiate(dataItemPrefab, contentParent);
 
-            string displayName = "Room " + index;
+            // string displayName = "Room " + index;
+            string displayName = room.roomName;
             string areaText = "Diện tích: " + GetRoomAreaString(room);
 
             var texts = item.GetComponentsInChildren<TextMeshProUGUI>();
