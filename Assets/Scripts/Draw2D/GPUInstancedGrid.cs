@@ -119,10 +119,10 @@ public class GPUInstancedGrid : MonoBehaviour
         // đảm bảo limit size là kết quả của 5 mũ n (chỉ check tới n = 5)
         bool sizeChanged = previousSize != limitSize && squareOfFive.Contains(limitSize);
         bool cameraMoved = previousCameraPosition != cam.transform.position;
-        bool zoomed = cam.orthographicSize != previousOrthographicSize;
+        bool zoomed = !Mathf.Approximately(cam.orthographicSize, previousOrthographicSize);
         if (cameraMoved || sizeChanged || zoomed)
         {
-            OnChangedLimitSize?.Invoke(level);
+            OnChangedLimitSize?.Invoke(limitSize);
             Debug.Log($"Thay đổi grid size {limitSize} {previousLimitSize}");
             // đảm bảo vẽ một lần
             previousSize = limitSize;
@@ -237,7 +237,7 @@ public class GPUInstancedGrid : MonoBehaviour
         RenderInstanced(normalMatricesArray, normalCount, normalPropertyBlock);
         RenderInstanced(thickMatricesArray, thickCount, thickPropertyBlock);
     }
-
+    
     private void RenderInstanced(Matrix4x4[] matrices, int totalCount, MaterialPropertyBlock block)
     {
         int batchSize = 1023; // Unity's limit for Graphics.DrawMeshInstanced
@@ -248,7 +248,7 @@ public class GPUInstancedGrid : MonoBehaviour
         {
             // find free pool
             batchPoolIndex = -1;
-            for (int j = 0; j < batchPoolInUse.Length; j++)
+            for (int j = startIndex; j < batchPoolInUse.Length; j++)
             {
                 if (batchPoolInUse[j] == false)
                 {
@@ -257,6 +257,8 @@ public class GPUInstancedGrid : MonoBehaviour
                     poolInUse.Add(j);
                     break;
                 }
+
+                startIndex++;
             }
 
 
