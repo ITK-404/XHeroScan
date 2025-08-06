@@ -38,9 +38,6 @@ public class GPUInstancedGrid : MonoBehaviour
     private int previousSize = 0;
     private int limitSize = 1;
 
-    private Vector3 previousCameraPosition;
-    private float previousOrthographicSize;
-
     void Start()
     {
         cam = Camera.main;
@@ -118,17 +115,14 @@ public class GPUInstancedGrid : MonoBehaviour
         if (limitSize == 0) return;
         // đảm bảo limit size là kết quả của 5 mũ n (chỉ check tới n = 5)
         bool sizeChanged = previousSize != limitSize && squareOfFive.Contains(limitSize);
-        bool cameraMoved = previousCameraPosition != cam.transform.position;
-        bool zoomed = !Mathf.Approximately(cam.orthographicSize, previousOrthographicSize);
-        if (cameraMoved || sizeChanged || zoomed)
+        if (sizeChanged)
         {
             OnChangedLimitSize?.Invoke(limitSize);
-            Debug.Log($"Thay đổi grid size {limitSize} {previousLimitSize}");
             // đảm bảo vẽ một lần
-            previousSize = limitSize;
-            previousCameraPosition = cam.transform.position;
-            previousOrthographicSize = cam.orthographicSize;
+            if(sizeChanged)
+                previousSize = limitSize;
             DrawGrid(limitSize, previousLimitSize);
+            Debug.Log($"Thay đổi grid size {limitSize} {previousLimitSize}");
         }
 
 
