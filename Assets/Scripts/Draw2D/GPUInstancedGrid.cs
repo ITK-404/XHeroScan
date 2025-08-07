@@ -117,7 +117,7 @@ public class GPUInstancedGrid : MonoBehaviour
         bool sizeChanged = previousSize != limitSize && squareOfFive.Contains(limitSize);
         if (sizeChanged)
         {
-            OnChangedLimitSize?.Invoke(limitSize);
+            OnChangedLimitSize?.Invoke(previousLimitSize);
             // đảm bảo vẽ một lần
             if(sizeChanged)
                 previousSize = limitSize;

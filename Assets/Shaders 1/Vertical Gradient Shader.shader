@@ -2,6 +2,7 @@ Shader "Unlit/HorizontalThreeColorGradientPreciseFade"
 {
     Properties
     {
+          _MainTex("Texture", 2D) = "white" {}
         _ColorA("Left Color", Color) = (0,0,1,1)
         _ColorB("Middle Color", Color) = (0,1,0,1)
         _ColorC("Right Color", Color) = (1,0,0,1)
@@ -37,11 +38,12 @@ Shader "Unlit/HorizontalThreeColorGradientPreciseFade"
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
             };
-
+            sampler2D _MainTex;
+            float4 _MainTex_ST;
             fixed4 _ColorA;
             fixed4 _ColorB;
             fixed4 _ColorC;
-            float _Split1;
+            float _Split1;  
             float _Split2;
             float _Fade;
 
@@ -49,7 +51,7 @@ Shader "Unlit/HorizontalThreeColorGradientPreciseFade"
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv;
+                o.uv =  TRANSFORM_TEX(v.uv, _MainTex);;
                 return o;
             }
 
