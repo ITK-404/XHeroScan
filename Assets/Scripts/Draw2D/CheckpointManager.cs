@@ -885,16 +885,20 @@ public class CheckpointManager : MonoBehaviour
     {
         if (originalRoom == null) return;
 
-        var allLoops = GeometryUtils.ListLoopsInRoom(originalRoom);
+        var allLoops = GeometryUtils.ListLoopsInRoom(originalRoom); // list of loops
+
+        Debug.Log($"[111111]Room {originalRoom.ID} has {allLoops.Count} loops.");
+
         if (allLoops.Count <= 1) return;
 
-        float originalArea = GeometryUtils.AbsArea(originalRoom.checkpoints);
-        const float AREA_EPS = 0.001f;
+        var originalArea = GeometryUtils.AbsArea(originalRoom.checkpoints);
+        const float AREA_EPS = 0.01f;
 
         var innerLoops = allLoops
             .Where(lp =>
                 !GeometryUtils.IsSamePolygonFlexible(lp, originalRoom.checkpoints) &&
-                Mathf.Abs(GeometryUtils.AbsArea(lp) - originalArea) > AREA_EPS)
+                Mathf.Abs(GeometryUtils.AbsArea(lp) - originalArea) > AREA_EPS &&
+                GeometryUtils.AbsArea(lp) < originalArea - AREA_EPS)
             .ToList();
 
         List<List<Vector2>> uniqueLoops = new();
@@ -924,6 +928,7 @@ public class CheckpointManager : MonoBehaviour
         var floorGO = GameObject.Find($"RoomFloor_{originalRoom.ID}");
         if (floorGO != null) GameObject.Destroy(floorGO);
 
+        // Tạo lại danh sách các Room mới dựa trên các vòng kín
         for (int i = 1; i < uniqueLoops.Count; i++)
         {
             var lp = uniqueLoops[i];

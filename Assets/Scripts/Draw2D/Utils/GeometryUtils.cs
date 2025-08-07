@@ -199,37 +199,75 @@ public static class GeometryUtils
     }
 
     public static bool IsSamePolygonFlexible(List<Vector2> a, List<Vector2> b, float tol = 0.001f)
-    {
-        if (a.Count != b.Count) return false;
+{
+    // ✅ Chuẩn hóa: loại điểm cuối nếu trùng điểm đầu
+    if (Vector2.Distance(a[0], a[^1]) < tol) a = a.Take(a.Count - 1).ToList();
+    if (Vector2.Distance(b[0], b[^1]) < tol) b = b.Take(b.Count - 1).ToList();
 
-        // Thử 2 chiều: thuận và đảo
-        for (int dir = 0; dir < 2; dir++)
+    // ✅ So sánh sau khi đã chuẩn hóa
+    if (a.Count != b.Count) return false;
+    int n = a.Count;
+
+    for (int dir = 0; dir < 2; dir++) // 0: thuận, 1: ngược
+    {
+        List<Vector2> bb = (dir == 0) ? b : b.AsEnumerable().Reverse().ToList();
+
+        for (int offset = 0; offset < n; offset++)
         {
-            bool ok = true;
-            // tìm offset khớp đỉnh đầu
-            int start = -1;
-            for (int i = 0; i < b.Count; i++)
+            bool match = true;
+            for (int i = 0; i < n; i++)
             {
-                Vector2 bp = (dir == 0) ? b[i] : b[b.Count - 1 - i];
-                if (Vector2.Distance(a[0], bp) < tol) { start = i; break; }
-            }
-            if (start == -1) ok = false;
-            else
-            {
-                for (int k = 0; k < a.Count && ok; k++)
+                Vector2 ap = a[i];
+                Vector2 bp = bb[(i + offset) % n];
+                if (Vector2.Distance(ap, bp) > tol)
                 {
-                    Vector2 ap = a[k];
-                    int idx = (dir == 0)
-                              ? (start + k) % b.Count
-                              : (start - k + b.Count) % b.Count;
-                    Vector2 bp = b[idx];
-                    if (Vector2.Distance(ap, bp) > tol) ok = false;
+                    match = false;
+                    break;
                 }
             }
-            if (ok) return true;
+            if (match) return true;
         }
-        return false;
     }
+
+    return false;
+}
+
+
+    public static Vector2 GetCentroid(List<Vector2> polygon)
+    {
+        int n = polygon.Count;
+        if (n < 3) return Vector2.zero;
+
+        float cx = 0f, cy = 0f;
+        float signedArea = 0f;
+
+        for (int i = 0; i < n; i++)
+        {
+            Vector2 p0 = polygon[i];
+            Vector2 p1 = polygon[(i + 1) % n];
+
+            float a = p0.x * p1.y - p1.x * p0.y;
+            signedArea += a;
+            cx += (p0.x + p1.x) * a;
+            cy += (p0.y + p1.y) * a;
+        }
+
+        signedArea *= 0.5f;
+        if (Mathf.Abs(signedArea) < 1e-6f)
+        {
+            Vector2 avg = Vector2.zero;
+            foreach (var p in polygon)
+                avg += p;
+            avg /= polygon.Count;
+            return avg;
+        }
+
+        cx /= (6f * signedArea);
+        cy /= (6f * signedArea);
+
+        return new Vector2(cx, cy);
+    }
+
     public static float AbsArea(List<Vector2> poly)
     {
         double area = 0;
@@ -237,87 +275,6 @@ public static class GeometryUtils
             area += (double)poly[j].x * poly[i].y - (double)poly[i].x * poly[j].y;
         return Mathf.Abs((float)(area * 0.5));
     }
-    public static bool PolygonInsidePolygon(List<Vector2> inner, List<Vector2> outer, float eps = 0.001f)
-{
-    if (inner == null || outer == null || inner.Count < 3 || outer.Count < 3)
-        return false;
-
-    // 1) Mọi đỉnh của inner phải nằm trong / trên biên outer
-    foreach (var p in inner)
-        if (!PointInPolygon(p, outer, true))
-            return false;
-
-    // 2) Cạnh inner không được xuyên qua cạnh outer (trừ khi hợp lệ)
-    for (int i = 0; i < inner.Count; i++)
-    {
-        Vector2 a1 = inner[i];
-        Vector2 a2 = inner[(i + 1) % inner.Count];
-
-        for (int j = 0; j < outer.Count; j++)
-        {
-            Vector2 b1 = outer[j];
-            Vector2 b2 = outer[(j + 1) % outer.Count];
-
-            if (!SegmentsIntersect(a1, a2, b1, b2, eps)) continue;
-
-            // A) Giao đúng tại endpoint
-            bool endpointHit =
-                Vector2.Distance(a1, b1) < eps || Vector2.Distance(a1, b2) < eps ||
-                Vector2.Distance(a2, b1) < eps || Vector2.Distance(a2, b2) < eps;
-
-            // B) Cạnh inner trùng một đoạn với cạnh outer
-            bool partialOverlap =
-                AreColinear(a1, a2, b1, eps) && AreColinear(a1, a2, b2, eps) &&
-                (PointOnSegment2(b1, b2, a1, eps) || PointOnSegment2(b1, b2, a2, eps) ||
-                 PointOnSegment2(a1, a2, b1, eps) || PointOnSegment2(a1, a2, b2, eps));
-
-            if (!(endpointHit || partialOverlap))
-                return false;
-        }
-    }
-    return true;
-}
-
-
-/* ───────── Helpers ───────── */
-static bool AreColinear(Vector2 p, Vector2 q, Vector2 r, float eps)
-{
-    return Mathf.Abs((q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x)) < eps;
-}
-
-static bool PointOnSegment2(Vector2 s1, Vector2 s2, Vector2 p, float eps)
-{
-    return AreColinear(s1, s2, p, eps) &&
-           p.x >= Mathf.Min(s1.x, s2.x) - eps && p.x <= Mathf.Max(s1.x, s2.x) + eps &&
-           p.y >= Mathf.Min(s1.y, s2.y) - eps && p.y <= Mathf.Max(s1.y, s2.y) + eps;
-}
-
-
-    private static bool SegmentsIntersect(Vector2 p1, Vector2 p2, Vector2 q1, Vector2 q2, float eps)
-    {
-        // Loại bỏ trường hợp chung điểm (coi như không cắt)
-        if (Vector2.Distance(p1, q1) < eps || Vector2.Distance(p1, q2) < eps ||
-            Vector2.Distance(p2, q1) < eps || Vector2.Distance(p2, q2) < eps)
-            return false;
-
-        return LinesIntersect(p1, p2, q1, q2);
-    }
-
-    private static bool LinesIntersect(Vector2 a1, Vector2 a2, Vector2 b1, Vector2 b2)
-    {
-        float d1 = Cross(b1 - a1, a2 - a1);
-        float d2 = Cross(b2 - a1, a2 - a1);
-        float d3 = Cross(a1 - b1, b2 - b1);
-        float d4 = Cross(a2 - b1, b2 - b1);
-
-        if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
-            ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0)))
-            return true;
-
-        return false;
-    }
-
-    private static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
     // Ray-casting algorithm
     public static bool PointInPolygon(Vector2 point, List<Vector2> polygon)
     {
@@ -335,4 +292,5 @@ static bool PointOnSegment2(Vector2 s1, Vector2 s2, Vector2 p, float eps)
         }
         return inside;
     }
+    
 }
