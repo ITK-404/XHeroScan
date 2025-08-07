@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.EventSystems;
+using System.Collections;
 
 public class RoomMeshController : MonoBehaviour
 {
@@ -189,23 +190,33 @@ public class RoomMeshController : MonoBehaviour
         // Nếu chưa có material, tạo material đỏ để dễ nhìn
         if (floorMaterial == null)
         {
-            // floorMaterial = new Material(Shader.Find("Standard"));
             floorMaterial = new Material(Shader.Find("Unlit/Color"));
-            // floorMaterial.color = Color.red; // Đổi sang đỏ
             Color usedColor = (color == default) ? Color.red : color;
             floorMaterial.color = usedColor;
-
         }
 
         meshRenderer.material = floorMaterial;
 
-        // Tùy chọn: Thêm collider để click sàn
-        if (GetComponent<MeshCollider>() == null)
-            gameObject.AddComponent<MeshCollider>();
+        // add collider trực tiếp ở đây nữa
+        // if (GetComponent<MeshCollider>() == null)
+        //     gameObject.AddComponent<MeshCollider>();
 
-        // Đảm bảo đăng ký lại RoomFloorMap
+        StartCoroutine(DelayedAddCollider());
+
+        // Đăng ký lại RoomFloorMap
         checkPointManager.RoomFloorMap[RoomID] = this.gameObject;
         Debug.Log($"Đã tự động đăng ký RoomFloorMap[{RoomID}] = {gameObject.name}");
+    }
+    IEnumerator DelayedAddCollider()
+    {
+        yield return null; // chờ 1 frame
+
+        var mesh = GetComponent<MeshFilter>()?.sharedMesh;
+        if (mesh != null && mesh.triangles.Length >= 3)
+        {
+            var collider = gameObject.AddComponent<MeshCollider>();
+            collider.sharedMesh = mesh;
+        }
     }
 
     public void GenerateMesh(List<Vector2> checkpoints)

@@ -173,99 +173,39 @@ public static class GeometryUtils
         }
         return false;
     }
-    // Overload mới có includeEdge
-    public static bool PointInPolygon(Vector2 point, List<Vector2> polygon, bool includeEdge)
-    {
-        if (!includeEdge)
-            return PointInPolygon(point, polygon); // gọi hàm gốc
-
-        // Cho phép điểm nằm trên cạnh cũng được tính là "nằm trong"
-        for (int i = 0; i < polygon.Count; i++)
-        {
-            Vector2 a = polygon[i];
-            Vector2 b = polygon[(i + 1) % polygon.Count];
-            if (PointOnSegment(point, a, b, 0.001f)) return true;
-        }
-
-        return PointInPolygon(point, polygon); // fallback kiểm tra trong polygon
-    }
-
-    public static bool PointOnSegment(Vector2 p, Vector2 a, Vector2 b, float eps = 0.001f)
-    {
-        float lengthAB = Vector2.Distance(a, b);
-        float lengthAP = Vector2.Distance(a, p);
-        float lengthPB = Vector2.Distance(p, b);
-        return Mathf.Abs((lengthAP + lengthPB) - lengthAB) < eps;
-    }
 
     public static bool IsSamePolygonFlexible(List<Vector2> a, List<Vector2> b, float tol = 0.001f)
-{
-    // ✅ Chuẩn hóa: loại điểm cuối nếu trùng điểm đầu
-    if (Vector2.Distance(a[0], a[^1]) < tol) a = a.Take(a.Count - 1).ToList();
-    if (Vector2.Distance(b[0], b[^1]) < tol) b = b.Take(b.Count - 1).ToList();
-
-    // ✅ So sánh sau khi đã chuẩn hóa
-    if (a.Count != b.Count) return false;
-    int n = a.Count;
-
-    for (int dir = 0; dir < 2; dir++) // 0: thuận, 1: ngược
     {
-        List<Vector2> bb = (dir == 0) ? b : b.AsEnumerable().Reverse().ToList();
+        // Chuẩn hóa: loại điểm cuối nếu trùng điểm đầu
+        if (Vector2.Distance(a[0], a[^1]) < tol) a = a.Take(a.Count - 1).ToList();
+        if (Vector2.Distance(b[0], b[^1]) < tol) b = b.Take(b.Count - 1).ToList();
 
-        for (int offset = 0; offset < n; offset++)
+        // So sánh sau khi đã chuẩn hóa
+        if (a.Count != b.Count) return false;
+        int n = a.Count;
+
+        for (int dir = 0; dir < 2; dir++) // 0: thuận, 1: ngược
         {
-            bool match = true;
-            for (int i = 0; i < n; i++)
+            List<Vector2> bb = (dir == 0) ? b : b.AsEnumerable().Reverse().ToList();
+
+            for (int offset = 0; offset < n; offset++)
             {
-                Vector2 ap = a[i];
-                Vector2 bp = bb[(i + offset) % n];
-                if (Vector2.Distance(ap, bp) > tol)
+                bool match = true;
+                for (int i = 0; i < n; i++)
                 {
-                    match = false;
-                    break;
+                    Vector2 ap = a[i];
+                    Vector2 bp = bb[(i + offset) % n];
+                    if (Vector2.Distance(ap, bp) > tol)
+                    {
+                        match = false;
+                        break;
+                    }
                 }
+                if (match) return true;
             }
-            if (match) return true;
-        }
-    }
-
-    return false;
-}
-
-
-    public static Vector2 GetCentroid(List<Vector2> polygon)
-    {
-        int n = polygon.Count;
-        if (n < 3) return Vector2.zero;
-
-        float cx = 0f, cy = 0f;
-        float signedArea = 0f;
-
-        for (int i = 0; i < n; i++)
-        {
-            Vector2 p0 = polygon[i];
-            Vector2 p1 = polygon[(i + 1) % n];
-
-            float a = p0.x * p1.y - p1.x * p0.y;
-            signedArea += a;
-            cx += (p0.x + p1.x) * a;
-            cy += (p0.y + p1.y) * a;
         }
 
-        signedArea *= 0.5f;
-        if (Mathf.Abs(signedArea) < 1e-6f)
-        {
-            Vector2 avg = Vector2.zero;
-            foreach (var p in polygon)
-                avg += p;
-            avg /= polygon.Count;
-            return avg;
-        }
-
-        cx /= (6f * signedArea);
-        cy /= (6f * signedArea);
-
-        return new Vector2(cx, cy);
+        return false;
     }
 
     public static float AbsArea(List<Vector2> poly)
@@ -292,5 +232,8 @@ public static class GeometryUtils
         }
         return inside;
     }
-    
+    public static string GetPolygonHash(List<Vector2> polygon)
+    {
+        return string.Join("|", polygon.Select(p => $"{p.x:F4},{p.y:F4}"));
+    }    
 }

@@ -6,6 +6,7 @@ using TMPro;
 using System.Linq;
 using UnityEngine.SceneManagement;
 using System;
+using System.Collections;
 
 public class CheckpointManager : MonoBehaviour
 {
@@ -296,13 +297,23 @@ public class CheckpointManager : MonoBehaviour
         {
             // -> Có cập-nhật phòng
             if (!firstPointInsideRoom && firstPoint) Destroy(firstPoint); // point 1 ngoài -> xoá
-            // RoomLoopDetector.DetectAndUpdateRooms(this);
 
-            foreach (var r in roomsToSplit.Distinct()) DetectAndSplitRoomIfNecessary(r);
+            // foreach (var r in roomsToSplit.Distinct()) DetectAndSplitRoomIfNecessary(r);
+            StartCoroutine(WaitAndSplitRooms(roomsToSplit.Distinct().ToList()));
+
             RedrawAllRooms();
         }
 
         firstPoint = null; // reset trạng thái click
+    }
+    private IEnumerator WaitAndSplitRooms(List<Room> rooms)
+    {
+        yield return null; // chờ 1 frame
+
+        foreach (var r in rooms)
+            DetectAndSplitRoomIfNecessary(r);
+
+        RedrawAllRooms();
     }
 
     private void InsertPointIntoWall(Room room, Vector2 point)
@@ -887,18 +898,16 @@ public class CheckpointManager : MonoBehaviour
 
         var allLoops = GeometryUtils.ListLoopsInRoom(originalRoom); // list of loops
 
-        Debug.Log($"[111111]Room {originalRoom.ID} has {allLoops.Count} loops.");
-
         if (allLoops.Count <= 1) return;
 
         var originalArea = GeometryUtils.AbsArea(originalRoom.checkpoints);
-        const float AREA_EPS = 0.01f;
+        const float AREA_RATIO_EPS = 0.01f; // 1% sai số
 
         var innerLoops = allLoops
             .Where(lp =>
                 !GeometryUtils.IsSamePolygonFlexible(lp, originalRoom.checkpoints) &&
-                Mathf.Abs(GeometryUtils.AbsArea(lp) - originalArea) > AREA_EPS &&
-                GeometryUtils.AbsArea(lp) < originalArea - AREA_EPS)
+                Mathf.Abs(GeometryUtils.AbsArea(lp) - originalArea) > originalArea * AREA_RATIO_EPS &&
+                GeometryUtils.AbsArea(lp) < originalArea * (1f - AREA_RATIO_EPS))
             .ToList();
 
         List<List<Vector2>> uniqueLoops = new();
