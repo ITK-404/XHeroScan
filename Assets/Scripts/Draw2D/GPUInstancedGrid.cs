@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 public class GPUInstancedGrid : MonoBehaviour
 {
     public static event Action<int> OnChangedLimitSize;
-
+    public static GPUInstancedGrid Instance;
     [Header("Grid Settings")]
     public float cellSize = 0.5f;
 
@@ -40,6 +40,7 @@ public class GPUInstancedGrid : MonoBehaviour
 
     void Start()
     {
+        Instance = this;
         cam = Camera.main;
         normalPropertyBlock = new MaterialPropertyBlock();
         thickPropertyBlock = new MaterialPropertyBlock();
@@ -68,6 +69,58 @@ public class GPUInstancedGrid : MonoBehaviour
         InitializeArrays();
     }
 
+    private Bounds bounds;
+    private Bounds cameraBounds;
+
+    private void CreateCameraBounds()
+    {
+        float halfRange = viewRange / 2;
+        bounds.center = Vector3.zero;
+        bounds.min = -new Vector3(halfRange, 0, halfRange);
+        bounds.max = new Vector3(halfRange, 0, halfRange);
+
+        var height = cam.orthographicSize;
+        var width = height * cam.aspect;
+
+        var minX = bounds.min.x + width;
+        var maxX = bounds.extents.x - width;
+
+        var minY = bounds.min.z + height;
+        var maxY = bounds.extents.z - height;
+
+        cameraBounds = new Bounds();
+        cameraBounds.SetMinMax(
+            new Vector3(minX, 0, minY) * 2,
+            new Vector3(maxX, 0, maxY) * 2
+        );
+    }
+    
+    public Vector3 GetCameraBoundsPosition(Vector3 _targetPosition)
+    {
+        return new Vector3(
+            Mathf.Clamp(_targetPosition.x, cameraBounds.min.x, cameraBounds.max.x),
+            _targetPosition.y,
+            Mathf.Clamp(_targetPosition.z, cameraBounds.min.z, cameraBounds.max.z)
+        );
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (Application.isPlaying)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(bounds.center, bounds.size);
+            Gizmos.DrawWireCube(cam.transform.position, cameraBounds.size);
+
+
+            // Gizmos.DrawLine(bottomLeft, new Vector3(bottomLeft.x, topRight.y, 0));
+            // Gizmos.DrawLine(bottomLeft, new Vector3(topRight.x, bottomLeft.y, 0));
+            // Gizmos.color = Color.yellow;
+            // Gizmos.DrawLine(topRight, new Vector3(bottomLeft.x, topRight.y, 0));
+            // Gizmos.DrawLine(topRight, new Vector3(topRight.x, bottomLeft.y, 0));
+        }
+    }
+
     private void InitializeArrays()
     {
         int count = (viewRange + 1) * (viewRange + 1) * 2;
@@ -86,6 +139,7 @@ public class GPUInstancedGrid : MonoBehaviour
 
     void Update()
     {
+        CreateCameraBounds();
         // CalculateVisibleBounds();
         RenderGridWithInstancing();
         RenderGrid();
@@ -93,7 +147,6 @@ public class GPUInstancedGrid : MonoBehaviour
 
     private void CalculateVisibleBounds()
     {
-        
     }
 
     private void RenderGridWithInstancing()
@@ -119,7 +172,7 @@ public class GPUInstancedGrid : MonoBehaviour
         {
             OnChangedLimitSize?.Invoke(previousLimitSize);
             // đảm bảo vẽ một lần
-            if(sizeChanged)
+            if (sizeChanged)
                 previousSize = limitSize;
             DrawGrid(limitSize, previousLimitSize);
             Debug.Log($"Thay đổi grid size {limitSize} {previousLimitSize}");
@@ -153,7 +206,7 @@ public class GPUInstancedGrid : MonoBehaviour
 
         return bestFit;
     }
-    
+
     private Bounds GetCameraBounds()
     {
         Vector3 camPos = cam.transform.position;
@@ -162,14 +215,14 @@ public class GPUInstancedGrid : MonoBehaviour
 
         return new Bounds(camPos, new Vector3(width, 100f, height));
     }
-    
+
     private void DrawGrid(int limitSize, int previousLimitSize)
     {
         normalCount = 0;
         thickCount = 0;
         normalMatrices.Clear();
         thickMatrices.Clear();
-        
+
         int verticalCounting = 0;
         int horizontalCounting = 0;
         for (int z = minZ; z <= maxZ; z++)
@@ -231,7 +284,7 @@ public class GPUInstancedGrid : MonoBehaviour
         RenderInstanced(normalMatricesArray, normalCount, normalPropertyBlock);
         RenderInstanced(thickMatricesArray, thickCount, thickPropertyBlock);
     }
-    
+
     private void RenderInstanced(Matrix4x4[] matrices, int totalCount, MaterialPropertyBlock block)
     {
         int batchSize = 1023; // Unity's limit for Graphics.DrawMeshInstanced

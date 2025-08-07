@@ -12,6 +12,8 @@ public class LoadFile : MonoBehaviour
     public Transform contentParent;        // Gán DataLoader
     public GameObject dataItemPrefab;      // Prefab cho mỗi file hiển thị
 
+    [Header("Warning UI")]
+    [SerializeField] private GameObject warningPopup;
     void OnEnable()
     {
         LoadAllSavedFiles();
@@ -25,6 +27,7 @@ public class LoadFile : MonoBehaviour
 
         List<JsonFileInfo> files = SaveLoadManager.GetAllSavedFileInfos();
         files.Sort();
+
         foreach (var file in files)
         {
             string displayName = Path.GetFileNameWithoutExtension(file.fileName);

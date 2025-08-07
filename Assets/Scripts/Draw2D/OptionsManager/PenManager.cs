@@ -53,7 +53,7 @@ public class PenManager : MonoBehaviour
         DrawTool = FindFirstObjectByType<DrawingTool>();
     }
 
-    void Update()
+    void LateUpdate()
     {
         if (ConnectManager.isConnectActive) return;// đang nối line dừng mọi move với pen
 
@@ -98,6 +98,8 @@ public class PenManager : MonoBehaviour
                 checkpointManager.isMovingCheckpoint = false;
             }
         }
+        mainCamera.transform.position = 
+            GPUInstancedGrid.Instance.GetCameraBoundsPosition(mainCamera.transform.position);
     }
 
     private bool IsPointerInActionSpace(Vector2 screenPosition)
@@ -222,8 +224,9 @@ public class PenManager : MonoBehaviour
                         mainCamera.nearClipPlane)) -
                     mainCamera.ScreenToWorldPoint(new Vector3(touch.position.x - touchDelta.x,
                         touch.position.y - touchDelta.y, mainCamera.nearClipPlane));
-
+                GPUInstancedGrid.Instance.GetCameraBoundsPosition(mainCamera.transform.position + -move);
                 mainCamera.transform.Translate(-move, Space.World);
+                
             }
         }
 
