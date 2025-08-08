@@ -195,10 +195,8 @@ public class CheckpointManager : MonoBehaviour
                 loopMappings.Add(map);
                 allCheckpoints.Add(map.CheckpointsGO);
             }
-
             // tính lại a, b sau khi cắt
             Vector2 a = aOrig, b = bOrig;
-
             if (!aInside)
             {
                 if (intersections.Count > 0)
