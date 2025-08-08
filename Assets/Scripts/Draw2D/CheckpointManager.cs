@@ -253,7 +253,7 @@ public class CheckpointManager : MonoBehaviour
                 Vector2 w1 = new(wall.start.x, wall.start.z);
                 Vector2 w2 = new(wall.end.x, wall.end.z);
 
-                if (LineSegmentsIntersect(a, b, w1, w2, out Vector2 inter))
+                if (LineSegmentsIntersect(a, b, w1, w2, out Vector2 inter)) 
                 {
                     Vector3 inter3D = new(inter.x, 0, inter.y);
                     GameObject ipGO = Instantiate(checkpointPrefab, inter3D, Quaternion.identity);
@@ -284,7 +284,7 @@ public class CheckpointManager : MonoBehaviour
             RoomStorage.UpdateOrAddRoom(room);
             anyRoomUpdated = true;
             roomsToSplit.Add(room);
-        }
+        } 
 
         // 3. KẾT THÚC
         if (!anyRoomUpdated)
@@ -901,13 +901,27 @@ public class CheckpointManager : MonoBehaviour
         if (allLoops.Count <= 1) return;
 
         var originalArea = GeometryUtils.AbsArea(originalRoom.checkpoints);
-        const float AREA_RATIO_EPS = 0.01f; // 1% sai số
+        // const float AREA_RATIO_EPS = 0.01f; // 1% sai số
 
-        var innerLoops = allLoops
-            .Where(lp =>
-                !GeometryUtils.IsSamePolygonFlexible(lp, originalRoom.checkpoints) &&
-                Mathf.Abs(GeometryUtils.AbsArea(lp) - originalArea) > originalArea * AREA_RATIO_EPS &&
-                GeometryUtils.AbsArea(lp) < originalArea * (1f - AREA_RATIO_EPS))
+        // var innerLoops = allLoops
+        //     .Where(lp =>
+        //         !GeometryUtils.IsSamePolygonFlexible(lp, originalRoom.checkpoints) &&
+        //         Mathf.Abs(GeometryUtils.AbsArea(lp) - originalArea) > originalArea * AREA_RATIO_EPS &&
+        //         GeometryUtils.AbsArea(lp) < originalArea * (1f - AREA_RATIO_EPS)) //|A - A₀| < 0.02 * A₀  --> chỉ đúng nếu phòng đó gần bằng 98% diện tích gốc
+        //     .ToList();
+
+        const float AREA_MIN = 0.001f;
+
+        var validLoops = allLoops
+            .Where(lp => GeometryUtils.AbsArea(lp) > AREA_MIN)
+            .ToList();
+
+        if (validLoops.Count <= 1) return;
+
+        var largestLoop = validLoops.OrderByDescending(lp => GeometryUtils.AbsArea(lp)).First();
+
+        var innerLoops = validLoops
+            .Where(lp => !GeometryUtils.IsSamePolygonFlexible(lp, largestLoop))
             .ToList();
 
         List<List<Vector2>> uniqueLoops = new();
@@ -919,8 +933,8 @@ public class CheckpointManager : MonoBehaviour
 
         // Giữ groupID gốc nếu có, nếu chưa thì dùng ID hiện tại
         string gid = !string.IsNullOrEmpty(originalRoom.groupID)
-                     ? originalRoom.groupID
-                     : originalRoom.ID;
+                    ? originalRoom.groupID
+                    : originalRoom.ID;
 
         var backupWalls = originalRoom.wallLines.Select(w => new WallLine(w)).ToList();
 
@@ -929,8 +943,8 @@ public class CheckpointManager : MonoBehaviour
         originalRoom.checkpoints = loop0;
         originalRoom.wallLines = backupWalls
             .Where(w => GeometryUtils.EdgeInLoop(loop0,
-                         new Vector2(w.start.x, w.start.z),
-                         new Vector2(w.end.x, w.end.z)))
+                        new Vector2(w.start.x, w.start.z),
+                        new Vector2(w.end.x, w.end.z)))
             .ToList();
         RoomStorage.UpdateOrAddRoom(originalRoom);
 
