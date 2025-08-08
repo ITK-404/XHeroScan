@@ -2,44 +2,95 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum ScaleHandle
+{
+    TopLeft,
+    Top,
+    TopRight,
+    Right,
+    BottomRight,
+    Bottom,
+    BottomLeft,
+    Left,
+}
+
 public class FurnitureItem : MonoBehaviour
 {
-    public FurnitureData data;
-    public SpriteRenderer spriteRenderer;
-    public FurniturePoint pointPrefab;
+    public static bool OnDrag = false; 
+    private static GameObject pointHolder;
+    private static Camera mainCam;
 
+    public FurnitureData data;
+    public FurniturePoint pointPrefab;
+    
+    public BoxCollider boxCollider;
+    public SpriteRenderer spriteRender;
     private List<FurniturePoint> pointsList = new();
-    public static GameObject pointHolder;
 
     private void Awake()
     {
-        if (pointHolder == null)
+        if (mainCam == null)
         {
-            pointHolder = new GameObject("Point Holder");
+            mainCam = Camera.main;
         }
 
-        for (int i = 0; i < 8; i++)
-        {
-            var point = Instantiate(pointPrefab, pointHolder.transform);
-            pointsList.Add(point);
-        }
+        // if (pointHolder == null)
+        // {
+        //     pointHolder = new GameObject("Point Holder");
+        // }
 
-        RefreshPointPosition();
+        // foreach (ScaleHandle value in Enum.GetValues(typeof(ScaleHandle)))
+        // {
+        //     var point = Instantiate(pointPrefab, pointHolder.transform);
+        //     point.center = transform;
+        //     point.scaleHandle = value;
+        //     point.furniture = this;
+        //  
+        //     pointsList.Add(point);
+        // }
     }
 
-    private void RefreshPointPosition()
+
+  
+
+    private Vector3 startPos;
+
+    public void OnDragPoint(FurniturePoint point)
     {
-        var list = spriteRenderer.bounds.GetHandlePositions(transform);
-        for (int i = 0; i < pointsList.Count; i++)
-        {
-            pointsList[i].transform.localPosition = list[i];
-        }
+        
+    }
+
+    private void OnMouseDrag()
+    {
+        transform.position = GetWorldMousePosition();
+        OnDrag = true;
+    }
+
+    private void OnMouseUp()
+    {
+        OnDrag = false;
+    }
+
+    public void OnStartPoint(FurnitureItem point)
+    {
+        startPos = GetWorldMousePosition(); 
+    }
+
+    private Vector3 GetWorldMousePosition()
+    {
+        float distance = Vector3.Distance(mainCam.transform.position, FurnitureManager.Instance.transform.position);
+
+        // Chuyển vị trí chuột sang tọa độ thế giới
+        Vector3 worldMousePosition = mainCam.ScreenToWorldPoint(
+            new Vector3(Input.mousePosition.x, Input.mousePosition.y, distance)
+        );
+        return worldMousePosition;
     }
 
     private void OnDrawGizmos()
     {
-        if (spriteRenderer == null) return;
-        Bounds bounds = spriteRenderer.bounds;
+        if (boxCollider == null) return;
+        Bounds bounds = boxCollider.bounds;
         Gizmos.DrawWireCube(bounds.center, bounds.size);
         Vector3 dragSize = new Vector3(0.5f, 0, 0.5f);
         // top middle
@@ -60,32 +111,6 @@ public class FurnitureItem : MonoBehaviour
         // bottom left
         Gizmos.DrawWireCube(bounds.center + new Vector3(-bounds.size.x / 2, 0, -bounds.size.z / 2), dragSize);
     }
-
-    private void OnMouseDown(Vector3 position)
-    {
-        var bounds = spriteRenderer.bounds;
-        var extend = position - bounds.center;
-        var mockPos = bounds.center - extend;
-        var center = Vector3.Lerp(position, mockPos, 0.5f);
-    }
-
-    private void Update()
-    {
-    }
-
-    public void ChangeScale(Vector3 deltaScale)
-    {
-        var bounds = spriteRenderer.bounds;
-        var oldScale = transform.localScale;
-        var oldPos = transform.localPosition;
-        var pivot = bounds.center;
-        var newPos = Vector3.zero;
-        var finalScale = oldScale + deltaScale;
-        newPos.x = pivot.x + (oldPos.x - pivot.x) * (deltaScale.x / oldScale.x);
-        newPos.y = pivot.y + (oldPos.y - pivot.y) * (deltaScale.y / oldScale.y);
-        transform.localScale = finalScale;
-        transform.localPosition = newPos;
-    }
 }
 
 [Serializable]
@@ -96,3 +121,4 @@ public class FurnitureData
     public float Height = 1;
     public float ObjectHeight = 0.5f;
 }
+

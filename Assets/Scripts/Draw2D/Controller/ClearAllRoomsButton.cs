@@ -122,5 +122,7 @@ public class ClearAllRoomsButton : MonoBehaviour
             deleteAllRoomCommand.ClearAllRoom = this;
             UndoRedoController.Instance.AddToUndo(deleteAllRoomCommand);
         }
+        
+        FurnitureManager.Instance.ClearAllFurnitures();
     }
 }
