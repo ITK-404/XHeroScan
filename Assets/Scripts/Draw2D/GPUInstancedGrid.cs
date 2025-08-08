@@ -90,8 +90,8 @@ public class GPUInstancedGrid : MonoBehaviour
 
         cameraBounds = new Bounds();
         cameraBounds.SetMinMax(
-            new Vector3(minX, 0, minY) * 2,
-            new Vector3(maxX, 0, maxY) * 2
+            new Vector3(minX / 1.5f, 0, minY) * 2,
+            new Vector3(maxX / 1.5f, 0, maxY) * 2
         );
     }
     
