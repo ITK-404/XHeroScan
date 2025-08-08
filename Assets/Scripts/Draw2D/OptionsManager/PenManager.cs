@@ -215,6 +215,12 @@ public class PenManager : MonoBehaviour
         // Debug.Log("Is room Floor is move" + isRoomFloorBeingDragged);
         if (Input.touchCount == 1)
         {
+
+
+            if (FurnitureItem.OnDrag)
+            {
+                return;
+            }
             Touch touch = Input.GetTouch(0);
             if (touch.phase == TouchPhase.Moved)
             {
