@@ -150,42 +150,45 @@ public class CheckpointManager : MonoBehaviour
         }
     }
 
+// Put these fields in your class (outside of any method)
+private const float EDGE_EPS   = 0.001f; // kiểm tra nằm trên biên
+private const float SNAP_EPS   = 0.01f;  // snap ~ 1cm
+private const float DUP_EPS2   = 1e-6f;  // bỏ giao trùng A/B
+private const float DEDUP_EPS2 = 1e-6f;  // dedup intersections
+
+// =================== PUBLIC ENTRY ===================
     public void HandleSingleWallPlacement(Vector3 position)
     {
         if (ConnectManager.isConnectActive) return;
 
         List<GameObject> tempCreatedPoints = new();
 
-        // 1. CLICK ĐẦU 
+        // 1) CLICK 1
         if (firstPoint == null)
         {
             firstPoint = Instantiate(checkpointPrefab, position, Quaternion.identity);
             firstPoint.transform.SetParent(null);
-            return;                         // click 2 mới xử lý
+            return;
         }
 
-        //  2. CLICK THỨ 2 
+        // 2) CLICK 2
         Vector3 startWorld = firstPoint.transform.position;
-        Vector3 endWorld = position;
+        Vector3 endWorld   = position;
 
         Vector2 aOrig = new(startWorld.x, startWorld.z);
-        Vector2 bOrig = new(endWorld.x, endWorld.z);
+        Vector2 bOrig = new(endWorld.x,   endWorld.z);
 
-        bool anyRoomUpdated = false; // có room nào thay đổi?
-        bool firstPointInsideRoom = false; // point 1 có trong phòng nào không?
-        List<Room> roomsToSplit = new(); // phòng sẽ split sau khi vẽ
+        bool anyRoomUpdated       = false;
+        bool firstPointInsideRoom = false;
+        List<Room> roomsToSplit   = new();
 
-        // 2.1. Duyệt qua snapshot rooms
         foreach (Room room in RoomStorage.rooms.ToList())
         {
             bool aInside = PointInPolygon(aOrig, room.checkpoints);
             bool bInside = PointInPolygon(bOrig, room.checkpoints);
-            var intersections = GetLinePolygonIntersections(aOrig, bOrig, room.checkpoints);
+            bool aOnBoundary = OnBoundary(room, aOrig, EDGE_EPS);
 
-            if (!aInside && !bInside && intersections.Count == 0)
-                continue;                           // hoàn toàn không ảnh hưởng room
-
-            if (aInside) firstPointInsideRoom = true;
+            if (aInside || aOnBoundary) firstPointInsideRoom = true;
 
             // --- lấy / tạo LoopMap ---
             var map = loopMappings.FirstOrDefault(m => m.RoomID == room.ID);
@@ -195,115 +198,376 @@ public class CheckpointManager : MonoBehaviour
                 loopMappings.Add(map);
                 allCheckpoints.Add(map.CheckpointsGO);
             }
-            // tính lại a, b sau khi cắt
-            Vector2 a = aOrig, b = bOrig;
-            if (!aInside)
-            {
-                if (intersections.Count > 0)
-                    a = intersections.OrderBy(p => Vector2.Distance(p, b)).First();
-                else continue;
-            }
+            if ((aInside || aOnBoundary) && firstPoint != null && !map.CheckpointsGO.Contains(firstPoint))
+                map.CheckpointsGO.Add(firstPoint);
 
-            if (!aInside && !bInside)
-            {
-                if (intersections.Count >= 2)
-                {
-                    a = intersections[0];
-                    b = intersections[1];
-                    aInside = bInside = true;
-                }
-                else continue;
-            }
-            else if (!aInside || !bInside)
-            {
-                if (intersections.Count >= 1)
-                {
-                    if (!aInside) a = intersections.OrderBy(p => Vector2.Distance(p, b)).First();
-                    if (!bInside) b = intersections.OrderBy(p => Vector2.Distance(p, a)).First();
-                    aInside = bInside = true;
-                }
-                else continue;
-            }
+            // 2.0. Chọn A,B (hình học)
+            Vector2 A, B;
+            bool insideInsideCase, A_fromHit, B_fromHit, haveValidPair;
+            DetermineSegmentForRoom(room, aOrig, bOrig,
+                                    out A, out B,
+                                    out insideInsideCase,
+                                    out A_fromHit, out B_fromHit,
+                                    out haveValidPair);
+            if (!haveValidPair) continue;
 
-            Vector3 start = new(a.x, 0, a.y);
-            Vector3 end = new(b.x, 0, b.y);
+            // Snap về biên (nếu cần)
+            if (!insideInsideCase && (A_fromHit || !aInside)) TrySnapToAnyEdge(room, A, SNAP_EPS, out A);
+            if (!insideInsideCase && (B_fromHit || !bInside)) TrySnapToAnyEdge(room, B, SNAP_EPS, out B);
 
-            // 2.2. Chèn checkpoint vào cạnh nếu cần
-            if (aInside &&
-                room.wallLines.Any(w => PointOnSegment(a, new(w.start.x, w.start.z),
-                                                          new(w.end.x, w.end.z), 0.001f)) &&
-                !room.checkpoints.Any(p => Vector2.Distance(p, a) < 0.001f))
-            {
-                InsertPointIntoWall(room, a);
-            }
+            // Tính lại trạng thái sau snap
+            bool aNowInside = PointInPolygon(A, room.checkpoints);
+            bool bNowInside = PointInPolygon(B, room.checkpoints);
+            bool A_onBoundary2 = OnBoundary(room, A, EDGE_EPS);
+            bool B_onBoundary2 = OnBoundary(room, B, EDGE_EPS);
 
-            if (bInside &&
-                room.wallLines.Any(w => PointOnSegment(b, new(w.start.x, w.start.z),
-                                                          new(w.end.x, w.end.z), 0.001f)) &&
-                !room.checkpoints.Any(p => Vector2.Distance(p, b) < 0.001f))
-            {
-                InsertPointIntoWall(room, b);
-            }
+            // 2.1. Quyết định vẽ
+            bool A_anchored = A_onBoundary2 || A_fromHit;
+            bool B_anchored = B_onBoundary2 || B_fromHit;
+            bool shouldDraw = insideInsideCase || A_anchored || B_anchored;
+            if (!shouldDraw) continue;
 
-            // 2.3. Giao cắt với các wall hiện có
-            foreach (var wall in room.wallLines.ToList())
-            {
-                Vector2 w1 = new(wall.start.x, wall.start.z);
-                Vector2 w2 = new(wall.end.x, wall.end.z);
+            Vector3 start = new(A.x, 0, A.y);
+            Vector3 end   = new(B.x, 0, B.y);
 
-                if (LineSegmentsIntersect(a, b, w1, w2, out Vector2 inter)) 
-                {
-                    Vector3 inter3D = new(inter.x, 0, inter.y);
-                    GameObject ipGO = Instantiate(checkpointPrefab, inter3D, Quaternion.identity);
-                    ipGO.transform.SetParent(null);
-                    map.CheckpointsGO.Add(ipGO);
+            // 2.2. Spawn/insert điểm biên
+            if (A_onBoundary2 && !room.checkpoints.Any(p => Vector2.Distance(p, A) < EDGE_EPS))
+                tempCreatedPoints.Add(SpawnEdgeCheckpoint(room, map, start, A));
+            if (B_onBoundary2 && !room.checkpoints.Any(p => Vector2.Distance(p, B) < EDGE_EPS))
+                tempCreatedPoints.Add(SpawnEdgeCheckpoint(room, map, end, B));
 
-                    if (!room.checkpoints.Contains(inter))
-                        room.checkpoints.Add(inter);
+            // marker cho đầu bên trong nhưng không trên biên (để người dùng thấy)
+            if (bNowInside && !B_onBoundary2)
+                tempCreatedPoints.Add(SpawnMarker(map, end));
+            // (đầu A nếu trong và không trên biên chính là firstPoint)
 
-                    tempCreatedPoints.Add(ipGO); // cũng là point sinh tạm
-                }
-            }
+            // 2.3. Marker các giao cắt với tường nội bộ
+            SpawnInternalIntersections(room, map, A, B, tempCreatedPoints);
 
-            bool aOnEdge = room.wallLines.Any(w => PointOnSegment(a, new(w.start.x, w.start.z),
-                                                                     new(w.end.x, w.end.z), 0.001f));
-            bool bOnEdge = room.wallLines.Any(w => PointOnSegment(b, new(w.start.x, w.start.z),
-                                                                     new(w.end.x, w.end.z), 0.001f));
-            if (!aOnEdge && !bOnEdge) continue;
-
-            // 2.4. Vẽ line mới
+            // 2.4. Vẽ line
             DrawingTool.currentLineType = currentLineType;
             DrawingTool.DrawLineAndDistance(start, end);
 
-            WallLine newline = new() { start = start, end = end, type = currentLineType };
+            var newline = new WallLine { start = start, end = end, type = currentLineType };
             room.wallLines.Add(newline);
             DrawingTool.wallLines.Add(newline);
 
             RoomStorage.UpdateOrAddRoom(room);
             anyRoomUpdated = true;
-            roomsToSplit.Add(room);
-        } 
 
-        // 3. KẾT THÚC
+            // 2.5. Tách nếu tạo mạch kín
+            if (ShouldSplitSegment(room, A, B, A_onBoundary2, B_onBoundary2))
+                roomsToSplit.Add(room);
+        }
+
+        // 3) KẾT THÚC
         if (!anyRoomUpdated)
         {
-            // -> Không cập-nhật phòng nào: xoá mọi thứ vừa tạo
-            if (firstPoint) Destroy(firstPoint);
+            if (!firstPointInsideRoom && firstPoint) Destroy(firstPoint);
             foreach (var p in tempCreatedPoints) if (p) Destroy(p);
         }
         else
         {
-            // -> Có cập-nhật phòng
-            if (!firstPointInsideRoom && firstPoint) Destroy(firstPoint); // point 1 ngoài -> xoá
+            if (!firstPointInsideRoom && firstPoint) Destroy(firstPoint);
 
-            // foreach (var r in roomsToSplit.Distinct()) DetectAndSplitRoomIfNecessary(r);
-            StartCoroutine(WaitAndSplitRooms(roomsToSplit.Distinct().ToList()));
+            if (roomsToSplit.Count > 0)
+                StartCoroutine(WaitAndSplitRooms(roomsToSplit.Distinct().ToList()));
 
             RedrawAllRooms();
         }
 
-        firstPoint = null; // reset trạng thái click
+        firstPoint = null; // reset
     }
+
+    private float DistPointSeg2(Vector2 p, Vector2 a, Vector2 b)
+    {
+        Vector2 ab = b - a;
+        float t = Vector2.Dot(p - a, ab) / (ab.sqrMagnitude + 1e-12f);
+        t = Mathf.Clamp01(t);
+        Vector2 proj = a + t * ab;
+        return (p - proj).sqrMagnitude;
+    }
+
+    private bool TrySnapToAnyEdge(Room room, Vector2 p, float snapEps, out Vector2 snapped)
+    {
+        float bestD2 = float.MaxValue;
+        Vector2 best = p;
+        foreach (var w in room.wallLines)
+        {
+            Vector2 a = new(w.start.x, w.start.z);
+            Vector2 b = new(w.end.x,   w.end.z);
+            float d2 = DistPointSeg2(p, a, b);
+            if (d2 < bestD2)
+            {
+                bestD2 = d2;
+                Vector2 ab = b - a;
+                float t = Vector2.Dot(p - a, ab) / (ab.sqrMagnitude + 1e-12f);
+                t = Mathf.Clamp01(t);
+                best = a + t * ab;
+            }
+        }
+        if (bestD2 <= snapEps * snapEps) { snapped = best; return true; }
+        snapped = p; return false;
+    }
+
+    private IEnumerable<(Vector2 a, Vector2 b)> GetBoundaryEdges(Room room)
+    {
+        var cps = room.checkpoints;
+        for (int i = 0, n = cps.Count; i < n; i++)
+            yield return (cps[i], cps[(i + 1) % n]);
+    }
+
+    private bool OnBoundary(Room room, Vector2 p, float eps)
+    {
+        foreach (var (a, b) in GetBoundaryEdges(room))
+            if (PointOnSegment(p, a, b, eps)) return true;
+        return false;
+    }
+
+    private List<Vector2> DedupIntersections(List<Vector2> raw)
+    {
+        List<Vector2> outList = new();
+        foreach (var p in raw)
+        {
+            bool dup = false;
+            foreach (var q in outList)
+                if ((p - q).sqrMagnitude < DEDUP_EPS2) { dup = true; break; }
+            if (!dup) outList.Add(p);
+        }
+        return outList;
+    }
+
+    private bool SegIntersectOrTouchEps(Vector2 a1, Vector2 a2, Vector2 b1, Vector2 b2, float eps, out Vector2 inter)
+    {
+        inter = default;
+
+        float d12 = Mathf.Min(
+            DistPointSeg2(a1, b1, b2),
+            Mathf.Min(DistPointSeg2(a2, b1, b2),
+            Mathf.Min(DistPointSeg2(b1, a1, a2),
+                    DistPointSeg2(b2, a1, a2))));
+        if (d12 <= eps * eps)
+        {
+            Vector2 mid = Vector2.zero; int c = 0;
+            if (DistPointSeg2(a1, b1, b2) <= eps * eps) { mid += a1; c++; }
+            if (DistPointSeg2(a2, b1, b2) <= eps * eps) { mid += a2; c++; }
+            if (DistPointSeg2(b1, a1, a2) <= eps * eps) { mid += b1; c++; }
+            if (DistPointSeg2(b2, a1, a2) <= eps * eps) { mid += b2; c++; }
+            if (c > 0) inter = mid / c;
+            return true;
+        }
+
+        if (LineSegmentsIntersect(a1, a2, b1, b2, out inter)) return true;
+        return false;
+    }
+
+    private bool TryBoundaryIntersection(Room room, Vector2 A, Vector2 B, out Vector2 hit, bool preferNearB)
+    {
+        hit = default; bool found = false; float best = float.MaxValue;
+        foreach (var (e1, e2) in GetBoundaryEdges(room))
+        {
+            if (SegIntersectOrTouchEps(A, B, e1, e2, EDGE_EPS, out Vector2 inter))
+            {
+                float score = preferNearB ? (inter - B).sqrMagnitude : (inter - A).sqrMagnitude;
+                if (score < best) { best = score; hit = inter; found = true; }
+            }
+        }
+        return found;
+    }
+
+    private void DetermineSegmentForRoom(
+        Room room, Vector2 aOrig, Vector2 bOrig,
+        out Vector2 A, out Vector2 B,
+        out bool insideInsideCase,
+        out bool A_fromHit, out bool B_fromHit,
+        out bool haveValidPair)
+    {
+        insideInsideCase = false; A_fromHit = B_fromHit = false; haveValidPair = false;
+        A = aOrig; B = bOrig;
+
+        bool aInside = PointInPolygon(aOrig, room.checkpoints);
+        bool bInside = PointInPolygon(bOrig, room.checkpoints);
+
+        var intersections = DedupIntersections(GetLinePolygonIntersections(aOrig, bOrig, room.checkpoints));
+
+        Vector2 dir = (bOrig - aOrig);
+        float dirLen2 = dir.sqrMagnitude + 1e-9f;
+        var hits = intersections
+            .Select(p => (p, t: Mathf.Clamp01(Vector2.Dot(p - aOrig, dir) / dirLen2)))
+            .OrderBy(x => x.t)
+            .ToList();
+
+        if (!aInside && !bInside)
+        {
+            if (hits.Count >= 2)
+            {
+                int pickI = -1; float pickLen = -1f;
+                for (int i = 0; i < hits.Count - 1; i++)
+                {
+                    float midT = 0.5f * (hits[i].t + hits[i + 1].t);
+                    Vector2 mid = aOrig + (bOrig - aOrig) * midT;
+                    if (PointInPolygon(mid, room.checkpoints))
+                    {
+                        float segLen = hits[i + 1].t - hits[i].t;
+                        if (segLen > pickLen) { pickLen = segLen; pickI = i; }
+                    }
+                }
+                if (pickI >= 0)
+                {
+                    A = hits[pickI].p;   A_fromHit = true;
+                    B = hits[pickI+1].p; B_fromHit = true;
+                    haveValidPair = true;
+                }
+            }
+        }
+        else if (!aInside && bInside)
+        {
+            if (hits.Count >= 1)
+            {
+                A = hits.OrderBy(h => Vector2.SqrMagnitude(h.p - bOrig)).First().p;
+                A_fromHit = true; haveValidPair = true;
+            }
+            else if (TryBoundaryIntersection(room, aOrig, bOrig, out var h, preferNearB: true))
+            {
+                A = h; A_fromHit = true; haveValidPair = true;
+            }
+        }
+        else if (aInside && !bInside)
+        {
+            if (hits.Count >= 1)
+            {
+                B = hits.OrderBy(h => Vector2.SqrMagnitude(h.p - aOrig)).First().p;
+                B_fromHit = true; haveValidPair = true;
+            }
+            else if (TryBoundaryIntersection(room, aOrig, bOrig, out var h, preferNearB: false))
+            {
+                B = h; B_fromHit = true; haveValidPair = true;
+            }
+        }
+        else
+        {
+            insideInsideCase = true; haveValidPair = true;
+        }
+    }
+
+    private GameObject SpawnEdgeCheckpoint(Room room, LoopMap map, Vector3 pos, Vector2 p2)
+    {
+        InsertPointIntoWall(room, p2);
+        var go = Instantiate(checkpointPrefab, pos, Quaternion.identity);
+        go.transform.SetParent(null, true);
+        map.CheckpointsGO.Add(go);
+        return go;
+    }
+
+    private GameObject SpawnMarker(LoopMap map, Vector3 pos)
+    {
+        var go = Instantiate(checkpointPrefab, pos, Quaternion.identity);
+        go.transform.SetParent(null, true);
+        map.CheckpointsGO.Add(go);
+        return go;
+    }
+
+    private void SpawnInternalIntersections(Room room, LoopMap map, Vector2 A, Vector2 B, List<GameObject> bucket)
+    {
+        foreach (var wall in room.wallLines.ToList())
+        {
+            Vector2 w1 = new(wall.start.x, wall.start.z);
+            Vector2 w2 = new(wall.end.x,   wall.end.z);
+
+            if (SegIntersectOrTouchEps(A, B, w1, w2, EDGE_EPS, out Vector2 inter))
+            {
+                if ((inter - A).sqrMagnitude < DUP_EPS2 || (inter - B).sqrMagnitude < DUP_EPS2) continue;
+
+                var ipGO = Instantiate(checkpointPrefab, new Vector3(inter.x, 0, inter.y), Quaternion.identity);
+                ipGO.transform.SetParent(null, true);
+                map.CheckpointsGO.Add(ipGO);
+                bucket.Add(ipGO);
+            }
+        }
+    }
+
+    private (HashSet<int> compsHit, bool[] compAnchored) BuildWallsGraphAndHits(Room room, Vector2 A, Vector2 B)
+    {
+        int n = room.wallLines.Count;
+        bool[] anchored = new bool[n];
+        List<int>[] adj = new List<int>[n];
+        for (int i = 0; i < n; i++) adj[i] = new List<int>();
+
+        for (int i = 0; i < n; i++)
+        {
+            var wl = room.wallLines[i];
+            Vector2 s = new(wl.start.x, wl.start.z);
+            Vector2 e = new(wl.end.x,   wl.end.z);
+            anchored[i] = OnBoundary(room, s, EDGE_EPS) || OnBoundary(room, e, EDGE_EPS);
+        }
+
+        for (int i = 0; i < n; i++)
+        {
+            var wi = room.wallLines[i];
+            Vector2 a1 = new(wi.start.x, wi.start.z);
+            Vector2 a2 = new(wi.end.x,   wi.end.z);
+            for (int j = i + 1; j < n; j++)
+            {
+                var wj = room.wallLines[j];
+                Vector2 b1 = new(wj.start.x, wj.start.z);
+                Vector2 b2 = new(wj.end.x,   wj.end.z);
+
+                if (SegIntersectOrTouchEps(a1, a2, b1, b2, EDGE_EPS, out _)
+                    || (a1 - b1).sqrMagnitude < DUP_EPS2 || (a1 - b2).sqrMagnitude < DUP_EPS2
+                    || (a2 - b1).sqrMagnitude < DUP_EPS2 || (a2 - b2).sqrMagnitude < DUP_EPS2)
+                {
+                    adj[i].Add(j);
+                    adj[j].Add(i);
+                }
+            }
+        }
+
+        int[] comp = new int[n];
+        Array.Fill(comp, -1);
+        List<bool> compHasAnchor = new();
+
+        int cid = 0;
+        for (int i = 0; i < n; i++)
+        {
+            if (comp[i] != -1) continue;
+            bool hasAnchor = false;
+            Stack<int> st = new(); st.Push(i);
+            comp[i] = cid;
+            while (st.Count > 0)
+            {
+                int u = st.Pop();
+                if (anchored[u]) hasAnchor = true;
+                foreach (var v in adj[u])
+                    if (comp[v] == -1) { comp[v] = cid; st.Push(v); }
+            }
+            compHasAnchor.Add(hasAnchor);
+            cid++;
+        }
+
+        HashSet<int> hitComps = new();
+        for (int i = 0; i < n; i++)
+        {
+            var wl = room.wallLines[i];
+            Vector2 s = new(wl.start.x, wl.start.z);
+            Vector2 e = new(wl.end.x,   wl.end.z);
+            if (SegIntersectOrTouchEps(A, B, s, e, EDGE_EPS, out _))
+                hitComps.Add(comp[i]);
+        }
+
+        return (hitComps, compHasAnchor.ToArray());
+    }
+
+    private bool ShouldSplitSegment(Room room, Vector2 A, Vector2 B, bool A_onBoundary, bool B_onBoundary)
+    {
+        var (compsHit, compAnchored) = BuildWallsGraphAndHits(room, A, B);
+        bool hitAnyAnchoredComp   = compsHit.Any(c => compAnchored[c]);
+        int anchoredCompsHitCount = compsHit.Where(c => compAnchored[c]).Distinct().Count();
+
+        return  (A_onBoundary && B_onBoundary)
+            || ((A_onBoundary || B_onBoundary) && hitAnyAnchoredComp)
+            || (anchoredCompsHitCount >= 2);
+    }
+
     private IEnumerator WaitAndSplitRooms(List<Room> rooms)
     {
         yield return null; // chờ 1 frame
