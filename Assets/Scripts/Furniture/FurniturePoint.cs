@@ -4,7 +4,7 @@ public class FurniturePoint : MonoBehaviour
 {
     public static Camera mainCam;
     public Transform center;
-    public ScaleHandle scaleHandle;
+    public CheckpointType checkpointType;
     public FurnitureItem furniture;
     private void Awake()
     {
@@ -16,6 +16,11 @@ public class FurniturePoint : MonoBehaviour
 
     private void OnMouseDrag()
     {
+        if(furniture == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
         furniture.OnDragPoint(this);
     }
 }

@@ -2169,7 +2169,7 @@ PrefabInstance:
     - target: {fileID: 270710281579286436, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 3.5250244
+      value: 3.5249023
       objectReference: {fileID: 0}
     - target: {fileID: 429801500406248616, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
@@ -2284,7 +2284,7 @@ PrefabInstance:
     - target: {fileID: 1096783217439380342, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.000030517578
+      value: -0.000027656555
       objectReference: {fileID: 0}
     - target: {fileID: 1099334954491201323, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
@@ -5978,7 +5978,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eceb0c265fcc4a5fb211731031489d63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  offset: {x: 0, y: 0, z: 0}
   furnitureItemPrefab: {fileID: 0}
 --- !u!1 &516852550
 GameObject:
@@ -13756,6 +13755,7 @@ MonoBehaviour:
   defaultSprite: {fileID: 21300000, guid: a83c047dbf34d314090ae79a428c5c83, type: 3}
   furnitureItemPrefab: {fileID: 7234985322380843007, guid: 1dbcc122087dc784d836ad3f337c2482,
     type: 3}
+  offset: {x: 0, y: 0, z: 0}
 --- !u!4 &1339119839
 Transform:
   m_ObjectHideFlags: 0
