@@ -28,12 +28,14 @@ public class MovePointManager: MonoBehaviour
         if (!_weldAdj.TryGetValue(b, out var sb)) { sb = new HashSet<GameObject>(); _weldAdj[b] = sb; }
         sa.Add(b); sb.Add(a);
     }
+
     private void RemoveEdge(GameObject a, GameObject b)
     {
         if (a == null || b == null) return;
         if (_weldAdj.TryGetValue(a, out var sa)) sa.Remove(b);
         if (_weldAdj.TryGetValue(b, out var sb)) sb.Remove(a);
     }
+    
     private IEnumerable<GameObject> Neighbors(GameObject a)
     {
         if (a != null && _weldAdj.TryGetValue(a, out var sa))
@@ -137,31 +139,31 @@ public class MovePointManager: MonoBehaviour
         if (checkPointManager.selectedCheckpoint == null) return;
 
         Vector3 newPosition = checkPointManager.GetWorldPositionFromScreen(Input.mousePosition);
-        Vector3 oldPos = checkPointManager.selectedCheckpoint.transform.position;
+        var selected = checkPointManager.selectedCheckpoint;
+        Vector3 oldPos = selected.transform.position;
         Vector3 selectedDelta = newPosition - oldPos;
 
-        // === Nếu là điểm cửa/cửa sổ 
+        // === Nếu là điểm cửa/cửa sổ ===
         foreach (var kvp in checkPointManager.tempDoorWindowPoints)
         {
             foreach (var (line, p1GO, p2GO) in kvp.Value)
             {
-                if (checkPointManager.selectedCheckpoint == p1GO || checkPointManager.selectedCheckpoint == p2GO)
+                if (selected == p1GO || selected == p2GO)
                 {
                     WallLine wall = FindClosestWallLine(line, kvp.Key);
                     if (wall == null) return;
 
                     Vector3 projected = checkPointManager.ProjectPointOnLineSegment(wall.start, wall.end, newPosition);
-                    if (checkPointManager.selectedCheckpoint == p1GO) line.start = projected; else line.end = projected;
+                    if (selected == p1GO) line.start = projected; else line.end = projected;
 
-                    checkPointManager.selectedCheckpoint.transform.position = projected;
+                    selected.transform.position = projected;
                     checkPointManager.RedrawAllRooms();
                     return;
                 }
             }
         }
 
-        // === Nếu là checkpoint chính trong polygon 
-        var selected = checkPointManager.selectedCheckpoint;
+        // === Nếu là checkpoint chính trong polygon
         selected.transform.position = newPosition;
 
         foreach (var loop in checkPointManager.AllCheckpoints)
@@ -177,7 +179,10 @@ public class MovePointManager: MonoBehaviour
             // Ghi lại vị trí cũ của tất cả neighbor đang dính để tính delta riêng
             var neighbors = new HashSet<GameObject>(Neighbors(selected));
             var neighborOldPos = new Dictionary<GameObject, Vector3>(neighbors.Count);
-            foreach (var n in neighbors) neighborOldPos[n] = n.transform.position;
+            foreach (var n in neighbors) if (n != null) neighborOldPos[n] = n.transform.position;
+
+            // Danh sách điểm cùng loop sẽ xóa (không sửa list trong foreach)
+            var sameLoopToRemove = new List<GameObject>();
 
             // A) Duy trì hysteresis cho các neighbor hiện có
             foreach (var n in neighbors.ToList())
@@ -185,14 +190,28 @@ public class MovePointManager: MonoBehaviour
                 if (n == null) { RemoveEdge(selected, n); neighbors.Remove(n); continue; }
 
                 float d = XZDist(selected.transform.position, n.transform.position);
+                bool isSameLoop = FindLoopContains(n) == loop;
+
+                // NEW: Nếu là cùng phòng và đã chạm (<= WELD_ON) thì gộp về selected bằng cách xóa n
+                if (isSameLoop && n != selected && d <= WELD_ON)
+                {
+                    if (loop.Count - sameLoopToRemove.Count > 3) // giữ >=3 đỉnh
+                    {
+                        sameLoopToRemove.Add(n);
+                        neighbors.Remove(n);
+                        neighborOldPos.Remove(n);
+                        continue;
+                    }
+                    // nếu chỉ còn 3 đỉnh thì KHÔNG xóa; rơi xuống dưới xử lý bình thường
+                }
+
                 if (d <= WELD_ON)
                 {
-                    // snap trùng selected
+                    // khác phòng: snap trùng selected
                     n.transform.position = selected.transform.position;
                 }
                 else if (d > WELD_OFF)
                 {
-                    // nhả riêng n
                     RemoveEdge(selected, n);
                     neighbors.Remove(n);
                     neighborOldPos.Remove(n);
@@ -204,7 +223,7 @@ public class MovePointManager: MonoBehaviour
                 }
             }
 
-            // B) Tạo weld mới với MỌI điểm trong WELD_ON, snap trùng ngay
+            // B) Tạo weld mới với MỌI điểm trong WELD_ON
             foreach (var lp in checkPointManager.AllCheckpoints)
             {
                 foreach (var cp in lp)
@@ -213,16 +232,42 @@ public class MovePointManager: MonoBehaviour
                     if (neighbors.Contains(cp)) continue;
 
                     float d = XZDist(selected.transform.position, cp.transform.position);
-                    if (d <= WELD_ON)
-                    {
-                        // ghi lại old pos trước khi snap để có delta chính xác cho manual lines
-                        if (!neighborOldPos.ContainsKey(cp)) neighborOldPos[cp] = cp.transform.position;
+                    if (d > WELD_ON) continue;
 
+                    bool isSameLoop = (lp == loop);
+
+                    if (isSameLoop)
+                    {
+                        // NEW: cùng phòng -> xóa bớt điểm trùng (giữ selected)
+                        if (cp != selected && loop.Count - sameLoopToRemove.Count > 3)
+                        {
+                            sameLoopToRemove.Add(cp);
+                        }
+                        // nếu còn đúng 3 đỉnh thì thôi, không xóa để bảo toàn polygon
+                    }
+                    else
+                    {
+                        // khác phòng -> weld + snap
+                        if (!neighborOldPos.ContainsKey(cp)) neighborOldPos[cp] = cp.transform.position;
                         AddEdge(selected, cp);
                         neighbors.Add(cp);
-
-                        cp.transform.position = selected.transform.position; // snap trùng selected
+                        cp.transform.position = selected.transform.position;
                     }
+                }
+            }
+
+            // THỰC XÓA các điểm cùng phòng đã gom
+            if (sameLoopToRemove.Count > 0)
+            {
+                foreach (var cp in sameLoopToRemove)
+                {
+                    // cắt tất cả liên kết weld của cp
+                    foreach (var nb in Neighbors(cp).ToList()) RemoveEdge(cp, nb);
+                    // bỏ khỏi đồ thị
+                    if (_weldAdj.ContainsKey(cp)) _weldAdj.Remove(cp);
+                    // bỏ khỏi loop và hủy GO
+                    loop.Remove(cp);
+                    if (cp != null) Destroy(cp);
                 }
             }
 
@@ -264,7 +309,7 @@ public class MovePointManager: MonoBehaviour
                     Vector2 p1 = room.checkpoints[wallLineIndex % n];
                     Vector2 p2 = room.checkpoints[(wallLineIndex + 1) % n];
                     room.wallLines[i].start = new Vector3(p1.x, 0, p1.y);
-                    room.wallLines[i].end   = new Vector3(p2.x, 0, p2.y);
+                    room.wallLines[i].end = new Vector3(p2.x, 0, p2.y);
                     wallLineIndex++;
                 }
             }
@@ -273,14 +318,14 @@ public class MovePointManager: MonoBehaviour
             foreach (var line in room.wallLines)
             {
                 bool nearSelectedStart = XZDist(line.start, oldPos) < 0.15f;
-                bool nearSelectedEnd   = XZDist(line.end,   oldPos) < 0.15f;
+                bool nearSelectedEnd = XZDist(line.end, oldPos) < 0.15f;
 
                 Vector3 partnerStartDelta, partnerEndDelta;
                 bool nearPartnerStart = TryGetNearestNeighborDelta(line.start, neighborOldPos, neighborDelta, 0.15f, out partnerStartDelta);
-                bool nearPartnerEnd   = TryGetNearestNeighborDelta(line.end,   neighborOldPos, neighborDelta, 0.15f, out partnerEndDelta);
+                bool nearPartnerEnd = TryGetNearestNeighborDelta(line.end, neighborOldPos, neighborDelta, 0.15f, out partnerEndDelta);
 
                 bool movedStart = nearSelectedStart || nearPartnerStart;
-                bool movedEnd   = nearSelectedEnd   || nearPartnerEnd;
+                bool movedEnd = nearSelectedEnd || nearPartnerEnd;
 
                 if (movedStart && movedEnd)
                 {
@@ -291,7 +336,7 @@ public class MovePointManager: MonoBehaviour
                         direction = Quaternion.Euler(0, hash % 360, 0) * Vector3.forward;
                     }
                     line.start = selected.transform.position - direction * 0.001f;
-                    line.end   = selected.transform.position + direction * 0.001f;
+                    line.end = selected.transform.position + direction * 0.001f;
                 }
                 else if (movedStart)
                 {
@@ -299,13 +344,13 @@ public class MovePointManager: MonoBehaviour
                 }
                 else if (movedEnd)
                 {
-                    line.end   += nearPartnerEnd ? partnerEndDelta : selectedDelta;
+                    line.end += nearPartnerEnd ? partnerEndDelta : selectedDelta;
                 }
                 else if (Vector3.Distance(line.start, line.end) < 0.001f)
                 {
                     Vector3 direction = Quaternion.Euler(0, 137f, 0) * Vector3.forward;
                     line.start = selected.transform.position - direction * 0.001f;
-                    line.end   = selected.transform.position + direction * 0.001f;
+                    line.end = selected.transform.position + direction * 0.001f;
                     Debug.LogWarning($"[Auto-fix] Manual line degenerate (start==end). Cưỡng bức kéo rộng tại: {selected.transform.position}");
                 }
             }
@@ -318,15 +363,15 @@ public class MovePointManager: MonoBehaviour
                 {
                     if (wall.type != LineType.Wall) continue;
                     float dist = GetDistanceFromSegment(door.start, wall.start, wall.end)
-                               + GetDistanceFromSegment(door.end,   wall.start, wall.end);
+                               + GetDistanceFromSegment(door.end, wall.start, wall.end);
                     if (dist < minDistance) { minDistance = dist; parentWall = wall; }
                 }
                 if (parentWall == null) continue;
 
                 float r1 = Mathf.Clamp01(GetRatioAlongLine(door.start, parentWall.start, parentWall.end));
-                float r2 = Mathf.Clamp01(GetRatioAlongLine(door.end,   parentWall.start, parentWall.end));
+                float r2 = Mathf.Clamp01(GetRatioAlongLine(door.end, parentWall.start, parentWall.end));
                 door.start = Vector3.Lerp(parentWall.start, parentWall.end, r1);
-                door.end   = Vector3.Lerp(parentWall.start, parentWall.end, r2);
+                door.end = Vector3.Lerp(parentWall.start, parentWall.end, r2);
 
                 if (checkPointManager.tempDoorWindowPoints.TryGetValue(room.ID, out var doorsInRoom))
                     foreach (var (line, p1GO, p2GO) in doorsInRoom)
