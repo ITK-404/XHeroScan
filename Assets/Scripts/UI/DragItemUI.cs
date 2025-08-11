@@ -6,17 +6,19 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
     public FurnitureItem furnitureItemPrefab;
     public void OnDrag(PointerEventData eventData)
     {
-        Debug.Log("On Drag UI: over gameobject: "+IsOverUI());
+        Debug.Log("On Drag UI: over gameobject: " + IsOverUI());
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
         // start drag
+        FurnitureItem.OnDragFurniture = true;
         FurnitureManager.Instance.CreateDragItem(furnitureItemPrefab);
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
+
         if (IsOverUI())
         {
             FurnitureManager.Instance.ClearItem();
@@ -25,6 +27,7 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
         {
             FurnitureManager.Instance.Drop();
         }
+        FurnitureItem.OnDragFurniture = false;
     }
 
     private bool IsOverUI()

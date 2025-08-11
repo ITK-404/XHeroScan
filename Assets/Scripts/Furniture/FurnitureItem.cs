@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using UnityEngine;
 
 public enum CheckpointType
@@ -22,7 +23,8 @@ public enum ResizeAxis
 }
 public class FurnitureItem : MonoBehaviour
 {
-    public static bool OnDrag = false;
+    public static bool OnDragFurniture = false;
+    public static bool OnDragPoint = false;
     private static GameObject pointHolder;
     private static Camera mainCam;
     private const float LIMIT_SIZE = 0.5f;
@@ -44,9 +46,11 @@ public class FurnitureItem : MonoBehaviour
     [SerializeField] private FurniturePoint topLeftPoint;
     [SerializeField] private FurniturePoint topRightPoint;
 
-
+    [SerializeField] private Bounds bounds;
     private FurniturePoint[] pointsArray;
+    private Vector3 startPos;
     public float width, height = 1;
+
     private void Awake()
     {
         bounds = new Bounds();
@@ -73,9 +77,7 @@ public class FurnitureItem : MonoBehaviour
         point.furniture = this;
     }
 
-    private Vector3 startPos;
-    [SerializeField] private Bounds bounds;
-    public void OnDragPoint(FurniturePoint point)
+    public void DragPoint(FurniturePoint point)
     {
         Vector3 newPos = GetWorldMousePosition();
         newPos = point.transform.parent.InverseTransformPoint(newPos);
@@ -113,13 +115,16 @@ public class FurnitureItem : MonoBehaviour
         width = bounds.size.x;
         height = bounds.size.z;
         spriteRender.transform.localPosition = bounds.center;
+        RefreshCheckPoints();
+    }
 
+    public void RefreshCheckPoints()
+    {
         foreach (var item in pointsArray)
         {
             Recalculator(item, bounds);
         }
     }
-
 
     private void Update()
     {
@@ -127,7 +132,7 @@ public class FurnitureItem : MonoBehaviour
         height = Mathf.Clamp(height, 0.1f, 100);
         spriteRender.transform.localScale = new Vector3(width, height, 1);
     }
-    private ClampHandler clamp = new();
+
     public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint, ResizeAxis resizeAxis)
     {
 
@@ -138,7 +143,7 @@ public class FurnitureItem : MonoBehaviour
 
         Vector3 dragPos = new Vector3(xPos, transform.position.y, zPos);
 
-        dragPos = clamp.ClampPosition(dragPos, bounds.center, LIMIT_SIZE, dragPoint.checkpointType);
+        dragPos = ClampHandler.ClampPosition(dragPos, bounds.center, LIMIT_SIZE, dragPoint.checkpointType);
 
         Vector3 anchor = anchorPoint.localPosition;
         Vector3 center = (anchor + dragPos) / 2f;
@@ -181,12 +186,6 @@ public class FurnitureItem : MonoBehaviour
         float xExtend = Mathf.Max(bounds.extents.x, LIMIT_SIZE);
         float yExtend = Mathf.Max(bounds.extents.z, LIMIT_SIZE);
 
-        switch (point.checkpointType)
-        {
-
-            default:
-                break;
-        }
         Vector3 offset = Vector3.zero;
         var type = point.checkpointType;
         // left
@@ -238,20 +237,22 @@ public class FurnitureItem : MonoBehaviour
         point.transform.localPosition = newPosition;
     }
 
-    private void OnMouseDrag()
+    public void Dragging(Transform dragTransform)
     {
-        transform.position = GetWorldMousePosition();
-        OnDrag = true;
+        var currentPos = GetWorldMousePosition();
+        var delta = currentPos - startPos;
+        dragTransform.localPosition += delta;
+        startPos = currentPos;
+        bounds.center = dragTransform.localPosition;
+
+        RefreshCheckPoints();
+
+        OnDragPoint = true;
     }
 
-    private void OnMouseUp()
+    public void DeActiveDrag()
     {
-        OnDrag = false;
-    }
-
-    public void OnStartPoint(FurnitureItem point)
-    {
-        startPos = GetWorldMousePosition();
+        OnDragPoint = false;
     }
 
     private Vector3 GetWorldMousePosition()
@@ -263,6 +264,11 @@ public class FurnitureItem : MonoBehaviour
             new Vector3(Input.mousePosition.x, Input.mousePosition.y, distance)
         );
         return worldMousePosition;
+    }
+
+    public void StartDrag()
+    {
+        startPos = GetWorldMousePosition();
     }
 }
 

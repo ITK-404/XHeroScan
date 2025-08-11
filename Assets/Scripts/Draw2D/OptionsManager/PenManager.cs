@@ -287,7 +287,7 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
         {
 
 
-            if (FurnitureItem.OnDrag)
+            if (FurnitureItem.OnDragPoint || FurnitureItem.OnDragFurniture)
             {
                 return;
             }

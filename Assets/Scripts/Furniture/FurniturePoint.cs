@@ -21,6 +21,12 @@ public class FurniturePoint : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        furniture.OnDragPoint(this);
+        FurnitureItem.OnDragPoint = true;
+        furniture.DragPoint(this);
+    }
+
+    private void OnMouseUp()
+    {
+        FurnitureItem.OnDragPoint = false;
     }
 }

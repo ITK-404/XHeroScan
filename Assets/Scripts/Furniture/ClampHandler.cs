@@ -2,7 +2,7 @@
 
 public class ClampHandler
 {
-    public Vector3 ClampPosition(Vector3 currentPos, Vector3 center, float limitSize, CheckpointType type)
+    public static Vector3 ClampPosition(Vector3 currentPos, Vector3 center, float limitSize, CheckpointType type)
     {
         Debug.Log("Center: Position: " + center);
         Vector3 clampedPos = currentPos;
