@@ -7,7 +7,11 @@ public enum CheckpointType
     Left,
     Right,
     Top,
-    Bottom
+    Bottom,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight
 }
 
 public enum ResizeAxis
@@ -21,6 +25,7 @@ public class FurnitureItem : MonoBehaviour
     public static bool OnDrag = false;
     private static GameObject pointHolder;
     private static Camera mainCam;
+    private const float LIMIT_SIZE = 0.5f;
 
     public FurnitureData data;
     public FurniturePoint pointPrefab;
@@ -34,19 +39,28 @@ public class FurnitureItem : MonoBehaviour
     [SerializeField] private FurniturePoint topPoint;
     [SerializeField] private FurniturePoint bottomPoint;
 
+    [SerializeField] private FurniturePoint bottomLeftPoint;
+    [SerializeField] private FurniturePoint bottomRightPoint;
+    [SerializeField] private FurniturePoint topLeftPoint;
+    [SerializeField] private FurniturePoint topRightPoint;
+
+
     private FurniturePoint[] pointsArray;
     public float width, height = 1;
     private void Awake()
     {
+        bounds = new Bounds();
+        bounds.center = spriteRender.transform.localPosition;
+        bounds.size = new Vector2(width, height);
         if (mainCam == null)
         {
             mainCam = Camera.main;
         }
 
-        SetupPoint(leftPoint);
-        SetupPoint(rightPoint);
-        SetupPoint(topPoint);
-        SetupPoint(bottomPoint);
+        foreach(var item in GetComponentsInChildren<FurniturePoint>())
+        {
+            SetupPoint(item);
+        }
 
         pointsArray = GetComponentsInChildren<FurniturePoint>();
     }
@@ -60,34 +74,42 @@ public class FurnitureItem : MonoBehaviour
     }
 
     private Vector3 startPos;
-
+    [SerializeField] private Bounds bounds;
     public void OnDragPoint(FurniturePoint point)
     {
-
         Vector3 newPos = GetWorldMousePosition();
         newPos = point.transform.parent.InverseTransformPoint(newPos);
-        Bounds bounds = new Bounds();
-        bounds.center = spriteRender.transform.localPosition;
-        bounds.size = new Vector2(width, height);
-        
+
         switch (point.checkpointType)
         {
             case CheckpointType.Left:
-                ResizeWithAnchor(newPos, point.transform, rightPoint.transform, ref bounds, ResizeAxis.X);
+                ResizeWithAnchor(newPos, point, rightPoint.transform, ResizeAxis.X);
                 break;
             case CheckpointType.Right:
-                ResizeWithAnchor(newPos, point.transform, leftPoint.transform, ref bounds, ResizeAxis.X);
+                ResizeWithAnchor(newPos, point, leftPoint.transform, ResizeAxis.X);
                 break;
             case CheckpointType.Top:
-                ResizeWithAnchor(newPos, point.transform, bottomPoint.transform, ref bounds, ResizeAxis.Z);
+                ResizeWithAnchor(newPos, point, bottomPoint.transform, ResizeAxis.Z);
                 break;
             case CheckpointType.Bottom:
-                ResizeWithAnchor(newPos, point.transform, topPoint.transform, ref bounds, ResizeAxis.Z);
+                ResizeWithAnchor(newPos, point, topPoint.transform, ResizeAxis.Z);
+                break;
+            case CheckpointType.TopLeft:
+                ResizeWithAnchor(newPos, point, bottomRightPoint.transform, ResizeAxis.XZ);
+                break;
+            case CheckpointType.TopRight:
+                ResizeWithAnchor(newPos, point, bottomLeftPoint.transform, ResizeAxis.XZ);
+                break;
+            case CheckpointType.BottomLeft:
+                ResizeWithAnchor(newPos, point, topRightPoint.transform, ResizeAxis.XZ);
+                break;
+            case CheckpointType.BottomRight:
+                ResizeWithAnchor(newPos, point, topLeftPoint.transform, ResizeAxis.XZ);
                 break;
             default:
                 break;
         }
-        
+
         width = bounds.size.x;
         height = bounds.size.y;
         spriteRender.transform.localPosition = bounds.center;
@@ -105,37 +127,37 @@ public class FurnitureItem : MonoBehaviour
         height = Mathf.Clamp(height, 0.1f, 100);
         spriteRender.transform.localScale = new Vector3(width, height, 1);
     }
-
-    public void ResizeWithAnchor(Vector3 localPoint, Transform dragPoint, Transform anchorPoint, ref Bounds bounds, ResizeAxis resizeAxis)
+    private ClampHandler clamp = new();
+    public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint, ResizeAxis resizeAxis)
     {
 
-        float xPos = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.X ? localPoint.x : dragPoint.localPosition.x;
-        float zPos = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.Z ? localPoint.z : dragPoint.localPosition.z;
-        
-        Vector3 newPosFiler = new Vector3(xPos, dragPoint.transform.position.y, zPos);
-        
+        float xPos = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.X
+            ? localPoint.x : dragPoint.transform.localPosition.x;
+        float zPos = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.Z
+            ? localPoint.z : dragPoint.transform.localPosition.z;
+
+        Vector3 dragPos = new Vector3(xPos, transform.position.y, zPos);
+
+        dragPos = clamp.ClampPosition(dragPos, bounds, LIMIT_SIZE, dragPoint.checkpointType);
+
         Vector3 anchor = anchorPoint.localPosition;
-        Vector3 center = (anchor + newPosFiler) / 2f;
+        Vector3 center = (anchor + dragPos) / 2f;
 
 
-        //float xCenter = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.X ? bounds.center.x : center.x;
-        //float zCenter = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.Z ? bounds.center.z : center.z;
-
-        //Vector3 filerCenter = new Vector3(xCenter, center.y, zCenter);
 
         Vector3 size = bounds.size;
 
         switch (resizeAxis)
         {
             case ResizeAxis.X:
-                size.x = Mathf.Abs(newPosFiler.x - anchor.x);
+                size.x = Mathf.Abs(dragPos.x - anchor.x);
                 break;
             case ResizeAxis.Z:
-                size.y = Mathf.Abs(newPosFiler.z - anchor.z);
+                size.y = Mathf.Abs(dragPos.z - anchor.z);
                 break;
             case ResizeAxis.XZ:
-                size.x = Mathf.Abs(newPosFiler.x - anchor.x);
-                size.y = Mathf.Abs(newPosFiler.z - anchor.z);
+                size.x = Mathf.Abs(dragPos.x - anchor.x);
+                size.y = Mathf.Abs(dragPos.z - anchor.z);
                 break;
             default:
                 break;
@@ -150,23 +172,63 @@ public class FurnitureItem : MonoBehaviour
     private void Recalculator(FurniturePoint point, Bounds bounds)
     {
         Vector3 newPosition = point.transform.localPosition;
+        float xExtend = Mathf.Max(bounds.extents.x, LIMIT_SIZE);
+        float yExtend = Mathf.Max(bounds.extents.y, LIMIT_SIZE);
+
         switch (point.checkpointType)
         {
+
+            default:
+                break;
+        }
+        Vector3 offset = Vector3.zero;
+        var type = point.checkpointType;
+        // left
+        switch (type)
+        {
             case CheckpointType.Left:
-                newPosition = bounds.center - new Vector3(bounds.extents.x, 0, 0);
+            case CheckpointType.TopLeft:
+            case CheckpointType.BottomLeft:
+                offset += new Vector3(-xExtend, 0, 0);
                 break;
+
+            default:
+                break;
+        }
+        // right
+        switch (type)
+        {
             case CheckpointType.Right:
-                newPosition = bounds.center + new Vector3(bounds.extents.x, 0, 0);
-                break;
-            case CheckpointType.Top:
-                newPosition = bounds.center + new Vector3(0, 0, bounds.extents.y);
-                break;
-            case CheckpointType.Bottom:
-                newPosition = bounds.center - new Vector3(0, 0, bounds.extents.y);
+            case CheckpointType.TopRight:
+            case CheckpointType.BottomRight:
+                offset += new Vector3(xExtend, 0, 0);
                 break;
             default:
                 break;
         }
+        // top
+        switch (type)
+        {
+            case CheckpointType.Top:
+            case CheckpointType.TopLeft:
+            case CheckpointType.TopRight:
+                offset += new Vector3(0, 0, yExtend);
+                break;
+            default:
+                break;
+        }
+        // bottom
+        switch (type)
+        {
+            case CheckpointType.Bottom:
+            case CheckpointType.BottomLeft:
+            case CheckpointType.BottomRight:
+                offset += new Vector3(0, 0, -yExtend);
+                break;
+            default:
+                break;
+        }
+        newPosition = bounds.center + offset;
         point.transform.localPosition = newPosition;
     }
 
