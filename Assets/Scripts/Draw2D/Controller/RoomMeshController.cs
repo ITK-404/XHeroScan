@@ -191,7 +191,8 @@ public class RoomMeshController : MonoBehaviour
         if (floorMaterial == null)
         {
             floorMaterial = new Material(Shader.Find("Unlit/Color"));
-            Color usedColor = (color == default) ? Color.red : color;
+            // Color usedColor = (color == default) ? Color.red : color;
+            Color usedColor = (color == default) ? Color.white : color;
             floorMaterial.color = usedColor;
         }
 
@@ -221,7 +222,7 @@ public class RoomMeshController : MonoBehaviour
 
     public void GenerateMesh(List<Vector2> checkpoints)
     {
-        Debug.Log($"[RoomMeshController] GenerateMesh: RoomID={RoomID}, checkpoints={checkpoints.Count}");
+        // Debug.Log($"[RoomMeshController] GenerateMesh: RoomID={RoomID}, checkpoints={checkpoints.Count}");
 
         Vector2 pivot = GetCentroid(checkpoints); // <== dùng pivot thật
 

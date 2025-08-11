@@ -22,13 +22,13 @@ public class InputCreateRectangularRoom : MonoBehaviour
     private TMP_InputField _widthInputField;
 
     private const int LIMIT_CHARACTER_COUNT = 9;
-    
+
 
     private void Awake()
     {
         _lengthInputField = lengthInputField.GetComponentInChildren<TMP_InputField>();
         _widthInputField = widthInputField.GetComponentInChildren<TMP_InputField>();
-        
+
         _lengthInputField.characterLimit = LIMIT_CHARACTER_COUNT;
         _widthInputField.characterLimit = LIMIT_CHARACTER_COUNT;
     }
@@ -110,7 +110,7 @@ public class InputCreateRectangularRoom : MonoBehaviour
             checkpointManager.drawingCamera = Camera.main;
 
         // === Tạo Room hình chữ nhật ===
-        checkpointManager.CreateRectangleRoom(length, width);
+        CreateRectangleRoom(length, width);
 
         Debug.Log($"[RoomShapeInputController] Gửi yêu cầu tạo Room hình chữ nhật chiều dài {length}m , cạnh rộng {width}m");
         panelToggleController.Show(false);
@@ -120,5 +120,37 @@ public class InputCreateRectangularRoom : MonoBehaviour
     {
         failedPopup.gameObject.SetActive(true);
         failedPopup.DescriptionText = HeightErrorLog;
+    }
+    public void CreateRectangleRoom(float width, float height)
+    {
+        if (width <= 0 || height <= 0)
+        {
+            Debug.LogError("Chiều dài và chiều rộng phải > 0");
+            return;
+        }
+
+        // Xoá dữ liệu tạm nếu đang vẽ dở
+
+        // Tìm center trên mặt phẳng y=0 theo camera
+        Camera cam = checkpointManager.drawingCamera != null ? checkpointManager.drawingCamera : Camera.main;
+        Ray ray = cam.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
+        Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+        float enter = 0;
+        Vector3 center = Vector3.zero;
+
+        if (groundPlane.Raycast(ray, out enter))
+        {
+            center = ray.GetPoint(enter);
+        }
+        else
+        {
+            Debug.LogError("Không raycast được xuống mặt phẳng y=0");
+            return;
+        }
+
+        Debug.Log($"Tâm room (rectangle) tại: {center}");
+
+        // Tính 4 đỉnh hình chữ nhật quanh center
+        checkpointManager.CreateRectangleRoom(width, height, center,null,true);
     }
 }

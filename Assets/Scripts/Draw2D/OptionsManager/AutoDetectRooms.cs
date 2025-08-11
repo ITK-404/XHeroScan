@@ -5,17 +5,17 @@ using UnityEngine;
 
 public class RoomLoopDetector
 {
-    public static void DetectAndUpdateRooms(CheckpointManager checkpointManager)
+    public static void DetectAndUpdateRooms(SplitRoomManager splitRoomManager)
     {
         // Lấy toàn bộ wallLines hiện tại
         List<WallLine> allWallLines = new List<WallLine>();
         foreach (var room in RoomStorage.GetAllRooms())
             allWallLines.AddRange(room.wallLines);
 
-        DetectAndUpdateRoomsInternal(checkpointManager, allWallLines);
+        DetectAndUpdateRoomsInternal(splitRoomManager, allWallLines);
     }
 
-    public static void DetectAndUpdateRoomsInternal(CheckpointManager checkpointManager, List<WallLine> allWallLines)
+    public static void DetectAndUpdateRoomsInternal(SplitRoomManager splitRoomManager, List<WallLine> allWallLines)
     {
         // Lưu room cũ
         Dictionary<string, Room> oldRooms = new();
@@ -101,7 +101,7 @@ public class RoomLoopDetector
         if (changedRooms.Count > 0)
         {
             Color[] palette = { new(1f, .95f, .6f), new(.7f, 1f, .7f), new(.7f, .9f, 1f), new(1f, .75f, .85f) };
-            checkpointManager.RebuildSplitRoom(changedRooms, palette);
+            splitRoomManager.RebuildSplitRoom(changedRooms, palette);
         }
     }
 

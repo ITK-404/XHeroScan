@@ -27,7 +27,7 @@ public static class RoomStorage
             }
         }
 
-        Debug.Log("[ROOM_STORAGE] Them room moi" + updatedRoom.ID);
+        // Debug.Log("[ROOM_STORAGE] Them room moi" + updatedRoom.ID);
         rooms.Add(updatedRoom);
     }
 
