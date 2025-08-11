@@ -2,7 +2,7 @@
 
 public class ClampHandler
 {
-    public Vector3 ClampPosition(Vector3 currnetPos, Bounds bounds, float limitSize, CheckpointType type)
+    public Vector3 ClampPosition(Vector3 currnetPos, Vector3 center, float limitSize, CheckpointType type)
     {
         // clamp ở trái
         switch (type)
@@ -10,10 +10,10 @@ public class ClampHandler
             case CheckpointType.Left:
             case CheckpointType.TopLeft:
             case CheckpointType.BottomLeft:
-                if (currnetPos.x >= bounds.center.x - limitSize)
+                if (currnetPos.x >= center.x - limitSize)
                 {
                     Debug.Log("Đã clamp trục trái");
-                    currnetPos.x = bounds.center.x - limitSize;
+                    currnetPos.x = center.x - limitSize;
                 }
                 break;
             default:
@@ -25,10 +25,10 @@ public class ClampHandler
             case CheckpointType.Right:
             case CheckpointType.TopRight:
             case CheckpointType.BottomRight:
-                if (currnetPos.x <= bounds.center.x + limitSize)
+                if (currnetPos.x <= center.x + limitSize)
                 {
                     Debug.Log("Đã clamp trục phải");
-                    currnetPos.x = bounds.center.x + limitSize;
+                    currnetPos.x = center.x + limitSize;
                 }
                 break;
             default:
@@ -40,10 +40,10 @@ public class ClampHandler
             case CheckpointType.Top:
             case CheckpointType.TopLeft:
             case CheckpointType.TopRight:
-                if (currnetPos.z <= bounds.center.y + limitSize)
+                if (currnetPos.z <= center.y + limitSize)
                 {
                     Debug.Log("Đã clamp trục trên");
-                    currnetPos.z = bounds.center.y + limitSize;
+                    currnetPos.z = center.y + limitSize;
                 }
                 break;
             default:
@@ -55,10 +55,10 @@ public class ClampHandler
             case CheckpointType.Bottom:
             case CheckpointType.BottomLeft:
             case CheckpointType.BottomRight:
-                if (currnetPos.z >= bounds.center.y - limitSize)
+                if (currnetPos.z >= center.y - limitSize)
                 {
                     Debug.Log("Đã clamp trục dưới");
-                    currnetPos.z = bounds.center.y - limitSize;
+                    currnetPos.z = center.y - limitSize;
                 }
                 break;
             default:

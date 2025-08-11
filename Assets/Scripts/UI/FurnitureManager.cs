@@ -31,6 +31,7 @@ public class FurnitureManager : MonoBehaviour
 
     public void Drop()
     {
+        tempDragItem.OnDrop();
         runtimeFurnitures.Add(tempDragItem);
         tempDragItem = null;
     }
