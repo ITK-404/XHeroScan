@@ -11,22 +11,46 @@ public class RoomInfoDisplay : MonoBehaviour
     public TMP_Text areaText;
 
     [Header("Reference")]
-    private CheckpointManager checkpointManager; // Tham chiếu đến CheckpointManager để điều khiển room đã chọn
+    private CheckpointManager checkpointManager;
 
     private string selectedRoomID = "";
     private bool forceSelectFirstRoom = false;
+
+    // NEW: chặn tự chọn room ngay sau khi xóa
+    private bool suppressAutoPick = false;
+    private int lastRoomsCount = 0;
 
     void Awake()
     {
         ClearText();
     }
+
     void Start()
     {
         checkpointManager = FindFirstObjectByType<CheckpointManager>();
+        lastRoomsCount = RoomStorage.rooms.Count;
     }
 
     void Update()
     {
+        // Phát hiện có xóa room (số lượng giảm)
+        int curCount = RoomStorage.rooms.Count;
+        if (curCount < lastRoomsCount)
+        {
+            ResetAfterDelete();
+        }
+        lastRoomsCount = curCount;
+
+        // Nếu không còn room nào -> reset cứng
+        if (RoomStorage.rooms.Count == 0)
+        {
+            selectedRoomID = "";
+            suppressAutoPick = false;   // hết room rồi thì bỏ khóa
+            forceSelectFirstRoom = false;
+            ClearText();
+            return;
+        }
+
         string currentRoomID = checkpointManager.GetSelectedRoomID();
 
         // 1. Nếu có chọn mới → cập nhật nếu khác với room trước đó
@@ -34,9 +58,10 @@ public class RoomInfoDisplay : MonoBehaviour
         {
             selectedRoomID = currentRoomID;
             forceSelectFirstRoom = false;
+            suppressAutoPick = false; // user đã chọn lại → bỏ khóa auto-pick
         }
 
-        // 1.5. Nếu vừa reset và có ít nhất 1 room → ép lấy room đầu tiên
+        // 1.5. Nếu vừa reset thủ công và muốn ép lấy room đầu tiên
         if (forceSelectFirstRoom && RoomStorage.rooms.Count > 0 && string.IsNullOrEmpty(selectedRoomID))
         {
             selectedRoomID = RoomStorage.rooms[0].ID;
@@ -46,8 +71,8 @@ public class RoomInfoDisplay : MonoBehaviour
             return;
         }
 
-        // 2. Nếu chưa có chọn gì nhưng có ít nhất 1 room → chọn room đầu tiên
-        if (string.IsNullOrEmpty(currentRoomID) && string.IsNullOrEmpty(selectedRoomID) && RoomStorage.rooms.Count > 0)
+        // 2. Chỉ auto-pick room đầu tiên nếu KHÔNG bị khóa
+        if (!suppressAutoPick && string.IsNullOrEmpty(currentRoomID) && string.IsNullOrEmpty(selectedRoomID) && RoomStorage.rooms.Count > 0)
         {
             selectedRoomID = RoomStorage.rooms[0].ID;
         }
@@ -57,6 +82,7 @@ public class RoomInfoDisplay : MonoBehaviour
         {
             selectedRoomID = "";
             ClearText();
+            // giữ suppressAutoPick = true nếu vừa xóa để không auto-pick lại
             return;
         }
 
@@ -68,6 +94,11 @@ public class RoomInfoDisplay : MonoBehaviour
             {
                 UpdateRoomInfo(room);
             }
+        }
+        else
+        {
+            // Không có room được chọn (do vừa xóa hoặc click ra ngoài)
+            ClearText();
         }
     }
 
@@ -93,7 +124,7 @@ public class RoomInfoDisplay : MonoBehaviour
             perimeter += dist;
             maxLength = Mathf.Max(maxLength, dist);
             minLength = Mathf.Min(minLength, dist);
-            area += (a.x * b.y - b.x * a.y); // Shoelace formula
+            area += (a.x * b.y - b.x * a.y);
         }
 
         area = Mathf.Abs(area) * 0.5f;
@@ -115,7 +146,16 @@ public class RoomInfoDisplay : MonoBehaviour
     public void ResetState()
     {
         selectedRoomID = "";
-        forceSelectFirstRoom = true;
+        forceSelectFirstRoom = true;   // khác với ResetAfterDelete
+        suppressAutoPick = false;      // cho phép auto-pick
+        ClearText();
+    }
+
+    public void ResetAfterDelete()
+    {
+        selectedRoomID = "";
+        forceSelectFirstRoom = false;
+        suppressAutoPick = true; // khóa auto-pick cho đến khi user chọn lại
         ClearText();
     }
 }

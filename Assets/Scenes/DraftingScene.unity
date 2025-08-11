@@ -7515,9 +7515,9 @@ GameObject:
   - component: {fileID: 667801196}
   - component: {fileID: 667801198}
   - component: {fileID: 667801197}
-  - component: {fileID: 667801200}
-  - component: {fileID: 667801199}
   - component: {fileID: 667801201}
+  - component: {fileID: 667801202}
+  - component: {fileID: 667801203}
   m_Layer: 0
   m_Name: DrawingManager
   m_TagString: Untagged
@@ -7555,9 +7555,6 @@ MonoBehaviour:
   checkpointPrefab: {fileID: 58537293016028928, guid: 9042cba67031a32499d026c4ce9d7f48,
     type: 3}
   DrawingTool: {fileID: 667801198}
-  penManager: {fileID: 0}
-  undoRedoManager: {fileID: 0}
-  permissionRequester: {fileID: 1231677536}
   currentLineType: 0
   wallLines: []
   rooms: []
@@ -7598,39 +7595,6 @@ MonoBehaviour:
   currentLineType: 0
   lines: []
   distanceTexts: []
---- !u!114 &667801199
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 667801194}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 131e7979166f1b34092d232fa085c497, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  toggleButton: {fileID: 1956570594}
-  closeBtn: {fileID: 0}
-  targetPanel: {fileID: 1237074960}
-  inputCreateRectangularRoom: {fileID: 0}
---- !u!114 &667801200
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 667801194}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9573ad1daaaf88447a20c5ae991c9b73, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sidesInputField: {fileID: 0}
-  lengthInputField: {fileID: 0}
-  createButton: {fileID: 1237074958}
-  targetPanel: {fileID: 1237074960}
-  checkpointManager: {fileID: 667801197}
 --- !u!114 &667801201
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7648,6 +7612,30 @@ MonoBehaviour:
   toggleGroupUI: {fileID: 1992620989}
   penManager: {fileID: 0}
   drawingTool: {fileID: 667801198}
+--- !u!114 &667801202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 667801194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce2448cf9f39950479e0fc6b9236960d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &667801203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 667801194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43c33f216b3608045a33765f9c8f26bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &713410881
 GameObject:
   m_ObjectHideFlags: 0

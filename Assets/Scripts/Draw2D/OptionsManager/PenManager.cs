@@ -16,12 +16,18 @@ public class PenManager : MonoBehaviour
     public GameObject ActionSpace;
 
     public static bool isPenActive = true; // Trạng thái của Pen (bật/tắt)
-    private CheckpointManager checkpointManager; // Tham chiếu đến CheckpointManager để điều khiển vẽ
+    private CheckpointManager checkpointManager; // Tham chiếu đến 
+    private MovePointManager movePointManager; // Tham chiếu đến CheckpointManager để điều khiển vẽ
     private DrawingTool DrawTool; // Tham chiếu đến DrawingTool để điều khiển vẽ
     private bool isTouchStartedInActionSpace = false;
 
 
     private ToggleColorImage toggleColorImage;
+
+    // == Thêm vào PenManager ==
+private bool _dragRoom = false;
+private string _dragRoomID = null;
+private Vector3 _lastWorld; // world pos frame trước khi drag
 
     // public bool IsPenActive => isPenActive;  // Getter để cung cấp trạng thái Pen
     private Vector3 previewPosition; // Vị trí preview
@@ -39,6 +45,7 @@ public class PenManager : MonoBehaviour
         toggleColorImage.Toggle(isPenActive);
         // Lấy tham chiếu đến CheckpointManager
         checkpointManager = FindFirstObjectByType<CheckpointManager>();
+        movePointManager = FindFirstObjectByType<MovePointManager>();
 
         // // Tự gán Collider nếu chưa có
         // GameObject bg = GameObject.Find("Background Black");
@@ -55,51 +62,114 @@ public class PenManager : MonoBehaviour
 
     void LateUpdate()
     {
-        if (ConnectManager.isConnectActive) return;// đang nối line dừng mọi move với pen
+        if (ConnectManager.isConnectActive) return; // đang nối line thì bỏ qua
 
         if (!isPenActive)
         {
             checkpointManager.enabled = true;
-            HandleZoomAndPan(false); // Tắt zoom khi vẽ
+            HandleZoomAndPan(false);
         }
         else
         {
             checkpointManager.enabled = false;
 
-            // Nếu mesh sàn đang drag ➜ khóa bàn cờ
-            if (isRoomFloorBeingDragged)
-            {
-                // Debug.Log("RoomFloor drag đang hoạt động ➜ Khóa pan/zoom");
-                HandleZoomAndPan(false);
-            }
-            else
-            {
-                HandleZoomAndPan(true);
-            }
+            // Khóa pan/zoom khi đang kéo room
+            HandleZoomAndPan(!isRoomFloorBeingDragged);
 
             if (Input.GetMouseButtonDown(0))
             {
-                checkpointManager.SelectCheckpoint();
+                // Ưu tiên: click trúng floor -> kéo ROOM
+                if (TryHitRoomFloor(out _dragRoomID))
+                {
+                    _dragRoom = true;
+                    isRoomFloorBeingDragged = true;
+
+                    // tránh lẫn chế độ kéo điểm
+                    checkpointManager.DeselectCheckpoint();
+                    checkpointManager.selectedCheckpoint = null;
+                    checkpointManager.isMovingCheckpoint = false;
+
+                    _lastWorld = GetWorldOnXZ(Input.mousePosition);
+                }
+                else
+                {
+                    // Không trúng floor -> kéo checkpoint như cũ
+                    checkpointManager.SelectCheckpoint();
+                    _lastWorld = GetWorldOnXZ(Input.mousePosition);
+                }
             }
             else if (Input.GetMouseButton(0))
             {
-                // if (checkpointManager.IsInSavedLoop(checkpointManager.selectedCheckpoint) || checkpointManager.isClosedLoop)
-                if (checkpointManager.selectedCheckpoint != null)
+                var cur = GetWorldOnXZ(Input.mousePosition);
+                var delta = cur - _lastWorld;
+                _lastWorld = cur;
+
+                if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
                 {
+                    // Kéo phòng: chỉ clamp/magnet (khựng 1 nhịp), không snap đối tác lúc đang kéo
+                    movePointManager.MoveRoomSnap(_dragRoomID, delta);
+                }
+                else if (checkpointManager.selectedCheckpoint != null)
+                {
+                    // Kéo 1 điểm: giữ logic snap-point hiện có
                     checkpointManager.isMovingCheckpoint = true;
-                    checkpointManager.MoveSelectedCheckpoint();
+                    movePointManager.MoveSelectedCheckpoint();
                     checkpointManager.isDragging = true;
                 }
             }
             else if (Input.GetMouseButtonUp(0))
             {
+                // Thả chuột: nếu đang kéo room thì mới snap & weld
+                if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
+                {
+                    movePointManager.CommitRoomMagnet(_dragRoomID);
+                }
+
+                _dragRoom = false;
+                _dragRoomID = null;
+                isRoomFloorBeingDragged = false;
+
                 checkpointManager.DeselectCheckpoint();
                 checkpointManager.isDragging = false;
                 checkpointManager.isMovingCheckpoint = false;
             }
         }
-        mainCamera.transform.position = 
+
+        // Giữ camera trong bound
+        mainCamera.transform.position =
             GPUInstancedGrid.Instance.GetCameraBoundsPosition(mainCamera.transform.position);
+    }
+
+    // Raycast trúng mesh sàn phòng -> lấy roomID từ tên "RoomFloor_<id>" hoặc component
+    private bool TryHitRoomFloor(out string roomID)
+    {
+        roomID = null;
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out var hit, 2000f))
+        {
+            Transform t = hit.collider.transform;
+            while (t != null)
+            {
+                string name = t.gameObject.name;
+                if (name.StartsWith("RoomFloor_"))
+                {
+                    roomID = name.Substring("RoomFloor_".Length);
+                    return true;
+                }
+                t = t.parent; // leo lên cha để bắt đúng node đặt tên
+            }
+        }
+        return false;
+    }
+
+
+    // Lấy điểm world trên mặt phẳng XZ (y=0). Nếu có ground collider thì vẫn OK vì Raycast ở trên đã dùng.
+    private Vector3 GetWorldOnXZ(Vector3 screenPos)
+    {
+        Ray ray = mainCamera.ScreenPointToRay(screenPos);
+        Plane plane = new Plane(Vector3.up, Vector3.zero);
+        if (plane.Raycast(ray, out float enter)) return ray.GetPoint(enter);
+        return Vector3.zero;
     }
 
     private bool IsPointerInActionSpace(Vector2 screenPosition)
