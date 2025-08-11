@@ -127,9 +127,9 @@ public class FurnitureItem : MonoBehaviour
     {
 
         float xPos = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.X
-            ? localPoint.x : dragPoint.transform.localPosition.x;
+            ? localPoint.x : dragPoint.transform.position.x;
         float zPos = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.Z
-            ? localPoint.z : dragPoint.transform.localPosition.z;
+            ? localPoint.z : dragPoint.transform.position.z;
 
         Vector3 dragPos = new Vector3(xPos, transform.position.y, zPos);
 
