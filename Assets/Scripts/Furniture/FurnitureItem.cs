@@ -34,8 +34,6 @@ public class FurnitureItem : MonoBehaviour
     public SpriteRenderer spriteRender;
     private List<FurniturePoint> pointsList = new();
     [Header("Point")]
-    [SerializeField] private Transform pointParent;
-
     [SerializeField] private FurniturePoint leftPoint;
     [SerializeField] private FurniturePoint rightPoint;
     [SerializeField] private FurniturePoint topPoint;
@@ -47,21 +45,24 @@ public class FurnitureItem : MonoBehaviour
     [SerializeField] private FurniturePoint topRightPoint;
 
 
-    [SerializeField] private FurniturePoint[] pointsArray;
+    private FurniturePoint[] pointsArray;
     public float width, height = 1;
     private void Awake()
     {
-        pointParent.gameObject.SetActive(false);
-
+        bounds = new Bounds();
+        bounds.center = spriteRender.transform.localPosition;
+        bounds.size = new Vector3(width,1, height);
         if (mainCam == null)
         {
             mainCam = Camera.main;
         }
 
-        foreach (var item in pointsArray)
+        foreach(var item in GetComponentsInChildren<FurniturePoint>())
         {
             SetupPoint(item);
         }
+
+        pointsArray = GetComponentsInChildren<FurniturePoint>();
     }
 
 
@@ -73,6 +74,7 @@ public class FurnitureItem : MonoBehaviour
     }
 
     private Vector3 startPos;
+    [SerializeField] private Bounds bounds;
     public void OnDragPoint(FurniturePoint point)
     {
         Vector3 newPos = GetWorldMousePosition();
@@ -108,10 +110,13 @@ public class FurnitureItem : MonoBehaviour
                 break;
         }
 
+        width = bounds.size.x;
+        height = bounds.size.z;
+        spriteRender.transform.localPosition = bounds.center;
 
         foreach (var item in pointsArray)
         {
-            Recalculator(item);
+            Recalculator(item, bounds);
         }
     }
 
@@ -120,26 +125,27 @@ public class FurnitureItem : MonoBehaviour
     {
         width = Mathf.Clamp(width, 0.1f, 100);
         height = Mathf.Clamp(height, 0.1f, 100);
-        transform.localScale = new Vector3(width, height, 1);
+        spriteRender.transform.localScale = new Vector3(width, height, 1);
     }
     private ClampHandler clamp = new();
     public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint, ResizeAxis resizeAxis)
     {
 
         float xPos = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.X
-            ? localPoint.x : dragPoint.transform.position.x;
+            ? localPoint.x : dragPoint.transform.localPosition.x;
         float zPos = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.Z
-            ? localPoint.z : dragPoint.transform.position.z;
+            ? localPoint.z : dragPoint.transform.localPosition.z;
 
         Vector3 dragPos = new Vector3(xPos, transform.position.y, zPos);
 
-        dragPos = clamp.ClampPosition(dragPos, transform.position, LIMIT_SIZE, dragPoint.checkpointType);
+        dragPos = clamp.ClampPosition(dragPos, bounds.center, LIMIT_SIZE, dragPoint.checkpointType);
 
-        Vector3 anchor = anchorPoint.transform.position;
+        Vector3 anchor = anchorPoint.localPosition;
         Vector3 center = (anchor + dragPos) / 2f;
 
 
-        Vector3 size = new Vector2(width, height);
+
+        Vector3 size = bounds.size;
 
         switch (resizeAxis)
         {
@@ -147,28 +153,33 @@ public class FurnitureItem : MonoBehaviour
                 size.x = Mathf.Abs(dragPos.x - anchor.x);
                 break;
             case ResizeAxis.Z:
-                size.y = Mathf.Abs(dragPos.z - anchor.z);
+                size.z = Mathf.Abs(dragPos.z - anchor.z);
                 break;
             case ResizeAxis.XZ:
                 size.x = Mathf.Abs(dragPos.x - anchor.x);
-                size.y = Mathf.Abs(dragPos.z - anchor.z);
+                size.z = Mathf.Abs(dragPos.z - anchor.z);
                 break;
             default:
                 break;
         }
+        bounds.center = center;
+        bounds.size = size;
 
-        width = size.x;
-        height = size.y;
-        transform.position = center;
         //dragPoint.localPosition = newPosFiler;
 
     }
 
-    private void Recalculator(FurniturePoint point)
+    private void OnDrawGizmos()
     {
-        Vector3 newPosition = point.transform.position;
-        float xExtend = Mathf.Max(width / 2, LIMIT_SIZE);
-        float yExtend = Mathf.Max(height / 2, LIMIT_SIZE);
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireCube(bounds.center, bounds.size);
+    }
+
+    private void Recalculator(FurniturePoint point, Bounds bounds)
+    {
+        Vector3 newPosition = point.transform.localPosition;
+        float xExtend = Mathf.Max(bounds.extents.x, LIMIT_SIZE);
+        float yExtend = Mathf.Max(bounds.extents.z, LIMIT_SIZE);
 
         switch (point.checkpointType)
         {
@@ -223,8 +234,8 @@ public class FurnitureItem : MonoBehaviour
             default:
                 break;
         }
-        newPosition = transform.position + offset;
-        point.transform.position = newPosition;
+        newPosition = bounds.center + offset;
+        point.transform.localPosition = newPosition;
     }
 
     private void OnMouseDrag()
@@ -252,18 +263,6 @@ public class FurnitureItem : MonoBehaviour
             new Vector3(Input.mousePosition.x, Input.mousePosition.y, distance)
         );
         return worldMousePosition;
-    }
-
-    public void OnDrop()
-    {
-        pointParent.gameObject.SetActive(true);
-        pointParent.transform.parent = null;
-        pointParent.transform.position = Vector3.zero;
-
-        foreach (var item in pointsArray)
-        {
-            Recalculator(item);
-        }
     }
 }
 
