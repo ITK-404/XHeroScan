@@ -187,11 +187,13 @@ MonoBehaviour:
   bottomRightPoint: {fileID: 4216320851442645543}
   topLeftPoint: {fileID: 1563089411620250762}
   topRightPoint: {fileID: 4343442799858724315}
+  rotatePoint: {fileID: 6064774135361538737}
   bounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0, y: 0, z: 0}
   width: 1
   height: 1
+  currentRotation: 0
 --- !u!1 &9142053234481993226
 GameObject:
   m_ObjectHideFlags: 0
@@ -226,10 +228,10 @@ Transform:
   - {fileID: 8816129689401906355}
   - {fileID: 801093134056472849}
   - {fileID: 6510968780278702633}
-  - {fileID: 4279046148184675590}
   - {fileID: 8511327584036313522}
   - {fileID: 6155149442104183326}
   - {fileID: 4927128129466751517}
+  - {fileID: 4279046148184675590}
   m_Father: {fileID: 5406030576398905754}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1406439472754448393
@@ -354,7 +356,7 @@ PrefabInstance:
     - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: m_Name
-      value: Top Right
+      value: Top Right Point
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -566,7 +568,7 @@ PrefabInstance:
     - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: m_Name
-      value: Bottom Right
+      value: Bottom Right Point
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -672,7 +674,7 @@ PrefabInstance:
     - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: m_Name
-      value: Bottom Left
+      value: Bottom Left Point
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -783,7 +785,7 @@ PrefabInstance:
     - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: m_Name
-      value: Top Left
+      value: Top Left Point
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -1000,7 +1002,7 @@ PrefabInstance:
     - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: m_Name
-      value: Bottom Point (1)
+      value: Rotate Point
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -1101,6 +1103,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba90b2343916fb74593194249a54f573, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  furnitureItem: {fileID: 7234985322380843007}
 --- !u!1001 &7963753503142887594
 PrefabInstance:
   m_ObjectHideFlags: 0

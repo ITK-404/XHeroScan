@@ -2,51 +2,37 @@
 
 public class ClampHandler
 {
-    public static Vector3 ClampPosition(Vector3 currentPos, Vector3 center, float limitSize, CheckpointType type)
+    public static Vector3 ClampPosition(Vector3 currentPos, Vector3 center, float limitSize, CheckpointType type, Quaternion currentRotation)
     {
-        Debug.Log("Center: Position: " + center);
-        Vector3 clampedPos = currentPos;
+        // B1: Đưa vị trí và tâm về local space
+        Vector3 localPos = Quaternion.Inverse(currentRotation) * (currentPos - center);
 
-        // Clamp ở trái - CHỈ áp dụng cho các type Left
+        // B2: Clamp trong local space (như logic cũ)
         if (type == CheckpointType.Left || type == CheckpointType.TopLeft || type == CheckpointType.BottomLeft)
         {
-            if (currentPos.x > center.x - limitSize)
-            {
-                Debug.Log("Đã clamp trục trái");
-                clampedPos.x = center.x - limitSize;
-            }
+            if (localPos.x > -limitSize)
+                localPos.x = -limitSize;
         }
 
-        // Clamp phải - CHỈ áp dụng cho các type Right  
         if (type == CheckpointType.Right || type == CheckpointType.TopRight || type == CheckpointType.BottomRight)
         {
-            if (currentPos.x < center.x + limitSize)
-            {
-                Debug.Log("Đã clamp trục phải");
-                clampedPos.x = center.x + limitSize;
-            }
+            if (localPos.x < limitSize)
+                localPos.x = limitSize;
         }
 
-        // Clamp top - CHỈ áp dụng cho các type Top
         if (type == CheckpointType.Top || type == CheckpointType.TopLeft || type == CheckpointType.TopRight)
         {
-            if (currentPos.z < center.z + limitSize)
-            {
-                Debug.Log("Đã clamp trục trên");
-                clampedPos.z = center.z + limitSize;
-            }
+            if (localPos.z < limitSize)
+                localPos.z = limitSize;
         }
 
-        // Clamp bottom - CHỈ áp dụng cho các type Bottom
         if (type == CheckpointType.Bottom || type == CheckpointType.BottomLeft || type == CheckpointType.BottomRight)
         {
-            if (currentPos.z > center.z - limitSize)
-            {
-                Debug.Log("Đã clamp trục dưới");
-                clampedPos.z = center.z - limitSize;
-            }
+            if (localPos.z > -limitSize)
+                localPos.z = -limitSize;
         }
 
-        return clampedPos;
+        // B3: Chuyển kết quả clamp về world space
+        return center + currentRotation * localPos;
     }
 }

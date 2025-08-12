@@ -46,22 +46,24 @@ public class FurnitureItem : MonoBehaviour
     [SerializeField] private FurniturePoint topLeftPoint;
     [SerializeField] private FurniturePoint topRightPoint;
 
+    [SerializeField] private FurnitureRotate rotatePoint;
     [SerializeField] private Bounds bounds;
     private FurniturePoint[] pointsArray;
     private Vector3 startPos;
     public float width, height = 1;
 
+    [SerializeField] private float currentRotation;
     private void Awake()
     {
         bounds = new Bounds();
         bounds.center = spriteRender.transform.localPosition;
-        bounds.size = new Vector3(width,1, height);
+        bounds.size = new Vector3(width, 1, height);
         if (mainCam == null)
         {
             mainCam = Camera.main;
         }
 
-        foreach(var item in GetComponentsInChildren<FurniturePoint>())
+        foreach (var item in GetComponentsInChildren<FurniturePoint>())
         {
             SetupPoint(item);
         }
@@ -122,56 +124,111 @@ public class FurnitureItem : MonoBehaviour
     {
         foreach (var item in pointsArray)
         {
-            Recalculator(item, bounds);
+            Recalculator(item.transform, item.checkpointType, bounds, Vector3.zero);
         }
+        Recalculator(rotatePoint.transform, CheckpointType.Bottom, bounds, new Vector3(0, 0, -1));
     }
 
     private void Update()
     {
         width = Mathf.Clamp(width, 0.1f, 100);
         height = Mathf.Clamp(height, 0.1f, 100);
-        spriteRender.transform.localScale = new Vector3(width, height, 1);
+        spriteRender.transform.localScale = new Vector3(width, height, 1 * height * 0.5f);
     }
 
     public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint, ResizeAxis resizeAxis)
     {
+        // rotation hiện tại (dùng currentRotation của bạn)
+        Quaternion rotation = Quaternion.Euler(0f, currentRotation, 0f);
+        Vector3 originalCenter = bounds.center;
+        // Chuyển vị trí drag và anchor về "local chưa xoay" (unrotated local space)
+        Vector3 dragLocalUnrot = Quaternion.Inverse(rotation) * (localPoint - originalCenter);
+        Vector3 anchorLocalUnrot = Quaternion.Inverse(rotation) * (anchorPoint.localPosition - originalCenter);
 
-        float xPos = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.X
-            ? localPoint.x : dragPoint.transform.localPosition.x;
-        float zPos = resizeAxis == ResizeAxis.XZ || resizeAxis == ResizeAxis.Z
-            ? localPoint.z : dragPoint.transform.localPosition.z;
+        // cập nhật dragLocalUnrot theo ý định (nếu bạn muốn lock trục, thay bằng anchor value)
+        if (resizeAxis == ResizeAxis.Z) // chỉ scale Z -> giữ x bằng anchor.x
+            dragLocalUnrot.x = anchorLocalUnrot.x;
+        if (resizeAxis == ResizeAxis.X) // chỉ scale X -> giữ z bằng anchor.z
+            dragLocalUnrot.z = anchorLocalUnrot.z;
 
-        Vector3 dragPos = new Vector3(xPos, transform.position.y, zPos);
+        // --- Clamp trong không gian unrotated (giữ nguyên logic theo checkpoint type) ---
+        var type = dragPoint.checkpointType;
 
-        dragPos = ClampHandler.ClampPosition(dragPos, bounds.center, LIMIT_SIZE, dragPoint.checkpointType);
+        // Left
+        if (type == CheckpointType.Left || type == CheckpointType.TopLeft || type == CheckpointType.BottomLeft)
+        {
+            if (dragLocalUnrot.x > -LIMIT_SIZE) dragLocalUnrot.x = -LIMIT_SIZE;
+        }
 
-        Vector3 anchor = anchorPoint.localPosition;
-        Vector3 center = (anchor + dragPos) / 2f;
+        // Right
+        if (type == CheckpointType.Right || type == CheckpointType.TopRight || type == CheckpointType.BottomRight)
+        {
+            if (dragLocalUnrot.x < LIMIT_SIZE) dragLocalUnrot.x = LIMIT_SIZE;
+        }
 
+        // Top (positive Z in unrotated local)
+        if (type == CheckpointType.Top || type == CheckpointType.TopLeft || type == CheckpointType.TopRight)
+        {
+            if (dragLocalUnrot.z < LIMIT_SIZE) dragLocalUnrot.z = LIMIT_SIZE;
+        }
 
+        // Bottom (negative Z in unrotated local)
+        if (type == CheckpointType.Bottom || type == CheckpointType.BottomLeft || type == CheckpointType.BottomRight)
+        {
+            if (dragLocalUnrot.z > -LIMIT_SIZE) dragLocalUnrot.z = -LIMIT_SIZE;
+        }
 
-        Vector3 size = bounds.size;
+        // --- Tính center và size trong không gian unrotated ---
+        Vector3 centerLocalUnrot = (anchorLocalUnrot + dragLocalUnrot) / 2f;
+        Vector3 sizeLocal = bounds.size; // giữ cấu trúc: size.x -> width, size.z -> height
 
         switch (resizeAxis)
         {
             case ResizeAxis.X:
-                size.x = Mathf.Abs(dragPos.x - anchor.x);
+                sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
                 break;
             case ResizeAxis.Z:
-                size.z = Mathf.Abs(dragPos.z - anchor.z);
+                sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
                 break;
             case ResizeAxis.XZ:
-                size.x = Mathf.Abs(dragPos.x - anchor.x);
-                size.z = Mathf.Abs(dragPos.z - anchor.z);
-                break;
-            default:
+                sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
+                sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
                 break;
         }
-        bounds.center = center;
-        bounds.size = size;
 
-        //dragPoint.localPosition = newPosFiler;
+        // --- Chuyển center trở về không gian local (có xoay) và cập nhật bounds ---
+        bounds.center = originalCenter + rotation * centerLocalUnrot;
+        bounds.size = sizeLocal;
 
+        // cập nhật width/height nếu dùng chúng trực tiếp
+        UpdateWorldSizeFromLocal();
+
+        // Sau khi resize xong, cập nhật hiển thị / điểm:
+        spriteRender.transform.localPosition = bounds.center;
+        spriteRender.transform.localRotation = Quaternion.Euler(90, currentRotation, 0);
+
+    }
+
+    private void UpdateWorldSizeFromLocal()
+    {
+        // rotation in degrees around Y
+        float angleDeg = currentRotation;
+        float rad = angleDeg * Mathf.Deg2Rad;
+
+        float c = Mathf.Abs(Mathf.Cos(rad));
+        float s = Mathf.Abs(Mathf.Sin(rad));
+
+        // nếu localWidth/localHeight là toàn bộ size (không half extents)
+        float lx = bounds.size.x; // local width (X)
+        float lz = bounds.size.z; // local height (Z)
+
+        // AABB trên world X/Z
+        //worldWidth = c * lx + s * lz;   // full size along world X
+        //worldHeight = s * lx + c * lz;   // full size along world Z
+
+        // cho tiện, cũng cập nhật public width/height nếu bạn dùng 2 biến đó hiển thị
+        width = bounds.size.x;
+        height = bounds.size.z;
     }
 
     private void OnDrawGizmos()
@@ -180,14 +237,12 @@ public class FurnitureItem : MonoBehaviour
         Gizmos.DrawWireCube(bounds.center, bounds.size);
     }
 
-    private void Recalculator(FurniturePoint point, Bounds bounds)
+    private void Recalculator(Transform point, CheckpointType type, Bounds bounds, Vector3 offset)
     {
         Vector3 newPosition = point.transform.localPosition;
         float xExtend = Mathf.Max(bounds.extents.x, LIMIT_SIZE);
         float yExtend = Mathf.Max(bounds.extents.z, LIMIT_SIZE);
 
-        Vector3 offset = Vector3.zero;
-        var type = point.checkpointType;
         // left
         switch (type)
         {
@@ -233,6 +288,7 @@ public class FurnitureItem : MonoBehaviour
             default:
                 break;
         }
+        offset = Quaternion.Euler(0, currentRotation, 0) * offset;
         newPosition = bounds.center + offset;
         point.transform.localPosition = newPosition;
     }
@@ -246,7 +302,7 @@ public class FurnitureItem : MonoBehaviour
         bounds.center = dragTransform.localPosition;
 
         RefreshCheckPoints();
-
+        UpdateWorldSizeFromLocal();
         OnDragPoint = true;
     }
 
@@ -269,6 +325,35 @@ public class FurnitureItem : MonoBehaviour
     public void StartDrag()
     {
         startPos = GetWorldMousePosition();
+    }
+
+    public void RotateToMouse()
+    {
+        Vector3 mouseWorld = GetWorldMousePosition();
+
+        // Nếu bounds.center được lưu là local position relative tới THIS transform:
+        Vector3 centerWorld = transform.TransformPoint(bounds.center);
+
+        // Nếu bounds.center đã là world position thì dùng:
+        // Vector3 centerWorld = bounds.center;
+
+        Vector3 dir = mouseWorld - centerWorld;
+        dir.y = 0f; // bỏ cao độ
+
+        if (dir.sqrMagnitude < 1e-6f) return; // tránh chia 0 / LookRotation lỗi
+
+        // Cách 1 — trực tiếp với Atan2: trả về angle (deg) với 0 = +Z (forward)
+        float angleDeg = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+
+        // chuẩn hoá góc vào [0,360)
+        angleDeg = (angleDeg % 360f + 360f) % 360f;
+
+        currentRotation = angleDeg;
+        spriteRender.transform.localRotation = Quaternion.Euler(90f, currentRotation, 0f);
+
+        // cập nhật point/size nếu cần
+        RefreshCheckPoints();
+        UpdateWorldSizeFromLocal(); // nếu bạn đang dùng
     }
 }
 

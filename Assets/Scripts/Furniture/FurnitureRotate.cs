@@ -3,20 +3,14 @@ using UnityEngine;
 public class FurnitureRotate : MonoBehaviour
 {
     [SerializeField] private FurnitureItem furnitureItem;
-
     private void OnMouseDrag()
     {
-        
+        FurnitureItem.OnDragPoint = true;
+        furnitureItem.RotateToMouse();
     }
 
-    private void OnMouseEnter()
+    private void OnMouseUp()
     {
-        
+        FurnitureItem.OnDragPoint = false;
     }
-
-    private void OnMouseDown()
-    {
-        
-    }
-
 }
