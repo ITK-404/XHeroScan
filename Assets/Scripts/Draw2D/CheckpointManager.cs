@@ -145,9 +145,86 @@ public class CheckpointManager : MonoBehaviour
 
     // Put these fields in your class (outside of any method)
     private const float EDGE_EPS   = 0.001f; // kiểm tra nằm trên biên
-    private const float SNAP_EPS   = 0.01f;  // snap ~ 1cm
     private const float DUP_EPS2   = 1e-6f;  // bỏ giao trùng A/B
     private const float DEDUP_EPS2 = 1e-6f;  // dedup intersections
+    private const float SNAP_EPS = 0.01f;   // ~ 1cm
+    static float Dist2(Vector2 a, Vector2 b) => (a - b).magnitude;
+
+    // Project p lên đoạn ab (clamp trong đoạn)
+    static Vector2 ProjectOnSeg(Vector2 a, Vector2 b, Vector2 p)
+    {
+        Vector2 ab = b - a;
+        float ab2 = Vector2.Dot(ab, ab);
+        if (ab2 < 1e-12f) return a;
+        float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab2);
+        return a + t * ab;
+    }
+
+    // Snap vào 1 vertex trong 1 room
+    static bool TrySnapVertex(Room room, Vector2 p, float eps, out Vector2 snapped)
+    {
+        foreach (var v in room.checkpoints)
+        {
+            if (Dist2(p, v) <= eps) { snapped = v; return true; }
+        }
+        snapped = default;
+        return false;
+    }
+
+    // Snap vào cạnh polygon của room; nếu gần mút thì trả về mút
+    static bool TrySnapEdgePreferVertex(Room room, Vector2 p, float eps, out Vector2 snapped)
+    {
+        int n = room.checkpoints.Count;
+        if (n < 2) { snapped = default; return false; }
+
+        float bestD = float.MaxValue;
+        Vector2 best = default;
+        bool found = false;
+
+        for (int i = 0; i < n; i++)
+        {
+            var a = room.checkpoints[i];
+            var b = room.checkpoints[(i + 1) % n];
+
+            // gần đầu mút -> chọn mút luôn
+            if (Dist2(p, a) <= eps) { snapped = a; return true; }
+            if (Dist2(p, b) <= eps) { snapped = b; return true; }
+
+            var proj = ProjectOnSeg(a, b, p);
+            float d = Dist2(p, proj);
+            if (d <= eps && d < bestD)
+            {
+                bestD = d; best = proj; found = true;
+            }
+        }
+
+        snapped = best;
+        return found;
+    }
+
+    // Snap trên toàn bộ rooms: ưu tiên vertex, sau đó edge (edge vẫn ưu tiên mút)
+    bool TrySnapAcrossAllRooms(Vector2 p, float eps, out Vector2 snapped, out bool toVertex)
+    {
+        // 1) ưu tiên snap vào vertex
+        foreach (var room in RoomStorage.rooms)
+        {
+            if (TrySnapVertex(room, p, eps, out snapped)) { toVertex = true; return true; }
+        }
+
+        // 2) edge (ưu tiên mút)
+        float bestD = float.MaxValue; Vector2 best = default; bool found = false;
+        foreach (var room in RoomStorage.rooms)
+        {
+            if (TrySnapEdgePreferVertex(room, p, eps, out var s))
+            {
+                float d = Dist2(p, s);
+                if (d < bestD) { bestD = d; best = s; found = true; }
+            }
+        }
+
+        snapped = best; toVertex = false;
+        return found;
+    }
 
     public void HandleSingleWallPlacement(Vector3 position)
     {
@@ -155,15 +232,20 @@ public class CheckpointManager : MonoBehaviour
 
         List<GameObject> tempCreatedPoints = new();
 
-        // 1) CLICK 1
+        // ===== CLICK 1 =====
         if (firstPoint == null)
         {
+            // Snap sớm vị trí click vào vertex/edge gần nhất (ưu tiên vertex)
+            Vector2 p2 = new(position.x, position.z);
+            if (TrySnapAcrossAllRooms(p2, SNAP_EPS, out var s2, out _))
+                position = new Vector3(s2.x, 0, s2.y);
+
             firstPoint = Instantiate(checkpointPrefab, position, Quaternion.identity);
             firstPoint.transform.SetParent(null);
             return;
         }
 
-        // 2) CLICK 2
+        // ===== CLICK 2 =====
         Vector3 startWorld = firstPoint.transform.position;
         Vector3 endWorld   = position;
 
@@ -193,7 +275,7 @@ public class CheckpointManager : MonoBehaviour
             if ((aInside || aOnBoundary) && firstPoint != null && !map.CheckpointsGO.Contains(firstPoint))
                 map.CheckpointsGO.Add(firstPoint);
 
-            // 2.0. Chọn A,B (hình học)
+            // 2.0. Chọn A,B (hình học) từ hit ban đầu của bạn
             Vector2 A, B;
             bool insideInsideCase, A_fromHit, B_fromHit, haveValidPair;
             DetermineSegmentForRoom(room, aOrig, bOrig,
@@ -203,13 +285,33 @@ public class CheckpointManager : MonoBehaviour
                                     out haveValidPair);
             if (!haveValidPair) continue;
 
-            // Snap về biên (nếu cần)
-            if (!insideInsideCase && (A_fromHit || !aInside)) TrySnapToAnyEdge(room, A, SNAP_EPS, out A);
-            if (!insideInsideCase && (B_fromHit || !bInside)) TrySnapToAnyEdge(room, B, SNAP_EPS, out B);
+            // --- NEW: Snap ưu tiên vertex > edge cho A/B trên toàn bộ rooms ---
+            Vector2 A_snap = A, B_snap = B;
+            bool A_toVertex = false, B_toVertex = false;
+
+            if (TrySnapAcrossAllRooms(A, SNAP_EPS, out var sA, out var sA_isV))
+            { A_snap = sA; A_toVertex = sA_isV; }
+            if (TrySnapAcrossAllRooms(B, SNAP_EPS, out var sB, out var sB_isV))
+            { B_snap = sB; B_toVertex = sB_isV; }
+
+            // Fallback cũ: chỉ dùng nếu vẫn chưa “đứng” trên boundary/vertex
+            if (!insideInsideCase && (A_fromHit || !PointInPolygon(A_snap, room.checkpoints)))
+            {
+                if (!A_toVertex && !OnBoundary(room, A_snap, EDGE_EPS))
+                    TrySnapToAnyEdge(room, A_snap, SNAP_EPS, out A_snap);
+            }
+            if (!insideInsideCase && (B_fromHit || !PointInPolygon(B_snap, room.checkpoints)))
+            {
+                if (!B_toVertex && !OnBoundary(room, B_snap, EDGE_EPS))
+                    TrySnapToAnyEdge(room, B_snap, SNAP_EPS, out B_snap);
+            }
+
+            // cập nhật A/B cuối cùng
+            A = A_snap; B = B_snap;
 
             // Tính lại trạng thái sau snap
-            bool aNowInside = PointInPolygon(A, room.checkpoints);
-            bool bNowInside = PointInPolygon(B, room.checkpoints);
+            bool aNowInside   = PointInPolygon(A, room.checkpoints);
+            bool bNowInside   = PointInPolygon(B, room.checkpoints);
             bool A_onBoundary2 = OnBoundary(room, A, EDGE_EPS);
             bool B_onBoundary2 = OnBoundary(room, B, EDGE_EPS);
 
@@ -222,7 +324,7 @@ public class CheckpointManager : MonoBehaviour
             Vector3 start = new(A.x, 0, A.y);
             Vector3 end   = new(B.x, 0, B.y);
 
-            // 2.2. Spawn/insert điểm biên
+            // 2.2. Spawn/insert điểm biên (chỉ khi chưa tồn tại)
             if (A_onBoundary2 && !room.checkpoints.Any(p => Vector2.Distance(p, A) < EDGE_EPS))
                 tempCreatedPoints.Add(SpawnEdgeCheckpoint(room, map, start, A));
             if (B_onBoundary2 && !room.checkpoints.Any(p => Vector2.Distance(p, B) < EDGE_EPS))
@@ -252,7 +354,7 @@ public class CheckpointManager : MonoBehaviour
                 roomsToSplit.Add(room);
         }
 
-        // 3) KẾT THÚC
+        // ===== KẾT THÚC =====
         if (!anyRoomUpdated)
         {
             if (!firstPointInsideRoom && firstPoint) Destroy(firstPoint);
@@ -367,12 +469,7 @@ public class CheckpointManager : MonoBehaviour
         return found;
     }
 
-    private void DetermineSegmentForRoom(
-        Room room, Vector2 aOrig, Vector2 bOrig,
-        out Vector2 A, out Vector2 B,
-        out bool insideInsideCase,
-        out bool A_fromHit, out bool B_fromHit,
-        out bool haveValidPair)
+    private void DetermineSegmentForRoom(Room room, Vector2 aOrig, Vector2 bOrig, out Vector2 A, out Vector2 B, out bool insideInsideCase, out bool A_fromHit, out bool B_fromHit, out bool haveValidPair)
     {
         insideInsideCase = false; A_fromHit = B_fromHit = false; haveValidPair = false;
         A = aOrig; B = bOrig;
