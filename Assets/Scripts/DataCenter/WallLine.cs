@@ -16,6 +16,8 @@ public class WallLine
     public WallLine() { }
     public bool isVisible = true;
 
+    public bool isManualConnection = false;// line phụ 
+
     // Dùng cho toàn bộ Line
     public float distanceHeight = 0f;   // độ cao bắt đầu từ mặt đất = 0.5m
     public float Height = 0f; // Chiều cao tường = 2m, chiều cao của cửa / cửa sổ = 1m
@@ -46,6 +48,7 @@ public class WallLine
         this.isVisible = other.isVisible;
         this.materialFront = other.materialFront;
         this.materialBack = other.materialBack;
+        this.isManualConnection = other.isManualConnection;
     }
 }
 
@@ -62,6 +65,7 @@ public class Room
     public string roomName;
 
     public List<Vector2> checkpoints = new List<Vector2>(); // polygon chính
+    public List<Vector2> extraCheckpoints = new List<Vector2>(); // điểm lẻ trong phòng
     public List<WallLine> wallLines = new List<WallLine>();
     public List<float> heights = new List<float>();
 
@@ -101,6 +105,7 @@ public class Room
 
         checkpoints = new List<Vector2>(other.checkpoints);
         wallLines = new List<WallLine>(other.wallLines.Select(w => new WallLine(w)));
+        extraCheckpoints = new List<Vector2>(other.extraCheckpoints);
         heights = new List<float>(other.heights);
     }
 }
@@ -114,3 +119,4 @@ public enum LineType
     Door,
     Window
 }
+

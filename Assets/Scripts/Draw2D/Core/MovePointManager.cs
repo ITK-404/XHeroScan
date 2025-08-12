@@ -2,11 +2,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Linq;
+using System;
 
-public class MovePointManager: MonoBehaviour
+public class MovePointManager : MonoBehaviour
 {
     private float WELD_ON = 0.5f;    // <= khoảng này thì dính + snap trùng
     private float WELD_OFF = 0.6f;    // > khoảng này thì tách
+    private const float EDGE_EPS   = 0.001f; // kiểm tra nằm trên biên
 
     private CheckpointManager checkPointManager;
 
