@@ -13,7 +13,7 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
     {
         // start drag
         FurnitureItem.OnDragFurniture = true;
-        FurnitureManager.Instance.CreateDragItem(furnitureItemPrefab);
+        FurnitureManager.Instance.StartDragItem(furnitureItemPrefab);
     }
 
     public void OnEndDrag(PointerEventData eventData)
@@ -21,11 +21,11 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
 
         if (IsOverUI())
         {
-            FurnitureManager.Instance.ClearItem();
+            FurnitureManager.Instance.ClearDragItem();
         }
         else
         {
-            FurnitureManager.Instance.Drop();
+            FurnitureManager.Instance.DropDragItem();
         }
         FurnitureItem.OnDragFurniture = false;
     }

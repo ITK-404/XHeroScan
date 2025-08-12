@@ -3,18 +3,6 @@ using System.Collections.Generic;
 using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using UnityEngine;
 
-public enum CheckpointType
-{
-    Left,
-    Right,
-    Top,
-    Bottom,
-    TopLeft,
-    TopRight,
-    BottomLeft,
-    BottomRight
-}
-
 public enum ResizeAxis
 {
     X,
@@ -35,7 +23,10 @@ public class FurnitureItem : MonoBehaviour
     public BoxCollider boxCollider;
     public SpriteRenderer spriteRender;
     private List<FurniturePoint> pointsList = new();
+
     [Header("Point")]
+    [SerializeField] private GameObject checkPointParent;
+    
     [SerializeField] private FurniturePoint leftPoint;
     [SerializeField] private FurniturePoint rightPoint;
     [SerializeField] private FurniturePoint topPoint;
@@ -69,6 +60,8 @@ public class FurnitureItem : MonoBehaviour
         }
 
         pointsArray = GetComponentsInChildren<FurniturePoint>();
+        
+        DisableCheckPoint();
     }
 
 
@@ -349,11 +342,21 @@ public class FurnitureItem : MonoBehaviour
         angleDeg = (angleDeg % 360f + 360f) % 360f;
 
         currentRotation = angleDeg;
-        spriteRender.transform.localRotation = Quaternion.Euler(90f, currentRotation, 0f);
+        spriteRender.transform.localRotation = Quaternion.Euler(90f, -currentRotation, 0f);
 
         // cập nhật point/size nếu cần
         RefreshCheckPoints();
         UpdateWorldSizeFromLocal(); // nếu bạn đang dùng
+    }
+
+    public void DisableCheckPoint()
+    {
+        checkPointParent.gameObject.SetActive(false);
+    }
+
+    public void EnableCheckPoint()
+    {
+        checkPointParent.gameObject.SetActive(true);
     }
 }
 
@@ -365,4 +368,3 @@ public class FurnitureData
     public float Height = 1;
     public float ObjectHeight = 0.5f;
 }
-
