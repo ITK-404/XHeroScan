@@ -12,7 +12,8 @@ public class FurnitureDrag : MonoBehaviour
 
     private void OnMouseDrag()
     {
-        furnitureItem.Dragging(transform);
+        if(FurnitureManager.Instance.IsSelectFurniture(furnitureItem))
+            furnitureItem.Dragging(transform);
     }
 
     private void OnMouseUp()

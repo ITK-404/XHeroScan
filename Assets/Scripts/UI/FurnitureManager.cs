@@ -18,18 +18,18 @@ public class FurnitureManager : MonoBehaviour
         mainCam = Camera.main;
     }
     
-    public void CreateDragItem(FurnitureItem prefab)
+    public void StartDragItem(FurnitureItem prefab)
     {
         tempDragItem = Instantiate(prefab != null ? prefab : furnitureItemPrefab);
     }
 
-    public void ClearItem()
+    public void ClearDragItem()
     {
         Destroy(tempDragItem.gameObject);
         tempDragItem = null;
     }
 
-    public void Drop()
+    public void DropDragItem()
     {
         tempDragItem?.RefreshCheckPoints();
         runtimeFurnitures.Add(tempDragItem);
@@ -52,6 +52,29 @@ public class FurnitureManager : MonoBehaviour
         }
         runtimeFurnitures.Clear();
     }
+
+    private FurnitureItem currentFurniture;
+    public void SelectFurniture(FurnitureItem furniture)
+    {
+        if (currentFurniture == null)
+        {
+            currentFurniture = furniture;
+            currentFurniture.EnableCheckPoint();
+        }
+        else
+        {
+            if (currentFurniture == furniture)
+            {
+                currentFurniture.DisableCheckPoint();
+                currentFurniture = null;
+                return;
+            }
+            
+            currentFurniture?.DisableCheckPoint();
+            currentFurniture = furniture;
+            currentFurniture?.EnableCheckPoint();
+        }
+    }
     
     private Vector3 GetWorldMousePosition()
     {
@@ -62,5 +85,10 @@ public class FurnitureManager : MonoBehaviour
             new Vector3(Input.mousePosition.x, Input.mousePosition.y, distance)
         );
         return worldMousePosition;
+    }
+
+    public bool IsSelectFurniture(FurnitureItem furnitureItem)
+    {
+        return currentFurniture == furnitureItem;
     }
 }
