@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using UnityEngine;
 
@@ -15,21 +16,19 @@ public enum FurnitureState
     Select,
     UnSelect
 }
-public class FurnitureItem : MonoBehaviour
+public partial class FurnitureItem : MonoBehaviour
 {
     public static bool OnDragFurniture = false;
     public static bool OnDragPoint = false;
+    
     private static GameObject pointHolder;
     private static Camera mainCam;
     private const float LIMIT_SIZE = 0.5f;
-
+    [Header("References")]
     public FurnitureData data;
-    public FurniturePoint pointPrefab;
-
-    public BoxCollider boxCollider;
     public SpriteRenderer spriteRender;
-    private List<FurniturePoint> pointsList = new();
-
+    public LineRenderer linePrefab;
+    public TextMeshPro textMeshPrefab;
     [Header("Point")]
     [SerializeField] private GameObject checkPointParent;
     
@@ -44,12 +43,16 @@ public class FurnitureItem : MonoBehaviour
     [SerializeField] private FurniturePoint topRightPoint;
 
     [SerializeField] private FurnitureRotate rotatePoint;
+    [Header("Bounds")]
     [SerializeField] private Bounds bounds;
     private FurniturePoint[] pointsArray;
     private Vector3 startPos;
     public float width, height = 1;
 
     [SerializeField] private float currentRotation;
+
+    private DrawingTool drawingTool;
+
     private void Awake()
     {
         bounds = new Bounds();
@@ -70,6 +73,25 @@ public class FurnitureItem : MonoBehaviour
         DisableCheckPoint();
     }
 
+    private LineDistance widthLine;
+    private LineDistance heightLine;
+    public void InitLineAndText()
+    {
+        widthLine = new LineDistance(drawingTool.GetOrCreateLine(),
+            drawingTool.GetOrCreateText(),
+            topLeftPoint.gameObject,
+            topRightPoint.gameObject);
+        
+        heightLine = new LineDistance(drawingTool.GetOrCreateLine(),
+            drawingTool.GetOrCreateText(),
+            topRightPoint.gameObject,
+            bottomRightPoint.gameObject);
+    }
+    
+    private void Start()
+    {
+        drawingTool = DrawingTool.Instance;
+    }
 
     private void SetupPoint(FurniturePoint point)
     {
@@ -126,6 +148,10 @@ public class FurnitureItem : MonoBehaviour
             Recalculator(item.transform, item.checkpointType, bounds, Vector3.zero);
         }
         Recalculator(rotatePoint.transform, CheckpointType.Bottom, bounds, new Vector3(0, 0, -1));
+        if(widthLine != null)
+            widthLine.UpdateLine(); 
+        if(heightLine != null)
+            heightLine.UpdateLine();
     }
 
     private void Update()

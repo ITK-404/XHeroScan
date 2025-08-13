@@ -33,6 +33,7 @@ public class FurnitureManager : MonoBehaviour
     public void DropDragItem()
     {
         tempDragItem?.RefreshCheckPoints();
+        tempDragItem?.InitLineAndText();
         runtimeFurnitures.Add(tempDragItem);
         tempDragItem = null;
     }
