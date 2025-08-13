@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 public class FurnitureDrag : MonoBehaviour
@@ -16,6 +15,7 @@ public class FurnitureDrag : MonoBehaviour
         {
             return;
         }
+
         if (FurnitureManager.Instance.IsSelectFurniture(furnitureItem))
         {
             furnitureItem.Dragging(transform);

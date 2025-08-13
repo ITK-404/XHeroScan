@@ -5,18 +5,20 @@ using UnityEngine.EventSystems;
 public class FurnitureManager : MonoBehaviour
 {
     public static FurnitureManager Instance;
-    public Sprite defaultSprite;
+
     public FurnitureItem furnitureItemPrefab;
 
     private FurnitureItem tempDragItem;
     private Camera mainCam;
-    public Vector3 offset;
     private List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
 
+    public ScaleByCameraZoom ScaleByCameraZoom;
+    
     private void Awake()
     {
         Instance = this;
         mainCam = Camera.main;
+        ScaleByCameraZoom = GetComponent<ScaleByCameraZoom>();
     }
 
     public void StartDragItem(FurnitureItem prefab)

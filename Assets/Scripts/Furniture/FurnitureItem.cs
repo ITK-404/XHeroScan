@@ -16,22 +16,23 @@ public enum FurnitureState
     Select,
     UnSelect
 }
+
 public partial class FurnitureItem : MonoBehaviour
 {
     public static bool OnDragFurniture = false;
     public static bool OnDragPoint = false;
-    
-    private static GameObject pointHolder;
+
     private static Camera mainCam;
     private const float LIMIT_SIZE = 0.5f;
+
     [Header("References")]
     public FurnitureData data;
+
     public SpriteRenderer spriteRender;
-    public LineRenderer linePrefab;
-    public TextMeshPro textMeshPrefab;
+
     [Header("Point")]
     [SerializeField] private GameObject checkPointParent;
-    
+
     [SerializeField] private FurniturePoint leftPoint;
     [SerializeField] private FurniturePoint rightPoint;
     [SerializeField] private FurniturePoint topPoint;
@@ -43,11 +44,24 @@ public partial class FurnitureItem : MonoBehaviour
     [SerializeField] private FurniturePoint topRightPoint;
 
     [SerializeField] private FurnitureRotate rotatePoint;
+
     [Header("Bounds")]
     [SerializeField] private Bounds bounds;
+
     private FurniturePoint[] pointsArray;
     private Vector3 startPos;
-    public float width, height = 1;
+
+    public float width
+    {
+        get => data.Width;
+        set => data.Width = value;
+    }
+
+    public float height
+    {
+        get => data.Height;
+        set => data.Height = value;
+    }
 
     [SerializeField] private float currentRotation;
 
@@ -69,25 +83,51 @@ public partial class FurnitureItem : MonoBehaviour
         }
 
         pointsArray = GetComponentsInChildren<FurniturePoint>();
-        
+
         DisableCheckPoint();
     }
 
-    private LineDistance widthLine;
-    private LineDistance heightLine;
+
+    private IUpdateWhenMove[] IUpdateWhenMoves;
+
     public void InitLineAndText()
     {
-        widthLine = new LineDistance(drawingTool.GetOrCreateLine(),
-            drawingTool.GetOrCreateText(),
+        var topLine = new Outline(CreateLineRenderer(),
             topLeftPoint.gameObject,
             topRightPoint.gameObject);
-        
-        heightLine = new LineDistance(drawingTool.GetOrCreateLine(),
-            drawingTool.GetOrCreateText(),
+        var rightLine = new Outline(CreateLineRenderer(),
             topRightPoint.gameObject,
             bottomRightPoint.gameObject);
+        var leftLine = new Outline(CreateLineRenderer(),
+            topLeftPoint.gameObject,
+            bottomLeftPoint.gameObject);
+        var bottomLine = new Outline(CreateLineRenderer(),
+            bottomLeftPoint.gameObject,
+            bottomRightPoint.gameObject);
+
+        var topTextDistance = new TextDistance(CreateTextMeshPro(), topLine);
+        var rightTextDistance = new TextDistance(CreateTextMeshPro(), rightLine);
+
+        IUpdateWhenMoves = new IUpdateWhenMove[]
+            { topLine, leftLine, rightLine, bottomLine, topTextDistance, rightTextDistance };
     }
-    
+
+    [SerializeField] private LineRenderer lineRendererPrefab;
+    [SerializeField] private TextMeshPro textMeshProPrefab;
+
+    private LineRenderer CreateLineRenderer()
+    {
+        var line = Instantiate(lineRendererPrefab, checkPointParent.transform);
+        DrawingTool.Instance.SetupLine(line);
+        return line;
+    }
+
+    private TextMeshPro CreateTextMeshPro()
+    {
+        var text = Instantiate(textMeshProPrefab, transform);
+        return text;
+    }
+
     private void Start()
     {
         drawingTool = DrawingTool.Instance;
@@ -143,25 +183,46 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void RefreshCheckPoints()
     {
+        // update all check point position
         foreach (var item in pointsArray)
         {
-            Recalculator(item.transform, item.checkpointType, bounds, Vector3.zero);
+            Recalculator(item.transform, item.checkpointType, bounds, new Vector3(0, 0.1f, 0));
         }
-        Recalculator(rotatePoint.transform, CheckpointType.Bottom, bounds, new Vector3(0, 0, -1));
-        if(widthLine != null)
-            widthLine.UpdateLine(); 
-        if(heightLine != null)
-            heightLine.UpdateLine();
+
+        // update rotate point
+        float z = bounds.size.y * 3 * FurnitureManager.Instance.ScaleByCameraZoom.Offset;
+        z = Mathf.Clamp(z, 0.25f, float.MaxValue);
+        Vector3 offset = new Vector3(0, 0.1f, -z);
+
+        Recalculator(rotatePoint.transform, CheckpointType.Bottom, bounds, offset);
+
+        if (IUpdateWhenMoves == null) return;
+        // update line
+        foreach (var item in IUpdateWhenMoves)
+        {
+            item.Update();
+        }
     }
 
     private void Update()
     {
+        // limit
         width = Mathf.Clamp(width, 0.1f, 100);
         height = Mathf.Clamp(height, 0.1f, 100);
+
+        // scale sprite
         spriteRender.transform.localScale = new Vector3(width, height, 1 * height * 0.5f);
+
+        // using for update by zoom in or zoom out
+        if (IUpdateWhenMoves == null) return;
+        foreach (var item in IUpdateWhenMoves)
+        {
+            item.UpdateWhenCameraZoom();
+        }
     }
 
-    public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint, ResizeAxis resizeAxis)
+    public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint,
+        ResizeAxis resizeAxis)
     {
         // rotation hiện tại (dùng currentRotation của bạn)
         Quaternion rotation = Quaternion.Euler(0f, currentRotation, 0f);
@@ -231,7 +292,6 @@ public partial class FurnitureItem : MonoBehaviour
         // Sau khi resize xong, cập nhật hiển thị / điểm:
         spriteRender.transform.localPosition = bounds.center;
         spriteRender.transform.localRotation = Quaternion.Euler(90, currentRotation, 0);
-
     }
 
     private void UpdateWorldSizeFromLocal()
@@ -254,12 +314,6 @@ public partial class FurnitureItem : MonoBehaviour
         // cho tiện, cũng cập nhật public width/height nếu bạn dùng 2 biến đó hiển thị
         width = bounds.size.x;
         height = bounds.size.z;
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(bounds.center, bounds.size);
     }
 
     private void Recalculator(Transform point, CheckpointType type, Bounds bounds, Vector3 offset)
@@ -290,7 +344,7 @@ public partial class FurnitureItem : MonoBehaviour
         {
             offset += new Vector3(0, 0, -yExtend);
         }
-        
+
         offset = Quaternion.Euler(0, currentRotation, 0) * offset;
         newPosition = bounds.center + offset;
         point.transform.localPosition = newPosition;
@@ -351,7 +405,8 @@ public partial class FurnitureItem : MonoBehaviour
         // chuẩn hoá góc vào [0,360)
         angleDeg = (angleDeg % 360f + 360f) % 360f;
 
-        currentRotation = angleDeg;
+        currentRotation = (angleDeg + 180f) % 360f;
+
         spriteRender.transform.localRotation = Quaternion.Euler(90f, currentRotation, 0f);
 
         // cập nhật point/size nếu cần

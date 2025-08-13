@@ -111,12 +111,12 @@ public class DrawingTool : MonoBehaviour
         // textMesh.text = $"{distanceInCm:F1} cm";
         TextMeshPro textMesh = GetOrCreateText(); // Dùng pool
 
-        UpdateLine(lr, textMesh, start, end, GetTextOffset(currentLineType));
+        UpdateText(textMesh, start, end, GetTextOffset(currentLineType));
         // Lưu dữ liệu tường
         wallLines.Add(new WallLine(start, end, currentLineType));
     }
 
-    public void UpdateLine(LineRenderer lr, TextMeshPro tmp, Vector3 start, Vector3 end, float offset)
+    public void UpdateText(TextMeshPro tmp, Vector3 start, Vector3 end, float offset)
     {
         float len = Vector3.Distance(start, end);
         float distanceInM = len * 1f;
@@ -139,8 +139,10 @@ public class DrawingTool : MonoBehaviour
         tmp.color = GetTextColor(currentLineType);
     }
 
+
     public void SetupLine(LineRenderer lr)
     {
+        if (lr == null) return;
         lr.textureMode = LineTextureMode.Tile;
         lr.alignment = LineAlignment.View; // Quan trọng: để line luôn xoay đúng góc nhìn
         lr.numCapVertices = 0;

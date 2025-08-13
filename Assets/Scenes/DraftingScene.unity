@@ -2284,7 +2284,7 @@ PrefabInstance:
     - target: {fileID: 1096783217439380342, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.000032395124
+      value: 0.00094673916
       objectReference: {fileID: 0}
     - target: {fileID: 1099334954491201323, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
@@ -13727,6 +13727,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1339119839}
   - component: {fileID: 1339119838}
+  - component: {fileID: 1339119840}
   m_Layer: 0
   m_Name: Furniture Manger
   m_TagString: Untagged
@@ -13746,10 +13747,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb3c5aa937d04430b489797356fa992c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultSprite: {fileID: 21300000, guid: a83c047dbf34d314090ae79a428c5c83, type: 3}
   furnitureItemPrefab: {fileID: 7234985322380843007, guid: 1dbcc122087dc784d836ad3f337c2482,
     type: 3}
-  offset: {x: 0, y: 0, z: 0}
+  ScaleByCameraZoom: {fileID: 1339119840}
 --- !u!4 &1339119839
 Transform:
   m_ObjectHideFlags: 0
@@ -13765,6 +13765,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1339119840
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1339119837}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e0fcc9ca60c40e68e9867529fa31e95, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  originalScale: {x: 0.6, y: 0.6, z: 0.6}
+  originalRotationPointOffset: 0.25
+  originalSize: 10
+  originalWidth: 0.05
 --- !u!1 &1345065153
 GameObject:
   m_ObjectHideFlags: 0
