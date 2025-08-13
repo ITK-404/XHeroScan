@@ -10,17 +10,21 @@ public class MovePointManager : MonoBehaviour
     private float WELD_OFF = 0.6f;    // > khoảng này thì tách
     private const float EDGE_EPS   = 0.001f; // kiểm tra nằm trên biên
     Dictionary<string, List<GameObject>> ExtraCheckpointVisuals = new Dictionary<string, List<GameObject>>();
+    static bool IsPerimeter(WallLine l) => l.type == LineType.Wall && !l.isManualConnection;
+
 
     Dictionary<string, List<GameObject>> placedPointsByRoom = new();
     Dictionary<string, GameObject> RoomFloorMap = new();
 
     private CheckpointManager checkPointManager;
+    private SplitRoomManager splitRoomManager;
 
     private bool _magnetLatch = false;
 
     void Start()
     {
         checkPointManager = FindFirstObjectByType<CheckpointManager>();
+        splitRoomManager = FindFirstObjectByType<SplitRoomManager>();
     }
 
     //  WELD CLUSTER (nhiều-điểm)
@@ -301,7 +305,10 @@ public class MovePointManager : MonoBehaviour
                 int n = room.checkpoints.Count;
                 for (int i = 0; i < room.wallLines.Count; i++)
                 {
-                    if (room.wallLines[i].type != LineType.Wall) continue;
+                    // if (room.wallLines[i].type != LineType.Wall) continue;
+                    var wl = room.wallLines[i];
+                    if (!IsPerimeter(wl)) continue;  // bỏ qua manual + door/window
+
                     Vector2 p1 = room.checkpoints[wallLineIndex % n];
                     Vector2 p2 = room.checkpoints[(wallLineIndex + 1) % n];
                     room.wallLines[i].start = new Vector3(p1.x, 0, p1.y);
@@ -399,203 +406,364 @@ public class MovePointManager : MonoBehaviour
         }
     }
     public bool MoveSelectedCheckpointExtra()
+{
+    // ===== Guard =====
+    if (checkPointManager.selectedCheckpoint == null) return false;
+    if (!checkPointManager.selectedCheckpoint.CompareTag("CheckpointExtra")) return false;
+
+    Vector3 newWorld = checkPointManager.GetWorldPositionFromScreen(Input.mousePosition);
+    Vector3 oldWorld = checkPointManager.selectedCheckpoint.transform.position;
+
+    string roomID = checkPointManager.FindRoomIDByPoint(oldWorld);
+    if (string.IsNullOrEmpty(roomID)) return false;
+
+    Room room = RoomStorage.GetRoomByID(roomID);
+    if (room == null || !checkPointManager.RoomFloorMap.TryGetValue(room.ID, out GameObject floorGO))
+        return false;
+
+    Vector2 floorPos = new Vector2(floorGO.transform.position.x, floorGO.transform.position.z);
+    Vector2 newLocal = new Vector2(newWorld.x, newWorld.z) - floorPos;
+    Vector2 oldLocal = new Vector2(oldWorld.x, oldWorld.z) - floorPos;
+
+    // Không cho kéo ra ngoài (kiểm tra theo local)
+    if (!checkPointManager.IsPointInPolygon(newLocal, room.checkpoints))
     {
-        Vector3 newPosition = checkPointManager.GetWorldPositionFromScreen(Input.mousePosition);
-        Vector3 oldWorldPos = checkPointManager.selectedCheckpoint.transform.position;
+        Debug.LogWarning("Không cho phép kéo CheckpointExtra ra ngoài room.");
+        return false;
+    }
 
-        checkPointManager.isMovingCheckpoint = true;
+    // ===== Tìm cạnh gần nhất để chèn vào polygon =====
+    float maxSnap = 0.3f;
+    float best = float.MaxValue;
+    int insertIndex = -1;
 
-        if (!checkPointManager.selectedCheckpoint.CompareTag("CheckpointExtra"))
-            return false;
+    for (int i = 0; i < room.checkpoints.Count; i++)
+    {
+        Vector2 a = room.checkpoints[i];
+        Vector2 b = room.checkpoints[(i + 1) % room.checkpoints.Count];
+        Vector2 ab = b - a;
+        float abLen = ab.magnitude;
+        if (abLen < 1e-5f) continue;
 
-        string roomID = checkPointManager.FindRoomIDByPoint(oldWorldPos);
-        if (string.IsNullOrEmpty(roomID))
-            return false;
+        float t = Vector2.Dot((newLocal - a), ab) / (abLen * abLen);
+        if (t < 0f || t > 1f) continue;
 
-        Room room = RoomStorage.GetRoomByID(roomID);
-        if (room == null || !checkPointManager.RoomFloorMap.TryGetValue(room.ID, out GameObject floorGO))
-            return false;
-
-        Vector2 new2D = new Vector2(newPosition.x, newPosition.z);
-        Vector2 local2D = new2D - new Vector2(floorGO.transform.position.x, floorGO.transform.position.z);
-        Vector2 oldLocal2D = new Vector2(oldWorldPos.x, oldWorldPos.z) - new Vector2(floorGO.transform.position.x, floorGO.transform.position.z);
-
-        if (!checkPointManager.IsPointInPolygon(new2D, room.checkpoints))
+        Vector2 proj = a + ab * t;
+        float d = Vector2.Distance(newLocal, proj);
+        if (d < best && d < maxSnap)
         {
-            Debug.LogWarning("Không cho phép kéo CheckpointExtra ra ngoài room.");
-            return false;
+            best = d;
+            insertIndex = i + 1;
+        }
+    }
+
+    // ====== CASE 1: Convert Extra -> Main (snap vào cạnh) ======
+    if (insertIndex != -1)
+    {
+        // A) Gỡ khỏi danh sách extra (theo local)
+        int nearestExtra = -1;
+        float bestExtra = float.MaxValue;
+        for (int i = 0; i < room.extraCheckpoints.Count; i++)
+        {
+            float d = Vector2.Distance(room.extraCheckpoints[i], oldLocal);
+            if (d < bestExtra) { bestExtra = d; nearestExtra = i; }
+        }
+        if (nearestExtra != -1) room.extraCheckpoints.RemoveAt(nearestExtra);
+
+        // B) Loại bỏ GO Extra cũ (nếu có)
+        if (placedPointsByRoom.TryGetValue(room.ID, out var placedList))
+        {
+            placedList.RemoveAll(go =>
+                go && go.CompareTag("CheckpointExtra") &&
+                Vector3.Distance(go.transform.position, oldWorld) < 0.05f);
         }
 
-        float minDist = float.MaxValue;
-        int insertIndex = -1;
-        float maxSnapDistance = 0.3f;
+        // C) Ghi nhận các manual line dính điểm cũ
+        var attachedManual = room.wallLines
+            .Where(l => l.isManualConnection &&
+                        (Vector3.Distance(l.start, oldWorld) < 0.15f ||
+                         Vector3.Distance(l.end,   oldWorld) < 0.15f))
+            .Select(l => new {
+                line = l,
+                atStart = Vector3.Distance(l.start, oldWorld) < 0.15f,
+                atEnd   = Vector3.Distance(l.end,   oldWorld) < 0.15f
+            }).ToList();
 
-        for (int i = 0; i < room.checkpoints.Count; i++)
+        // D) Chèn đỉnh vào polygon (local) & cập nhật GO
+        room.checkpoints.Insert(insertIndex, newLocal);
+        Vector3 snappedWorld = new Vector3(newLocal.x + floorPos.x, 0f, newLocal.y + floorPos.y);
+        var go = checkPointManager.selectedCheckpoint;
+        go.transform.position = snappedWorld;
+        go.tag = "Untagged";
+        go.transform.SetParent(null);
+
+        // E) Đồng bộ AllCheckpoints & placedPointsByRoom
+        var loop = checkPointManager.AllCheckpoints.Find(l => checkPointManager.FindRoomIDForLoop(l) == room.ID);
+        if (loop != null) { loop.Remove(go); loop.Insert(insertIndex, go); }
+        if (placedPointsByRoom.TryGetValue(room.ID, out var listMain))
+            if (!listMain.Contains(go)) listMain.Add(go);
+
+        // F) Rebuild viền (giữ cửa/sổ), không đụng manual
+        var manualRefs = room.wallLines.Where(l => l.isManualConnection).ToList();
+        RebuildWallLinesPreservingDoors(room);
+        foreach (var m in manualRefs) if (!room.wallLines.Contains(m)) room.wallLines.Add(m);
+
+        // G) Gắn lại manual vào vị trí mới & chống suy biến
+        foreach (var m in attachedManual)
         {
-            Vector2 a = room.checkpoints[i];
-            Vector2 b = room.checkpoints[(i + 1) % room.checkpoints.Count];
-            Vector2 ab = b - a;
-            Vector2 ap = new2D - a;
-
-            float abLength = ab.magnitude;
-            if (abLength < 0.0001f) continue;
-
-            float projection = Vector2.Dot(ap, ab) / abLength;
-            float t = projection / abLength;
-
-            if (t >= 0f && t <= 1f)
+            if (m.atStart) m.line.start = snappedWorld;
+            if (m.atEnd)   m.line.end   = snappedWorld;
+            if (Vector3.Distance(m.line.start, m.line.end) < 0.001f)
             {
-                Vector2 projectedPoint = a + ab * t;
-                float dist = Vector2.Distance(new2D, projectedPoint);
-
-                if (dist < minDist && dist < maxSnapDistance)
-                {
-                    minDist = dist;
-                    insertIndex = i + 1;
-                }
+                Vector3 dir = (m.line.end - m.line.start).normalized;
+                if (dir == Vector3.zero) dir = Quaternion.Euler(0, 137f, 0) * Vector3.forward;
+                m.line.start -= dir * 0.001f;
+                m.line.end   += dir * 0.001f;
             }
         }
 
-
-        if (insertIndex != -1)
+        // H) Snap nhẹ các đầu manual về đúng đỉnh nếu gần
+        if (placedPointsByRoom.TryGetValue(room.ID, out var checkpointGOs))
         {
-            // === CONVERTING EXTRA TO MAIN CHECKPOINT ===
-
-            // Step 1: Remove from extraCheckpoints
-            int nearestExtraIndex = -1;
-            float minDistExtra = float.MaxValue;
-            for (int i = 0; i < room.extraCheckpoints.Count; i++)
-            {
-                float dist = Vector2.Distance(room.extraCheckpoints[i], oldLocal2D);
-                if (dist < minDistExtra)
-                {
-                    minDistExtra = dist;
-                    nearestExtraIndex = i;
-                }
-            }
-
-            if (nearestExtraIndex != -1)
-                room.extraCheckpoints.RemoveAt(nearestExtraIndex);
-
-            if (placedPointsByRoom.TryGetValue(room.ID, out var checkpointList))
-            {
-                checkpointList.RemoveAll(go =>
-                        go != null &&
-                        go.CompareTag("CheckpointExtra") &&
-                        Vector3.Distance(go.transform.position, oldWorldPos) < 0.05f
-                    );
-            }
-            Vector3 worldPosAfterMove = RoomToWorld(local2D, floorGO);
-
-            // Step 2: Update manual lines that connect to oldWorldPos
             foreach (var line in room.wallLines)
             {
                 if (!line.isManualConnection) continue;
-
-                if (Vector3.Distance(line.start, oldWorldPos) < 0.15f)
-                    line.start = worldPosAfterMove;
-
-                if (Vector3.Distance(line.end, oldWorldPos) < 0.15f)
-                    line.end = worldPosAfterMove;
-            }
-
-            // Step 3: Insert checkpoint into main polygon
-            room.checkpoints.Insert(insertIndex, local2D);
-            checkPointManager.selectedCheckpoint.transform.position = worldPosAfterMove;
-            checkPointManager.selectedCheckpoint.tag = "Untagged";
-            checkPointManager.selectedCheckpoint.transform.SetParent(null);
-
-            // Step 4: Update allCheckpoints list
-            var loop = checkPointManager.AllCheckpoints.Find(l => checkPointManager.FindRoomIDForLoop(l) == room.ID);
-            if (loop != null)
-                loop.Insert(insertIndex, checkPointManager.selectedCheckpoint);
-
-            // Step 5: Rebuild perimeter walls
-            List<WallLine> manualLinesBackup = room.wallLines
-                .Where(w => w.isManualConnection)
-                .Select(w => new WallLine
+                foreach (var cp in checkpointGOs)
                 {
-                    start = w.start,
-                    end = w.end,
-                    type = w.type,
-                    isManualConnection = true
-                }).ToList();
-
-            RebuildWallLinesPreservingDoors(room);
-            room.wallLines.AddRange(manualLinesBackup);
-
-            // Step 6: Snap line endpoints to exact checkpoint positions
-            if (placedPointsByRoom.TryGetValue(room.ID, out List<GameObject> checkpointGOs))
-            {
-                foreach (var line in room.wallLines)
-                {
-                    if (!line.isManualConnection) continue;
-
-                    foreach (var cp in checkpointGOs)
-                    {
-                        Vector3 cpPos = cp.transform.position;
-                        float tolerance = (cp == checkPointManager.selectedCheckpoint) ? 0.15f : 0.05f;
-
-                        if (Vector3.Distance(line.start, cpPos) < tolerance)
-                            line.start = cpPos;
-                        if (Vector3.Distance(line.end, cpPos) < tolerance)
-                            line.end = cpPos;
-                    }
+                    if (!cp) continue;
+                    Vector3 p = cp.transform.position;
+                    float tol = (cp == go) ? 0.15f : 0.05f;
+                    if (Vector3.Distance(line.start, p) < tol) line.start = p;
+                    if (Vector3.Distance(line.end,   p) < tol) line.end   = p;
                 }
             }
-
-            RoomStorage.UpdateOrAddRoom(room);
-            floorGO.GetComponent<RoomMeshController>()?.GenerateMesh(room.checkpoints);
-            checkPointManager.ClearAllLines();
-            checkPointManager.RedrawAllRooms();
-            return true;
         }
-        else
-        {
-            // === MOVING WITHIN EXTRA CHECKPOINTS ===
-            int nearestExtraIndex = -1;
-            float minDistExtra = float.MaxValue;
 
+        // I) Kiểm tra điều kiện tách phòng (hình học, không phụ thuộc GO)
+        if (ShouldSplitByAnchorsOrEdgesGeom(room, floorGO,
+        out int anchorsOnPerimeter, out var mainsTouched, out var extrasTouched))
+{
+    if (splitRoomManager == null)
+        Debug.LogWarning("[SplitCheck] splitRoomManager == null -> không thể tách phòng.");
+    else
+        splitRoomManager.DetectAndSplitRoomIfNecessary(room);
+}
+
+        // J) Lưu & redraw
+        RoomStorage.UpdateOrAddRoom(room);
+        floorGO.GetComponent<RoomMeshController>()?.GenerateMesh(room.checkpoints);
+        checkPointManager.ClearAllLines();
+        checkPointManager.RedrawAllRooms();
+        return true;
+    }
+
+    // ====== CASE 2: Chỉ di chuyển trong nhóm Extra ======
+    {
+        int nearestExtra = -1;
+        float bestExtra = float.MaxValue;
+        for (int i = 0; i < room.extraCheckpoints.Count; i++)
+        {
+            Vector2 worldExtra = room.extraCheckpoints[i] + floorPos;
+            float d = Vector2.Distance(new Vector2(newWorld.x, newWorld.z), worldExtra);
+            if (d < bestExtra) { bestExtra = d; nearestExtra = i; }
+        }
+
+        if (nearestExtra != -1)
+        {
+            // vị trí mặc định (chưa weld)
+            Vector2 finalLocal = newLocal;
+            Vector3 finalWorld = new Vector3(finalLocal.x + floorPos.x, 0f, finalLocal.y + floorPos.y);
+
+            // ===== WELD extra↔extra trong bán kính WELD_ON =====
+            int weldIdx = -1;
+            float weldBest = WELD_ON; // ví dụ: private float WELD_ON = 0.5f;
             for (int i = 0; i < room.extraCheckpoints.Count; i++)
             {
-                Vector2 worldExtra = room.extraCheckpoints[i] + new Vector2(floorGO.transform.position.x, floorGO.transform.position.z);
-                float dist = Vector2.Distance(new2D, worldExtra);
-                if (dist < minDistExtra)
-                {
-                    minDistExtra = dist;
-                    nearestExtraIndex = i;
-                }
+                if (i == nearestExtra) continue;
+                float d = Vector2.Distance(finalLocal, room.extraCheckpoints[i]);
+                if (d <= weldBest) { weldBest = d; weldIdx = i; }
             }
-
-
-            if (nearestExtraIndex != -1)
+            if (weldIdx != -1)
             {
-                Vector3 worldPosAfterMove = RoomToWorld(local2D, floorGO);
-
-                room.extraCheckpoints[nearestExtraIndex] = local2D;
-                checkPointManager.selectedCheckpoint.transform.position = worldPosAfterMove;
-
-                // Update các line thủ công gắn với điểm cũ
-                foreach (var line in room.wallLines)
-                {
-                    if (!line.isManualConnection) continue;
-
-                    if (Vector3.Distance(line.start, oldWorldPos) < 0.15f)
-                        line.start = worldPosAfterMove;
-                    if (Vector3.Distance(line.end, oldWorldPos) < 0.15f)
-                        line.end = worldPosAfterMove;
-                }
-
-                UpdateWallLinesFromExtraCheckpoint(room, oldLocal2D, local2D, floorGO);
-                UpdateExtraCheckpointVisual(room.ID, nearestExtraIndex, local2D);
+                finalLocal = room.extraCheckpoints[weldIdx];
+                finalWorld = new Vector3(finalLocal.x + floorPos.x, 0f, finalLocal.y + floorPos.y);
             }
 
-            RoomStorage.UpdateOrAddRoom(room);
-            checkPointManager.ClearAllLines();
-            checkPointManager.RedrawAllRooms();
-            return true;
+            // cập nhật toạ độ & GO
+            room.extraCheckpoints[nearestExtra] = finalLocal;
+            checkPointManager.selectedCheckpoint.transform.position = finalWorld;
+
+            // Kéo theo manual đang dính
+            foreach (var line in room.wallLines)
+            {
+                if (!line.isManualConnection) continue;
+                if (Vector3.Distance(line.start, oldWorld) < 0.15f) line.start = finalWorld;
+                if (Vector3.Distance(line.end,   oldWorld) < 0.15f) line.end   = finalWorld;
+            }
+
+            // Logic phụ (nếu dùng)
+            UpdateWallLinesFromExtraCheckpoint(room, oldLocal, finalLocal, floorGO);
+            UpdateExtraCheckpointVisual(room.ID, nearestExtra, finalLocal);
+        }
+
+        // Kiểm tra tách phòng
+        if (ShouldSplitByAnchorsOrEdgesGeom(room, floorGO,
+        out int anchorsOnPerimeter, out var mainsTouched, out var extrasTouched))
+{
+    if (splitRoomManager == null)
+        Debug.LogWarning("[SplitCheck] splitRoomManager == null -> không thể tách phòng.");
+    else
+        splitRoomManager.DetectAndSplitRoomIfNecessary(room);
+}
+
+        RoomStorage.UpdateOrAddRoom(room);
+        checkPointManager.ClearAllLines();
+        checkPointManager.RedrawAllRooms();
+        return true;
+    }
+}
+// === Split condition: true nếu có >=2 "anchors" độc lập
+// - anchors trên PERIMETER (neo vào cạnh/đỉnh)  >= 2  OR
+// - extras được neo different                        >= 2  OR
+// - mains (điểm chính) được neo different            >= 2
+private bool ShouldSplitByAnchorsOrEdgesGeom(
+    Room room,
+    GameObject floorGO,
+    out int anchorsOnPerimeter,
+    out HashSet<int> mainsTouched,
+    out HashSet<int> extrasTouched,
+    float tolMain = 0.25f,
+    float tolExtra = 0.25f,
+    float tolEdge = 0.25f)
+{
+    mainsTouched  = new HashSet<int>();
+    extrasTouched = new HashSet<int>();
+    anchorsOnPerimeter = 0;
+
+    if (room == null || floorGO == null) return false;
+
+    Vector2 floorPos = new Vector2(floorGO.transform.position.x, floorGO.transform.position.z);
+
+    // world-space points from room data
+    var mainWorld = new List<Vector3>(room.checkpoints.Count);
+    foreach (var p in room.checkpoints)
+        mainWorld.Add(new Vector3(p.x + floorPos.x, 0f, p.y + floorPos.y));
+
+    var extraWorld = new List<Vector3>(room.extraCheckpoints.Count);
+    foreach (var p in room.extraCheckpoints)
+        extraWorld.Add(new Vector3(p.x + floorPos.x, 0f, p.y + floorPos.y));
+
+    if (mainWorld.Count == 0) return false;
+
+    // perimeter segments from checkpoints
+    var segs = new List<(Vector3 a, Vector3 b)>(mainWorld.Count);
+    for (int i = 0; i < mainWorld.Count; i++)
+    {
+        var a = mainWorld[i];
+        var b = mainWorld[(i + 1) % mainWorld.Count];
+        segs.Add((a, b));
+    }
+
+    // de-dup anchors along perimeter by world position
+    List<Vector3> perimeterAnchorPoints = new();
+
+    foreach (var l in room.wallLines)
+    {
+        if (!l.isManualConnection) continue;
+
+        // classify endpoints
+        int sMain  = IndexNearAny(l.start, mainWorld,  tolMain);
+        int eMain  = IndexNearAny(l.end,   mainWorld,  tolMain);
+        int sExtra = IndexNearAny(l.start, extraWorld, tolExtra);
+        int eExtra = IndexNearAny(l.end,   extraWorld, tolExtra);
+
+        bool sOnEdge = IsNearAnyPerimeter(l.start, segs, tolEdge, out var sProj);
+        bool eOnEdge = IsNearAnyPerimeter(l.end,   segs, tolEdge, out var eProj);
+
+        // count valid anchors: (main OR edge) <-> extra
+        if ((sMain >= 0 || sOnEdge) && eExtra >= 0)
+        {
+            extrasTouched.Add(eExtra);
+            if (sMain >= 0) mainsTouched.Add(sMain);
+            if (sOnEdge) AddUnique(perimeterAnchorPoints, sProj, tolEdge * 0.75f);
+        }
+        if ((eMain >= 0 || eOnEdge) && sExtra >= 0)
+        {
+            extrasTouched.Add(sExtra);
+            if (eMain >= 0) mainsTouched.Add(eMain);
+            if (eOnEdge) AddUnique(perimeterAnchorPoints, eProj, tolEdge * 0.75f);
         }
     }
+
+    anchorsOnPerimeter = perimeterAnchorPoints.Count;
+
+    bool should =
+        anchorsOnPerimeter >= 2 ||        // hai neo độc lập trên viền (có thể cùng một extra)
+        extrasTouched.Count   >= 2 ||     // hai extra khác nhau neo vào viền/đỉnh
+        mainsTouched.Count    >= 2;       // hai điểm chính khác nhau được neo
+
+    if (!should)
+    {
+        Debug.Log($"[SplitCheck] perimeterAnchors={anchorsOnPerimeter}, " +
+                  $"mainsTouched={mainsTouched.Count}, extrasTouched={extrasTouched.Count} " +
+                  $"| mains={mainWorld.Count}, extras={extraWorld.Count}");
+    }
+
+    return should;
+}
+
+// ==== geometry helpers ====
+private static bool IsNearAnyPerimeter(Vector3 p,
+                                       List<(Vector3 a, Vector3 b)> segs,
+                                       float tol,
+                                       out Vector3 projBest)
+{
+    projBest = Vector3.zero;
+    float best = float.MaxValue;
+
+    for (int i = 0; i < segs.Count; i++)
+    {
+        float t; Vector3 proj;
+        float d = DistPointToSegmentXZ(p, segs[i].a, segs[i].b, out t, out proj);
+        if (d < best)
+        {
+            best = d;
+            projBest = proj;
+        }
+    }
+    return best <= tol;
+}
+
+private static float DistPointToSegmentXZ(Vector3 p, Vector3 a, Vector3 b, out float t, out Vector3 proj)
+{
+    Vector2 P = new Vector2(p.x, p.z);
+    Vector2 A = new Vector2(a.x, a.z);
+    Vector2 B = new Vector2(b.x, b.z);
+    Vector2 AP = P - A;
+    Vector2 AB = B - A;
+    float ab2 = Vector2.Dot(AB, AB);
+    t = (ab2 > 1e-6f) ? Mathf.Clamp01(Vector2.Dot(AP, AB) / ab2) : 0f;
+    Vector2 Pproj = A + AB * t;
+    proj = new Vector3(Pproj.x, 0f, Pproj.y);
+    return (P - Pproj).magnitude;
+}
+
+private static void AddUnique(List<Vector3> pts, Vector3 p, float tol)
+{
+    for (int i = 0; i < pts.Count; i++)
+        if (Vector3.Distance(pts[i], p) <= tol) return;
+    pts.Add(p);
+}
+
+private int IndexNearAny(Vector3 p, List<Vector3> pts, float tol)
+{
+    for (int i = 0; i < pts.Count; i++)
+        if (Vector3.Distance(pts[i], p) <= tol) return i;
+    return -1;
+}
+
+
+
     Vector3 RoomToWorld(Vector2 localPos, GameObject floorGO)
     {
         return new Vector3(localPos.x, 0, localPos.y) + floorGO.transform.position;
@@ -923,23 +1091,45 @@ public class MovePointManager : MonoBehaviour
         var room = RoomStorage.GetRoomByID(roomID);
         if (room == null || loop == null || loop.Count == 0) return;
 
-        room.checkpoints = loop.Select(go => {
-            var p = go.transform.position; return new Vector2(p.x, p.z);
+        // 1. Cập nhật checkpoint mới từ vị trí point
+        room.checkpoints = loop.Select(go =>
+        {
+            var p = go.transform.position;
+            return new Vector2(p.x, p.z);
         }).ToList();
 
-        int n = room.checkpoints.Count, wi = 0;
-        for (int i = 0; i < room.wallLines.Count; i++)
+        // 2. Tạo lại line chính từ checkpoints
+        int n = room.checkpoints.Count;
+        List<WallLine> newWalls = new List<WallLine>(n);
+        for (int i = 0; i < n; i++)
         {
-            if (room.wallLines[i].type != LineType.Wall) continue;
-            var a = room.checkpoints[wi % n];
-            var b = room.checkpoints[(wi + 1) % n];
-            room.wallLines[i].start = new Vector3(a.x, 0, a.y);
-            room.wallLines[i].end   = new Vector3(b.x, 0, b.y);
-            wi++;
+            Vector2 a = room.checkpoints[i];
+            Vector2 b = room.checkpoints[(i + 1) % n];
+
+            newWalls.Add(new WallLine
+            {
+                start = new Vector3(a.x, 0, a.y),
+                end = new Vector3(b.x, 0, b.y),
+                type = LineType.Wall,
+                isManualConnection = false,
+                distanceHeight = 0f,
+                Height = 3f, // hoặc lấy từ room.heights nếu bạn có chiều cao riêng từng đoạn
+                materialFront = "Default",
+                materialBack = "Default"
+            });
         }
 
+        // 3. Giữ lại line phụ và cửa sổ / cửa
+        var preserved = room.wallLines.Where(w => w.isManualConnection || w.type != LineType.Wall).ToList();
+
+        // 4. Gộp lại và lưu
+        room.wallLines = newWalls.Concat(preserved).ToList();
+
         RoomStorage.UpdateOrAddRoom(room);
+
+        // 5. Cập nhật mesh sàn (nếu có)
         GameObject.Find($"RoomFloor_{roomID}")
             ?.GetComponent<RoomMeshController>()?.GenerateMesh(room.checkpoints);
     }
+
 }

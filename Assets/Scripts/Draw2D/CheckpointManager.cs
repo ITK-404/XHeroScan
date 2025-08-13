@@ -180,6 +180,8 @@ public class CheckpointManager : MonoBehaviour
         {
             foreach (var wl in room.wallLines)
             {
+                if (!wl.isVisible) continue;
+                
                 DrawingTool.currentLineType = wl.type;
                 DrawingTool.DrawLineAndDistance(wl.start, wl.end);
             }
