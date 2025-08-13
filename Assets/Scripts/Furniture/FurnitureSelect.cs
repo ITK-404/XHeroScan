@@ -6,6 +6,5 @@ public class FurnitureSelect : MonoBehaviour
 
     private void OnMouseDown()
     {
-        FurnitureManager.Instance.SelectFurniture(furnitureItem);
     }
 }

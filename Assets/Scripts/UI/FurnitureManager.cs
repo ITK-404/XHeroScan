@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class FurnitureManager : MonoBehaviour
 {
@@ -11,13 +12,13 @@ public class FurnitureManager : MonoBehaviour
     private Camera mainCam;
     public Vector3 offset;
     private List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
-    
+
     private void Awake()
     {
         Instance = this;
         mainCam = Camera.main;
     }
-    
+
     public void StartDragItem(FurnitureItem prefab)
     {
         tempDragItem = Instantiate(prefab != null ? prefab : furnitureItemPrefab);
@@ -42,6 +43,26 @@ public class FurnitureManager : MonoBehaviour
         {
             tempDragItem.transform.position = GetWorldMousePosition();
         }
+
+        if (Input.touchCount >= 2)
+        {
+            SelectFurniture(null);
+            return;
+        }
+
+        if (currentFurniture && Input.GetMouseButtonDown(0))
+        {
+            if (EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+
+            var mousePos = Input.mousePosition;
+            if (!Physics.Raycast(mainCam.ScreenPointToRay(mousePos), out var result))
+            {
+                SelectFurniture(null);
+            }
+        }
     }
 
     public void ClearAllFurnitures()
@@ -50,16 +71,18 @@ public class FurnitureManager : MonoBehaviour
         {
             Destroy(furniture.gameObject);
         }
+
         runtimeFurnitures.Clear();
     }
 
     private FurnitureItem currentFurniture;
+
     public void SelectFurniture(FurnitureItem furniture)
     {
         if (currentFurniture == null)
         {
             currentFurniture = furniture;
-            currentFurniture.EnableCheckPoint();
+            currentFurniture?.EnableCheckPoint();
         }
         else
         {
@@ -69,13 +92,13 @@ public class FurnitureManager : MonoBehaviour
                 currentFurniture = null;
                 return;
             }
-            
+
             currentFurniture?.DisableCheckPoint();
             currentFurniture = furniture;
             currentFurniture?.EnableCheckPoint();
         }
     }
-    
+
     private Vector3 GetWorldMousePosition()
     {
         float distance = Vector3.Distance(mainCam.transform.position, transform.position);

@@ -9,6 +9,12 @@ public enum ResizeAxis
     Z,
     XZ
 }
+
+public enum FurnitureState
+{
+    Select,
+    UnSelect
+}
 public class FurnitureItem : MonoBehaviour
 {
     public static bool OnDragFurniture = false;
@@ -236,51 +242,29 @@ public class FurnitureItem : MonoBehaviour
         float xExtend = Mathf.Max(bounds.extents.x, LIMIT_SIZE);
         float yExtend = Mathf.Max(bounds.extents.z, LIMIT_SIZE);
 
-        // left
-        switch (type)
+        if (type == CheckpointType.Left || type == CheckpointType.TopLeft || type == CheckpointType.BottomLeft)
         {
-            case CheckpointType.Left:
-            case CheckpointType.TopLeft:
-            case CheckpointType.BottomLeft:
-                offset += new Vector3(-xExtend, 0, 0);
-                break;
+            offset += new Vector3(-xExtend, 0, 0);
+        }
 
-            default:
-                break;
-        }
-        // right
-        switch (type)
+        // Right
+        if (type == CheckpointType.Right || type == CheckpointType.TopRight || type == CheckpointType.BottomRight)
         {
-            case CheckpointType.Right:
-            case CheckpointType.TopRight:
-            case CheckpointType.BottomRight:
-                offset += new Vector3(xExtend, 0, 0);
-                break;
-            default:
-                break;
+            offset += new Vector3(xExtend, 0, 0);
         }
-        // top
-        switch (type)
+
+        // Top (positive Z in unrotated local)
+        if (type == CheckpointType.Top || type == CheckpointType.TopLeft || type == CheckpointType.TopRight)
         {
-            case CheckpointType.Top:
-            case CheckpointType.TopLeft:
-            case CheckpointType.TopRight:
-                offset += new Vector3(0, 0, yExtend);
-                break;
-            default:
-                break;
+            offset += new Vector3(0, 0, yExtend);
         }
-        // bottom
-        switch (type)
+
+        // Bottom (negative Z in unrotated local)
+        if (type == CheckpointType.Bottom || type == CheckpointType.BottomLeft || type == CheckpointType.BottomRight)
         {
-            case CheckpointType.Bottom:
-            case CheckpointType.BottomLeft:
-            case CheckpointType.BottomRight:
-                offset += new Vector3(0, 0, -yExtend);
-                break;
-            default:
-                break;
+            offset += new Vector3(0, 0, -yExtend);
         }
+        
         offset = Quaternion.Euler(0, currentRotation, 0) * offset;
         newPosition = bounds.center + offset;
         point.transform.localPosition = newPosition;
@@ -342,7 +326,7 @@ public class FurnitureItem : MonoBehaviour
         angleDeg = (angleDeg % 360f + 360f) % 360f;
 
         currentRotation = angleDeg;
-        spriteRender.transform.localRotation = Quaternion.Euler(90f, -currentRotation, 0f);
+        spriteRender.transform.localRotation = Quaternion.Euler(90f, currentRotation, 0f);
 
         // cập nhật point/size nếu cần
         RefreshCheckPoints();

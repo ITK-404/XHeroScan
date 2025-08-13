@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 6447085774176705639}
   - component: {fileID: 6567203990392283915}
   - component: {fileID: 1797357889568239072}
-  - component: {fileID: 885608337224417757}
   m_Layer: 0
   m_Name: Square
   m_TagString: Untagged
@@ -125,19 +124,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   furnitureItem: {fileID: 7234985322380843007}
---- !u!114 &885608337224417757
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1410692367611771002}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b09cc38deaad4b77a027ab5080bc008b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  furnitureItem: {fileID: 7234985322380843007}
 --- !u!1 &4657399046887679853
 GameObject:
   m_ObjectHideFlags: 0
@@ -148,6 +134,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5406030576398905754}
   - component: {fileID: 7234985322380843007}
+  - component: {fileID: 5451159717796942090}
   m_Layer: 0
   m_Name: Square
   m_TagString: Untagged
@@ -209,6 +196,29 @@ MonoBehaviour:
   width: 1
   height: 1
   currentRotation: 0
+--- !u!114 &5451159717796942090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4657399046887679853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce8e4fea78fe491591dfa8598a15e91b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  checkPointList:
+  - {fileID: 8913344847378297492}
+  - {fileID: 8979417282074788687}
+  - {fileID: 8816129689401906355}
+  - {fileID: 801093134056472849}
+  - {fileID: 6510968780278702633}
+  - {fileID: 8511327584036313522}
+  - {fileID: 6155149442104183326}
+  - {fileID: 4927128129466751517}
+  - {fileID: 4279046148184675590}
+  size: 1
 --- !u!1 &9142053234481993226
 GameObject:
   m_ObjectHideFlags: 0
