@@ -113,7 +113,10 @@ public class CheckpointManager : MonoBehaviour
             }
 
             if (currentLineType == LineType.Wall)
+            {
                 handleCheckpointManger.HandleSingleWallPlacement(previewPosition);
+                // handleCheckpointManger.HandleWallLoopPlacement(previewPosition);
+            }
             else
                 handleCheckpointManger.HandleCheckpointPlacement(previewPosition);
 
@@ -386,6 +389,10 @@ public class CheckpointManager : MonoBehaviour
 
         Debug.Log($"[LoadPointsFromRoomStorage] Đã load lại {rooms.Count} phòng, {allCheckpoints.Count} loop.");
     }
+
+    public void ClearAllLines()=> DrawingTool.ClearAllLines();
+    public void DrawAllLinesFromRoomStorage()=> DrawingTool.DrawAllLinesFromRoomStorage();
+    public void DrawLineAndDistance(Vector3 start, Vector3 end) => DrawingTool.DrawLineAndDistance(start, end);
 
     void ShowIncompleteLoopPopup()
     {

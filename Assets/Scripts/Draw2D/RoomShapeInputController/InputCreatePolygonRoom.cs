@@ -116,7 +116,7 @@ public class RoomShapeInputController : MonoBehaviour
                 ? checkpointManager.currentCheckpoints[0].transform.position
                 : checkpointManager.currentCheckpoints[i + 1].transform.position;
 
-            checkpointManager.DrawingTool.DrawLineAndDistance(p1, p2);
+            checkpointManager.DrawLineAndDistance(p1, p2);
             checkpointManager.wallLines.Add(new WallLine(p1, p2, LineType.Wall));
         }
 
