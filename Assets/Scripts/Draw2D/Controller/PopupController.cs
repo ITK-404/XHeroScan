@@ -72,7 +72,7 @@ public static class PopupController
     {
         // === Tạo Canvas popup ===
 
-        var popup = GameObject.Instantiate(ModularPopup.Prefab);
+        var popup = GameObject.Instantiate(ModularPopup.PopupAsset.modularPopupYesNo).GetComponent<ModularPopup>();
         popup.AutoFindCanvasAndSetup();
         popup.autoClearWhenClick = true;
         popup.Header = "message";

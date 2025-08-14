@@ -411,7 +411,7 @@ public class CheckpointManager : MonoBehaviour
         //     }
         // );
         //
-        var popup = Instantiate(ModularPopup.Prefab);
+        var popup = Instantiate(ModularPopup.PopupAsset.modularPopupYesNo).GetComponent<ModularPopup>();
         popup.AutoFindCanvasAndSetup();
         popup.Header = "Mạch chưa khép kín!\\nBạn muốn xóa dữ liệu vẽ tạm không?";
         popup.ClickYesEvent = () =>

@@ -5,20 +5,20 @@ using UnityEngine.UI;
 
 public class ModularPopup : MonoBehaviour
 {
-    public static ModularPopup Prefab
+    public static PopupAsset PopupAsset
     {
         get
         {
-            if (modularPopupPrefab == null)
+            if (popupAsset == null)
             {
-                modularPopupPrefab = Resources.Load<ModularPopup>("Modular Popup");
+                popupAsset = Resources.Load<PopupAsset>("Popup Asset");
             }
 
-            return modularPopupPrefab;
+            return popupAsset;
         }
     }
 
-    private static ModularPopup modularPopupPrefab;
+    private static PopupAsset popupAsset;
 
     [SerializeField] private TextMeshProUGUI headerText;
     [SerializeField] private TextMeshProUGUI yesBtnText;

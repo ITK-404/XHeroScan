@@ -30,7 +30,7 @@ public class BackButton : MonoBehaviour
 
     private void ShowPopupPrefab()
     {
-        var popup = Instantiate(ModularPopup.Prefab);
+        var popup = Instantiate(ModularPopup.PopupAsset.modularPopupYesNo).GetComponent<ModularPopup>();
         popup.AutoFindCanvasAndSetup();
         popup.transform.rotation = Quaternion.identity;
         popup.transform.localEulerAngles = Vector3.zero;

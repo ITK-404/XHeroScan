@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 771e45314eba4d1d8e9ecaeb8cebb4d1, type: 3}
+  m_Name: Popup Asset
+  m_EditorClassIdentifier: 
+  modularPopupYesNo: {fileID: 727990230625871173, guid: eec42839d98af3a4da73b172d3134660,
+    type: 3}
+  modularPopupWarningDelete: {fileID: 1197438629999062631, guid: 526c85f25a6b5634b91ff3e27254e3a2,
+    type: 3}
+  toastPopupComplete: {fileID: 7597764315069114902, guid: e1373c2591f5e6d408df810f79b8515c,
+    type: 3}
+  toastPopupError: {fileID: 8838424758914733167, guid: fa730a6a21763e54aa0bb3ec5b9b182c,
+    type: 3}
+  toastPopupDowload: {fileID: 5727396525768655308, guid: e7f0603a434c6004f8038b0dd3f876e2,
+    type: 3}
