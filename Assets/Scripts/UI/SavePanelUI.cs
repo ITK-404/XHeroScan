@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -10,7 +11,7 @@ public class SavePanelUI : MonoBehaviour
     private const string ErrorMessage_FileNameEmpty = "Tên file đang bị để trống";
     private const string ErrorMessage_FileNameExit = "Tên file đã tồn tại, vui lòng chọn tên khác";
     private const string SuccessMessage_ExportFileComplete = "Bạn đã lưu bản vẽ thành công";
-    
+
     [SerializeField] private Button closeBtn;
     [SerializeField] private Button confirmBtn;
     [SerializeField] private TMP_InputField fileNameInputField;
@@ -25,8 +26,8 @@ public class SavePanelUI : MonoBehaviour
         confirmBtn.onClick.AddListener(() => Show());
         confirmBtn.onClick.AddListener(() => Confirm());
         Close();
-        successPopup.gameObject.SetActive(false);
-        failedPopup.gameObject.SetActive(false);
+        // successPopup.gameObject.SetActive(false);
+        // failedPopup.gameObject.SetActive(false);
     }
 
     private void Close()
@@ -38,7 +39,7 @@ public class SavePanelUI : MonoBehaviour
     public void Show()
     {
         EventSystem.current.SetSelectedGameObject(fileNameInputField.gameObject);
-        fileNameInputField.OnPointerClick(new PointerEventData(EventSystem.current)); 
+        fileNameInputField.OnPointerClick(new PointerEventData(EventSystem.current));
         // BackgroundUI.Instance.Show(transform.gameObject, Close);
         savePanelContainer.gameObject.SetActive(true);
     }
@@ -53,31 +54,30 @@ public class SavePanelUI : MonoBehaviour
 
         if (isFileNameEmpty)
         {
-            ShowErrorPopup(ErrorMessage_FileNameEmpty);
+            ShowPopup(ErrorMessage_FileNameEmpty,ModularPopup.PopupAsset.toastPopupError);
             return;
         }
 
         if (isFileExit)
         {
-            ShowErrorPopup(ErrorMessage_FileNameExit);
+            ShowPopup(ErrorMessage_FileNameExit,ModularPopup.PopupAsset.toastPopupError);
             return;
         }
 
-
-        ShowSuccessPopup(SuccessMessage_ExportFileComplete);        
+        ShowPopup(SuccessMessage_ExportFileComplete,ModularPopup.PopupAsset.toastPopupComplete);
         SaveLoadManager.Save(fileName);
         Close();
     }
 
-    private void ShowSuccessPopup(string description)
+    private void ShowPopup(string description, GameObject popupPrefab)
     {
-        successPopup.GetComponent<ToastUI>().DescriptionText = description;
-        successPopup.gameObject.SetActive(true);
+        var popup = Instantiate(popupPrefab).GetComponent<ModularPopup>();
+        popup.AutoFindCanvasAndSetup();
+        popup.SetParent(transform, savePanelContainer.transform.GetSiblingIndex() + 1);
+        popup.Description = description;
+        popup.AutoDestruct(2f);
+        // successPopup.GetComponent<ToastUI>().DescriptionText = description;
+        // successPopup.gameObject.SetActive(true);
     }
 
-    private void ShowErrorPopup(string description)
-    {
-        failedPopup.GetComponent<ToastUI>().DescriptionText = description;
-        failedPopup.gameObject.SetActive(true);
-    }
 }

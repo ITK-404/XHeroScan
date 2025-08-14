@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4711177542799058081}
   - component: {fileID: 729697516151603113}
   - component: {fileID: 3074947511240229239}
+  - component: {fileID: 1691647074180024241}
   m_Layer: 5
   m_Name: Toast UI Base
   m_TagString: Untagged
@@ -35,10 +36,10 @@ RectTransform:
   - {fileID: 7760152953607951356}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.817, y: 35.807034}
-  m_SizeDelta: {x: 827.21, y: 187.825}
+  m_AnchorMin: {x: 0.03389445, y: 0.804}
+  m_AnchorMax: {x: 0.9716167, y: 0.9052083}
+  m_AnchoredPosition: {x: -1.8170166, y: -252.19293}
+  m_SizeDelta: {x: 475.21002, y: 105.82501}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &729697516151603113
 CanvasRenderer:
@@ -74,6 +75,25 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &1691647074180024241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 344624022806090361}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1919e3fa9515ab4dbdc8c3f83a64822, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  headerText: {fileID: 2936648340007458450}
+  descriptionText: {fileID: 2172217888368880966}
+  yesBtnText: {fileID: 0}
+  noBtnText: {fileID: 0}
+  yesBtn: {fileID: 0}
+  noBtn: {fileID: 0}
+  autoClearWhenClick: 0
 --- !u!1 &2138053742229506925
 GameObject:
   m_ObjectHideFlags: 0
@@ -106,10 +126,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 2562974115442294370}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 7, y: -1}
-  m_SizeDelta: {x: 114.358, y: 153.566}
+  m_AnchorMin: {x: 0.14375274, y: 0.095000006}
+  m_AnchorMax: {x: 0.9488764, y: 0.89431906}
+  m_AnchoredPosition: {x: 0.5, y: 0}
+  m_SizeDelta: {x: 1.3580017, y: 3.5659943}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &118973411598368322
 CanvasRenderer:
@@ -201,7 +221,7 @@ MonoBehaviour:
   m_IgnoreLayout: 0
   m_MinWidth: -1
   m_MinHeight: -1
-  m_PreferredWidth: -1
+  m_PreferredWidth: 206.8
   m_PreferredHeight: -1
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
@@ -631,7 +651,7 @@ MonoBehaviour:
   m_IgnoreLayout: 0
   m_MinWidth: -1
   m_MinHeight: -1
-  m_PreferredWidth: 546.1
+  m_PreferredWidth: 979.3
   m_PreferredHeight: -1
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1

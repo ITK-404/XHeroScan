@@ -21,6 +21,7 @@ public class ModularPopup : MonoBehaviour
     private static PopupAsset popupAsset;
 
     [SerializeField] private TextMeshProUGUI headerText;
+    [SerializeField] private TextMeshProUGUI descriptionText;
     [SerializeField] private TextMeshProUGUI yesBtnText;
     [SerializeField] private TextMeshProUGUI noBtnText;
 
@@ -49,6 +50,13 @@ public class ModularPopup : MonoBehaviour
         set => headerText.text = value;
     }
 
+    public string Description
+    {
+        get => descriptionText.text;
+        set => descriptionText.text = value;
+    }
+
+
     public string YesText
     {
         get => yesBtnText.text;
@@ -63,8 +71,10 @@ public class ModularPopup : MonoBehaviour
 
     private void Awake()
     {
-        yesBtn.onClick.AddListener(OnYesClicked);
-        noBtn.onClick.AddListener(OnNoClicked);
+        if (yesBtn)
+            yesBtn.onClick.AddListener(OnYesClicked);
+        if (noBtn)
+            noBtn.onClick.AddListener(OnNoClicked);
     }
 
     private void OnYesClicked()
@@ -100,7 +110,30 @@ public class ModularPopup : MonoBehaviour
     public void AutoFindCanvasAndSetup()
     {
         var canvas = FindFirstObjectByType<Canvas>(FindObjectsInactive.Exclude);
-        transform.SetParent(canvas.transform,false);
+        transform.SetParent(canvas.transform, false);
         ResetAnchorOffsetAndScale();
+    }
+
+    public void SetParent(Transform parent, int childIndex = 0)
+    {
+        transform.parent = parent;
+        transform.SetSiblingIndex(childIndex);
+    }
+
+    public void AutoDestruct(float delay = 0.5f)
+    {
+        if (delay > 0)
+        {
+            Invoke(nameof(DestroySelf), delay);
+        }
+        else
+        {
+            DestroySelf();
+        }
+    }
+    
+    private void DestroySelf()
+    {
+        Destroy(gameObject);
     }
 }

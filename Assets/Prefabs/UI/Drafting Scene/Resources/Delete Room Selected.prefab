@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2049287888711623409}
   - component: {fileID: -1550783496544347399}
+  - component: {fileID: -8413941234239208715}
   m_Layer: 5
   m_Name: Delete Room Selected
   m_TagString: Untagged
@@ -33,10 +34,10 @@ RectTransform:
   - {fileID: 362289376765270113}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.157, y: 0.3401042}
-  m_AnchorMax: {x: 0.85287225, y: 0.665}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.15433334, y: 0.33600003}
+  m_AnchorMax: {x: 0.8608722, y: 0.66569465}
+  m_AnchoredPosition: {x: -1, y: 2}
+  m_SizeDelta: {x: -4, y: -4}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &-1550783496544347399
 MonoBehaviour:
@@ -51,11 +52,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   headerText: {fileID: 6710238332816868044}
+  descriptionText: {fileID: 0}
   yesBtnText: {fileID: 7092651007833378083}
   noBtnText: {fileID: 6280723521606418720}
   yesBtn: {fileID: 4860334266665771498}
   noBtn: {fileID: 5536081197106756691}
   autoClearWhenClick: 0
+--- !u!114 &-8413941234239208715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1197438629999062631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22279588c42e4c76aef8264161ccc458, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2511115273274582828
 GameObject:
   m_ObjectHideFlags: 0
@@ -431,12 +445,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 37.7
+  m_fontSize: 18
   m_fontSizeBase: 37.7
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_fontSizeMax: 32.1
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
@@ -664,12 +678,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 28.6
+  m_fontSize: 18
   m_fontSizeBase: 28.6
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_fontSizeMax: 28
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 256
@@ -1033,7 +1047,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 76932cc413f0b1040924998d2cc7897b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 737dce3bc09e5864a80994094158c8a5, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
