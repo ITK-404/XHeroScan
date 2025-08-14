@@ -272,109 +272,101 @@ public class HandleCheckpointManger : MonoBehaviour
     /// rồi nối line phụ isManualConnection=true. Stateless (không dùng manualStartGO).
     /// </summary>
     public bool HandleWallLoopPlacement(Vector3 p1, Vector3 p2)
+{
+    if (checkPointManager.selectedCheckpoint != null) return false;
+    if (RoomStorage.rooms.Count == 0)
     {
-        if (checkPointManager.selectedCheckpoint != null) return false;
-        if (RoomStorage.rooms.Count == 0)
-        {
-            Debug.LogWarning("RoomStorage chưa sẵn sàng.");
-            return false;
-        }
-
-        // Xác định room bằng p1 (vẽ trong cùng 1 room)
-        string roomID1 = checkPointManager.FindRoomIDByPoint(p1);
-        string roomID2 = checkPointManager.FindRoomIDByPoint(p2);
-
-        if (string.IsNullOrEmpty(roomID1) || roomID1 != roomID2)
-        {
-            Debug.LogWarning($"Hai điểm không cùng room: room1={roomID1}, room2={roomID2}");
-            return false;
-        }
-
-        if (!checkPointManager.RoomFloorMap.TryGetValue(roomID1, out GameObject parentFloor) || parentFloor == null)
-        {
-            Debug.LogWarning($"RoomFloorMap không có parentFloor cho room {roomID1}");
-            return false;
-        }
-
-        Room room = RoomStorage.GetRoomByID(roomID1);
-        if (room == null)
-        {
-            Debug.LogWarning("Không tìm thấy Room khi tạo line phụ.");
-            return false;
-        }
-
-        // A) Tái dùng firstPoint làm Extra ở p1
-        GameObject aGO = EnsureFirstPointAsExtra(room, parentFloor, p1);
-
-        // B) Tạo Extra ở p2
-        GameObject bGO = Instantiate(checkPointManager.checkpointPrefab, p2, Quaternion.identity);
-        bGO.transform.SetParent(parentFloor.transform);
-        bGO.tag = "CheckpointExtra";
-        if (!checkPointManager.currentCheckpoints.Contains(bGO))
-            checkPointManager.currentCheckpoints.Add(bGO);
-
-        // C) Lưu local-2D cho cả A và B (tránh trùng)
-        Vector2 parentXZ = new(parentFloor.transform.position.x, parentFloor.transform.position.z);
-        TryAddExtraLocal2D(room, new Vector2(p1.x, p1.z) - parentXZ, EDGE_EPS);
-        TryAddExtraLocal2D(room, new Vector2(p2.x, p2.z) - parentXZ, EDGE_EPS);
-        RoomStorage.UpdateOrAddRoom(room);
-
-        // D) Vẽ line phụ
-        checkPointManager.DrawingTool.currentLineType = checkPointManager.currentLineType;
-        checkPointManager.DrawLineAndDistance(p1, p2);
-
-        var newline = new WallLine
-        {
-            start = p1,
-            end = p2,
-            type = checkPointManager.currentLineType,
-            isManualConnection = true
-        };
-
-        room.wallLines.Add(newline);
-        checkPointManager.DrawingTool.wallLines.Add(newline);
-        RoomStorage.UpdateOrAddRoom(room);
-
-        // E) Redraw
-        checkPointManager.RedrawAllRooms();
-
-        return true;
-    }
-
-    private GameObject EnsureFirstPointAsExtra(Room room, GameObject parentFloor, Vector3 worldPos)
-    {
-        GameObject fp = checkPointManager.firstPoint;
-        if (fp == null)
-        {
-            fp = Instantiate(checkPointManager.checkpointPrefab, worldPos, Quaternion.identity);
-        }
-        else
-        {
-            fp.transform.position = worldPos;
-        }
-
-        fp.transform.SetParent(parentFloor.transform);
-        fp.tag = "CheckpointExtra";
-
-        if (!checkPointManager.currentCheckpoints.Contains(fp))
-            checkPointManager.currentCheckpoints.Add(fp);
-
-        return fp;
-    }
-
-    private bool TryAddExtraLocal2D(Room room, Vector2 local2D, float eps)
-    {
-        if (room.extraCheckpoints == null)
-            room.extraCheckpoints = new List<Vector2>();
-
-        bool exists = room.extraCheckpoints.Any(p => Vector2.Distance(p, local2D) < eps);
-        if (!exists)
-        {
-            room.extraCheckpoints.Add(local2D);
-            return true;
-        }
+        Debug.LogWarning("RoomStorage chưa sẵn sàng.");
         return false;
     }
+
+    // Xác định room bằng p1 (vẽ trong cùng 1 room)
+    string roomID1 = checkPointManager.FindRoomIDByPoint(p1);
+    string roomID2 = checkPointManager.FindRoomIDByPoint(p2);
+
+    if (string.IsNullOrEmpty(roomID1) || roomID1 != roomID2)
+    {
+        Debug.LogWarning($"Hai điểm không cùng room: room1={roomID1}, room2={roomID2}");
+        return false;
+    }
+
+    if (!checkPointManager.RoomFloorMap.TryGetValue(roomID1, out GameObject parentFloor) || parentFloor == null)
+    {
+        Debug.LogWarning($"RoomFloorMap không có parentFloor cho room {roomID1}");
+        return false;
+    }
+
+    Room room = RoomStorage.GetRoomByID(roomID1);
+    if (room == null)
+    {
+        Debug.LogWarning("Không tìm thấy Room khi tạo line phụ.");
+        return false;
+    }
+
+    // === Local-2D theo room/floor (để thêm vào room đúng roomID) ===
+    Vector2 parentXZ = new(parentFloor.transform.position.x, parentFloor.transform.position.z);
+    Vector2 aLocal2D = new Vector2(p1.x, p1.z) - parentXZ;
+    Vector2 bLocal2D = new Vector2(p2.x, p2.z) - parentXZ;
+
+    // A) Tái dùng firstPoint làm Extra ở p1 (KHÔNG parent vào floor)
+    GameObject aGO = checkPointManager.firstPoint;
+    if (aGO == null) aGO = Instantiate(checkPointManager.checkpointPrefab, p1, Quaternion.identity);
+    else aGO.transform.position = p1;
+    aGO.transform.SetParent(null);                 // KHÔNG parent
+    aGO.tag = "CheckpointExtra";
+    if (!checkPointManager.currentCheckpoints.Contains(aGO))
+        checkPointManager.currentCheckpoints.Add(aGO);
+
+    // B) Tạo Extra ở p2 (KHÔNG parent vào floor)
+    GameObject bGO = Instantiate(checkPointManager.checkpointPrefab, p2, Quaternion.identity);
+    bGO.transform.SetParent(null);                 // KHÔNG parent
+    bGO.tag = "CheckpointExtra";
+    if (!checkPointManager.currentCheckpoints.Contains(bGO))
+        checkPointManager.currentCheckpoints.Add(bGO);
+        
+    // C) Thêm vào room.extraCheckpoints (tránh trùng bằng EDGE_EPS)
+        float eps2 = EDGE_EPS * EDGE_EPS;
+
+    bool hasA = false;
+    for (int i = 0; i < room.extraCheckpoints.Count; i++)
+    {
+        Vector2 q = room.extraCheckpoints[i];
+        Vector2 d = q - aLocal2D;
+        if (d.sqrMagnitude <= eps2) { hasA = true; break; }
+    }
+    if (!hasA) room.extraCheckpoints.Add(aLocal2D);
+
+    bool hasB = false;
+    for (int i = 0; i < room.extraCheckpoints.Count; i++)
+    {
+        Vector2 q = room.extraCheckpoints[i];
+        Vector2 d = q - bLocal2D;
+        if (d.sqrMagnitude <= eps2) { hasB = true; break; }
+    }
+    if (!hasB) room.extraCheckpoints.Add(bLocal2D);
+
+    RoomStorage.UpdateOrAddRoom(room);
+
+    // D) Vẽ line phụ
+    checkPointManager.DrawingTool.currentLineType = checkPointManager.currentLineType;
+    checkPointManager.DrawLineAndDistance(p1, p2);
+
+    var newline = new WallLine
+    {
+        start = p1,
+        end = p2,
+        type = checkPointManager.currentLineType,
+        isManualConnection = true
+    };
+    room.wallLines.Add(newline);
+    checkPointManager.DrawingTool.wallLines.Add(newline);
+    RoomStorage.UpdateOrAddRoom(room);
+
+    // E) Redraw
+    checkPointManager.RedrawAllRooms();
+
+    return true;
+}
 
     private float DistPointSeg2(Vector2 p, Vector2 a, Vector2 b)
     {
