@@ -56,8 +56,8 @@ public class SizePointManager : MonoBehaviour
     [HideInInspector] public List<Vector3> oldSizePointPos = new List<Vector3>();
 
     //Width
-    private float groundWidth = 0.8f;
-    private float itemWidth = 0.4f;
+    private float groundWidth = 0.05f;
+    private float itemWidth = 0.1f;
     private float offsetDistance = -3.2f;
 
     public LineType currentLineType = LineType.Wall;
@@ -68,6 +68,12 @@ public class SizePointManager : MonoBehaviour
     private float verticalOffset = -1f;
     private float inwardOffset = 1f;
     private Room currentRoom;
+    public Room CurrentRoom => currentRoom;
+
+    public void SetCurrentRoom(Room room)
+    {
+        currentRoom = room;
+    }
 
     public void Start()
     {
@@ -138,18 +144,19 @@ public class SizePointManager : MonoBehaviour
 
             gameManager.guiCanvasManager.infomationItemCanvas.UpdateInfomation(item);
         }
-        //Nếu là "ground" thì có logic bị comment (có thể dùng sau)
+        // Nếu là "ground" thì có logic bị comment (có thể dùng sau)
         else
         {
-            //float c1 = (float)Math.Round(Vector3.Distance(corners[0], corners[1]) / 10, 2);
-            //float c2 = (float)Math.Round(Vector3.Distance(corners[1], corners[2]) / 10, 2);
-            //float c3 = (float)Math.Round(Vector3.Distance(corners[2], corners[3]) / 10, 2);
-            //float c4 = (float)Math.Round(Vector3.Distance(corners[3], corners[4]) / 10, 2);
+            // Tính lại các cạnh
+            float c1 = Vector3.Distance(corners[0], corners[1]) / 10f;
+            float c2 = Vector3.Distance(corners[1], corners[2]) / 10f;
+            float c3 = Vector3.Distance(corners[2], corners[3]) / 10f;
+            float c4 = Vector3.Distance(corners[3], corners[0]) / 10f;
 
-            //item.edgeLengthList[0] = c1;
-            //item.edgeLengthList[1] = c2;
-            //item.edgeLengthList[2] = c3;
-            //item.edgeLengthList[3] = c4;
+            item.edgeLengthList[0] = c1;
+            item.edgeLengthList[1] = c2;
+            item.edgeLengthList[2] = c3;
+            item.edgeLengthList[3] = c4;
 
             //item.width = c1;
             //item.height = c2;
@@ -166,8 +173,56 @@ public class SizePointManager : MonoBehaviour
         UpdateAreaText();
         DrawEdgeLengthText(corners);
         DrawEdgeLines(corners);
+        // AutoCheckAndFitCorners(corners);
         if (item.CompareKindOfItem(kindGroundString)) AddLineColliders();
     }
+    // private void AutoCheckAndFitCorners(Vector3[] corners)
+    // {
+    //     if (corners == null || corners.Length == 0) return;
+
+    //     Camera cam = Camera.main;
+
+    //     // Tính bounds
+    //     Bounds bounds = new Bounds(corners[0], Vector3.zero);
+    //     for (int i = 1; i < corners.Length; i++)
+    //         bounds.Encapsulate(corners[i]);
+
+    //     float boundsWidth = bounds.size.x;
+    //     float boundsHeight = bounds.size.y;
+
+    //     float camHalfHeight = cam.orthographicSize;
+    //     float camHalfWidth = camHalfHeight * cam.aspect;
+
+    //     bool needFit = false;
+
+    //     if (boundsWidth / 2f > camHalfWidth || boundsHeight / 2f > camHalfHeight)
+    //     {
+    //         needFit = true;
+    //     }
+
+    //     // Bỏ qua nếu shape đang quá bé
+    //     float minSizeThreshold = 0.1f; // tuỳ thang đo, bạn chỉnh được
+    //     if (boundsWidth < minSizeThreshold && boundsHeight < minSizeThreshold)
+    //     {
+    //         needFit = false;
+    //     }
+
+    //     if (needFit)
+    //     {
+    //         float requiredHalfHeight = boundsHeight / 2f;
+    //         float requiredHalfWidth = boundsWidth / 2f / cam.aspect;
+    //         float newOrthoSize = Mathf.Max(requiredHalfHeight, requiredHalfWidth) * 1.1f;
+
+    //         newOrthoSize = Mathf.Clamp(newOrthoSize, 5f, 70f);
+    //         cam.orthographicSize = newOrthoSize;
+
+    //         Vector3 camPos = bounds.center;
+    //         camPos.z = cam.transform.position.z;
+    //         cam.transform.position = camPos;
+
+    //         Debug.Log($"[AutoFit] OrthoSize={newOrthoSize} | Bounds W={boundsWidth} H={boundsHeight}");
+    //     }
+    // }
 
     /// <summary>
     /// Hàm UpdateMidPointsFromCorners() có mục đích tự động cập nhật vị trí các điểm giữa (midpoints) dựa trên vị trí các điểm góc (corners) trong danh sách sizePointList, theo cấu trúc hình chữ nhật (hoặc đa giác 4 cạnh mở rộng thành 8 điểm).
@@ -213,6 +268,17 @@ public class SizePointManager : MonoBehaviour
     public void MoveSizePoint(int index, Vector3 newPosition)
     {
         if (index < 0 || index >= sizePointList.Count) return;
+        if (index % 2 == 1)
+        {
+            // Nếu đang kéo midpoint thì dịch 2 corner theo
+            UpdateCornersFromMidpoint(index, newPosition);
+            UpdateMidPointsFromCorners();
+        }
+        else
+        {
+            // Nếu kéo corner thì cập nhật lại midpoints để đồng bộ
+            UpdateMidPointsFromCorners();
+        }
 
         //Cập nhật vị trí mới cho điểm được chọn
         sizePointList[index].transform.position = newPosition;
@@ -255,7 +321,7 @@ public class SizePointManager : MonoBehaviour
             );
             currentRoom.wallLines.Add(wall);
         }
-        
+
         RoomStorage.UpdateOrAddRoom(currentRoom);
 
         Debug.Log($"[UpdateRoom] Sau khi kéo điểm: {count} checkpoint, {count} wallLines.");
@@ -273,50 +339,55 @@ public class SizePointManager : MonoBehaviour
     {
         if (lineRenderer == null) return;
 
-        // Tạo các điểm cho viền hình chữ nhật
-        Vector3[] corners = new Vector3[5]; // 5 điểm vì vòng lặp quay lại điểm đầu tiên
-
-        if (item.CompareKindOfItem(kindGroundString))
+        if (item.edgeLengthList == null || item.edgeLengthList.Count < 4)
         {
-            // Kiểm tra danh sách độ dài cạnh có đủ 4 cạnh không
-            if (item.edgeLengthList == null || item.edgeLengthList.Count < 4)
-            {
-                Debug.LogError($"[DrawOutline] edgeLengthList ko du! Count = {item.edgeLengthList?.Count ?? -1}");
-                return;
-            }
-
-            // Phân nhánh theo loại item
-            float c1 = item.edgeLengthList[0] * 10f; // top
-            float c2 = item.edgeLengthList[1] * 10f; // right
-            float c3 = item.edgeLengthList[2] * 10f; // bottom
-            float c4 = item.edgeLengthList[3] * 10f; // left
-
-            // Đặt góc theo cạnh tương ứng
-            corners[0] = new Vector3(-c4 / 2, c1 / 2, 0);  // Góc trên bên tri
-            corners[1] = new Vector3(c2 / 2, c1 / 2, 0);   // Góc trên bên phải
-            corners[2] = new Vector3(c2 / 2, -c3 / 2, 0);  // Góc dưới bên phải
-            corners[3] = new Vector3(-c4 / 2, -c3 / 2, 0); // Góc dưới bên trái
-            corners[4] = corners[0];  // Quay lại điểm đầu tiên để tạo vòng tròn
-        }
-        else
-        {
-            // Lấy kích thước của item
-            float width = item.width * 10f;
-            float length = item.length * 10f;
-
-            // Góc tính theo chiều dài và rộng
-            corners[0] = new Vector3(-length / 2, width / 2, 0);  // Góc trên bên trái
-            corners[1] = new Vector3(length / 2, width / 2, 0);   // Góc trên bên phải
-            corners[2] = new Vector3(length / 2, -width / 2, 0);  // Góc dưới bên phải
-            corners[3] = new Vector3(-length / 2, -width / 2, 0); // Góc dưới bên trái
-            corners[4] = corners[0];  // Quay lại điểm đầu tiên để tạo vòng tròn
+            Debug.LogError($"[DrawOutline] edgeLengthList không đủ! Count = {item.edgeLengthList?.Count ?? -1}");
+            return;
         }
 
-        // Vẽ hình bằng LineRenderer
+        Vector3[] corners = new Vector3[5];
+
+        // Lấy cạnh
+        float c1 = item.edgeLengthList[0] * 10f; // cạnh 1
+        float c2 = item.edgeLengthList[1] * 10f; // cạnh 2
+        float c3 = item.edgeLengthList[2] * 10f; // cạnh 3
+        float c4 = item.edgeLengthList[3] * 10f; // cạnh 4
+
+        // Điểm 0: Gốc toạ độ, dịch vào giữa để hình nằm cân tâm
+        corners[0] = Vector3.zero;
+
+        // Cạnh 1: đi sang phải
+        corners[1] = corners[0] + new Vector3(c1, 0, 0);
+
+        // Cạnh 2: đi xuống
+        corners[2] = corners[1] + new Vector3(0, -c2, 0);
+
+        // Cạnh 3: đi trái
+        corners[3] = corners[2] + new Vector3(-c3, 0, 0);
+
+        // Cạnh 4: quay về điểm đầu
+        // corners[4] = corners[0];
+        corners[4] = corners[3] + new Vector3(0, c4, 0);
+
+        // Tính tâm để dịch về giữa
+        Vector3 centroid = Vector3.zero;
+        for (int i = 0; i < 4; i++)
+        {
+            centroid += corners[i];
+        }
+        centroid /= 4f;
+
+        for (int i = 0; i < corners.Length; i++)
+        {
+            corners[i] -= centroid;
+        }
+        // Gán lại điểm cuối bằng điểm đầu để khép kín
+        corners[4] = corners[0];
+
+        // Vẽ
         lineRenderer.positionCount = corners.Length;
         lineRenderer.SetPositions(corners);
 
-        //Gọi các hàm bổ trợ để hoàn thiện hiển thị
         CreateBackgroundMesh(corners);
         DrawEdgeLengthText(corners);
         DrawEdgeLines(corners);
@@ -386,7 +457,7 @@ public class SizePointManager : MonoBehaviour
             Vector3 normal = transform.TransformDirection(new Vector3(-edgeDirection.y, edgeDirection.x, 0)).normalized;
 
             // Điều chỉnh khoảng cách text
-            float textOffset = Mathf.Max(0.03f * length, 0.5f);
+            float textOffset = 1f;
             midpoint += normal * textOffset;
             midpoint.z = -1;
 
@@ -397,7 +468,15 @@ public class SizePointManager : MonoBehaviour
             // Cập nhật nội dung text
             TextMesh textMesh = textObject.GetComponent<TextMesh>();
             textMesh.text = (length / 10).ToString("F2");
-            textMesh.fontSize = Mathf.Clamp((int)(length * 3), 5, 10);
+
+            // SCALE = 1
+            textObject.transform.localScale = Vector3.one;
+
+            // Đặt Font Size cố định
+            textMesh.fontSize = 35;
+
+            // Nếu bạn muốn scale tự động thì bỏ clamp hoặc chỉnh công thức
+            // textMesh.fontSize = Mathf.Clamp((int)(length * 3), 5, 10); // BỎ DÒNG NÀY
             textMesh.color = Color.black;
         }
     }
@@ -422,7 +501,7 @@ public class SizePointManager : MonoBehaviour
             extensionLineList.Add(CreateExtensionLine());
         }
 
-        // 🔹 Vẽ tất cả các cạnh của đa giác
+        // Vẽ tất cả các cạnh của đa giác
         for (int i = 0; i < edgeCount; i++)
         {
             Vector3 start = corners[i];
@@ -614,6 +693,15 @@ public class SizePointManager : MonoBehaviour
         {
             currentRoom = new Room();
             RoomStorage.rooms.Add(currentRoom);
+
+            // Ánh xạ itemId → roomId
+            ItemCreated owner = GetComponentInParent<ItemCreated>();
+            if (owner != null)
+            {
+                ItemRoomMapper.ItemIdToRoomId[owner.itemId] = currentRoom.ID;
+                Debug.Log($"[Mapping] itemId = {owner.itemId} ánh xạ RoomID = {currentRoom.ID}");
+            }
+
         }
 
         // Xóa dữ liệu cũ trong phòng

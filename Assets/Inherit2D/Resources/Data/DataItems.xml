@@ -87,7 +87,7 @@
 		<length>0</length>
 		<distance>0</distance>
 	</item> -->
-	<item>
+	<!-- <item>
 		<id>2</id>
 		<name>Tivi</name>
 		<image>tv</image>
@@ -98,8 +98,20 @@
 		<height>1</height>
 		<length>2</length>
 		<distance>2</distance>
-	</item>
-	<item>
+		<edgeLengths>
+			<edgeLength>0.5</edgeLength>
+			<edgeLength>2</edgeLength>
+			<edgeLength>0.5</edgeLength>
+			<edgeLength>2</edgeLength>
+		</edgeLengths>
+		<directionOfEdges>
+			<direction>1, 0, 0</direction>
+			<direction>0, -1, 0</direction>
+			<direction>-1, 0, 0</direction>
+			<direction>0, 1, 0</direction>
+		</directionOfEdges>
+	</item>-->
+	<!-- <item>
 		<id>3</id>
 		<name>Máy lạnh</name>
 		<image>may_lanh</image>
@@ -111,6 +123,12 @@
 		<height>0.3</height>
 		<length>1</length>
 		<distance>5</distance>
+		<edgeLengths>
+			<edgeLength>0.5</edgeLength>
+			<edgeLength>1</edgeLength>
+			<edgeLength>0.5</edgeLength>
+			<edgeLength>1</edgeLength>
+		</edgeLengths>
 		<direction>
 			<good>
 				<chuot>Đông Nam, Đông, Nam, Bắc</chuot>
@@ -141,8 +159,8 @@
 				<heo>Đông Bắc, Tây Nam, Tây, Tây Bắc</heo>
 			</bad>
 		</direction>
-	</item>
-	<item>
+	</item> -->
+	<!--<item>
 		<id>4</id>
 		<name>Ghế</name>
 		<image>ghe</image>
@@ -369,5 +387,5 @@
 		<height>3</height>
 		<length>5</length>
 		<distance>1</distance>
-	</item>
+	</item> -->
 </items>

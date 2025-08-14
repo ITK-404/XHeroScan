@@ -52,6 +52,9 @@ public class ItemCreated : MonoBehaviour
     private bool mouseMove = false;
     private List<RaycastResult> results = new List<RaycastResult>();
 
+    public Item tempItem; // Dữ liệu tạm để chỉnh
+
+
     private void Start()
     {
         gameManager = GameManager.instance;
@@ -226,6 +229,8 @@ public class ItemCreated : MonoBehaviour
                             //Infomation Item
                             gameManager.guiCanvasManager.infomationItemCanvas.gameObject.SetActive(true);
                             gameManager.guiCanvasManager.infomationItemCanvas.UpdateInfomation(it.item);
+                            // Item showItem = it.tempItem != null ? it.tempItem : it.item;
+                            // gameManager.guiCanvasManager.infomationItemCanvas.UpdateInfomation(showItem);
 
                             //Rotation and Move
                             if (gameManager.itemIndex.item.CompareKindOfItem("Thao tác"))
@@ -387,5 +392,21 @@ public class ItemCreated : MonoBehaviour
             gameManager.itemCreatedOldPosition = transform.position;
             gameManager.itemCreatedOldRotation = transform.rotation.eulerAngles;
         }
+    }
+    public void CloneItemForConfig()
+    {
+        tempItem = item.DeepCopy();
+    }
+    public void ApplyConfigChanges()
+    {
+        if (tempItem != null)
+        {
+            item = tempItem.DeepCopy(); // Ghi lại vào bản riêng của itemCreated
+            tempItem = null; // Clear tạm
+        }
+    }
+    public void CancelConfigChanges()
+    {
+        tempItem = null; // Bỏ dữ liệu tạm, ko ảnh hưởng item gốc
     }
 }

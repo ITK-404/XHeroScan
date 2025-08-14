@@ -8,7 +8,8 @@ public class ButtonOk : MonoBehaviour
     public BtnController btnController;      // Gán BtnController từ Inspector
     public GameObject okButton;              // Button OK (GameObject chứa Button)
     private static bool isOkButtonShown = false;    // Đảm bảo chỉ hiện một lần
-    public static bool IsOkButtonShown { get { return isOkButtonShown; } }
+    public static bool IsOkButtonShown { set { isOkButtonShown = value; } get { return isOkButtonShown; } }
+
 
     void Start()
     {
@@ -34,7 +35,6 @@ public class ButtonOk : MonoBehaviour
     {
         isOkButtonShown = true;
         Debug.Log("[ButtonOk] OK Button hien thi do flag=1");
-        TransData.Instance.TransferData();
         SceneManager.LoadScene("FlatExampleScene");
     }
 }

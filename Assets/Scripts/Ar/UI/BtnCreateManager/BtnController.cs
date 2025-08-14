@@ -22,6 +22,10 @@ public class BtnController : MonoBehaviour
     public float AreaValue = 0f; // Diện tích mặt đáy
     public float PerimeterValue = 0f; // Chu vi (tổng chiều dài các cạnh)
     public float CeilingValue = 0f; // Diện tích mặt trần
+    
+    public GameObject compassLabelPrefab; // TextMesh hoặc mũi tên để hiển thị hướng
+
+    public ARAnchorManager anchorManager;
 
     private GameObject previewPoint = null;  // Điểm xem trước
     private GameObject spawnedPoint;
@@ -45,6 +49,7 @@ public class BtnController : MonoBehaviour
     private bool hasPlane = false;
     private float mergeThreshold = 0.1f; // Ngưỡng hợp nhất điểm
     private float closeThreshold = 0.2f; // Ngưỡng khép kín đường
+    public bool IsOverwrite = false;
     private int flag = 0; // Mặc định flag = 0
     public int Flag { get { return flag; } set { flag = value; } }
     private bool measure = true;
@@ -56,12 +61,8 @@ public class BtnController : MonoBehaviour
     private float heightDoor = 0.5f;
     private GameObject firstDoorBasePoint = null;
     private GameObject firstDoorTopPoint = null;
-    private bool measureRoom = false;
     private bool isMeasuringDoorHeight = false;
     private bool isMeasuringWindowHeight = false;
-    
-    public GameObject compassLabelPrefab; // TextMesh hoặc mũi tên để hiển thị hướng
-
 
     void Start()
     {
@@ -70,7 +71,16 @@ public class BtnController : MonoBehaviour
         float savedHeight = PlayerPrefs.GetFloat("HeightValue", 0f);
         this.heightValue = savedHeight;
 
-        if (btnByCam.Instance.IsMeasure)
+        // LOAD ROOM THEO ID NẾU CÓ
+        string selectedID = PlayerPrefs.GetString("SelectedRoomID", "");
+        if (!string.IsNullOrEmpty(selectedID))
+        {
+            heightValue = 0f;
+            IsOverwrite = true;
+        }
+
+        // if (btnByCam.Instance.IsMeasure) /// Cực kì dễ lỗi. ko dùng đến vẫn lỗi như thường nếu NULL!
+        if (btnByCam.Instance != null && btnByCam.Instance.IsMeasure)
         {
             heightValue = 0f;
             Debug.Log("btn da vao day heightValue: " + heightValue);
@@ -89,11 +99,12 @@ public class BtnController : MonoBehaviour
         if (planeManager != null)
             planeManager.planesChanged += OnPlanesChanged;
     }
-
+    
     void Update()
     {
         isDoor = PanelManagerDoorWindow.Instance.IsDoorChanged;
         isWindow = PanelManagerDoorWindow.Instance.IsWindowChanged;
+        // Debug.Log($"[ScanMode] Con song");
 
         if (!hasPlane || !isPointVisible || pointPrefab == null || raycastManager == null)
             return;
@@ -342,6 +353,7 @@ public class BtnController : MonoBehaviour
         // === khi nhan height=00 ===
         else
         {
+            Debug.Log($"[ScanMode] Dang do do cao ");
             // Lấy camera
             Camera cam = Camera.main != null ? Camera.main : Camera.allCameras.Length > 0 ? Camera.allCameras[0] : null;
             if (cam == null) return;
@@ -512,7 +524,7 @@ public class BtnController : MonoBehaviour
                     firstDoorTopPoint = Instantiate(pointPrefab, insertPoint + Vector3.up * heightDoor, Quaternion.identity);
 
                     // Kết nối điểm Pn với Pn'
-                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position);
+                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position,firstDoorBasePoint,firstDoorTopPoint);
                     // return;
                 }
                 else
@@ -522,12 +534,12 @@ public class BtnController : MonoBehaviour
                     GameObject secondDoorTopPoint = Instantiate(pointPrefab, insertPoint + Vector3.up * heightDoor, Quaternion.identity);
 
                     // 1. Kết nối Pn với Pn' của mỗi điểm
-                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position);   // p1 ↔ p1'
-                    lineManager.DrawLineAndDistance(secondDoorBasePoint.transform.position, secondDoorTopPoint.transform.position); // p2 ↔ p2'
+                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position,firstDoorBasePoint,firstDoorTopPoint);   // p1 ↔ p1'
+                    lineManager.DrawLineAndDistance(secondDoorBasePoint.transform.position, secondDoorTopPoint.transform.position,secondDoorBasePoint,secondDoorTopPoint); // p2 ↔ p2'
 
                     // 2. Kết nối base và top: p1 → p2, p1' → p2'
-                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, secondDoorBasePoint.transform.position); // p1 → p2
-                    lineManager.DrawLineAndDistance(firstDoorTopPoint.transform.position, secondDoorTopPoint.transform.position);   // p1' → p2'
+                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, secondDoorBasePoint.transform.position,firstDoorBasePoint,secondDoorBasePoint); // p1 → p2
+                    lineManager.DrawLineAndDistance(firstDoorTopPoint.transform.position, secondDoorTopPoint.transform.position,firstDoorTopPoint,secondDoorTopPoint);   // p1' → p2'
 
                     // Vẽ tường cửa riêng biệt
                     modelView.CreateWall(
@@ -763,7 +775,7 @@ public class BtnController : MonoBehaviour
                     firstDoorTopPoint = Instantiate(pointPrefab, insertPoint + Vector3.up * heightDoor, Quaternion.identity);
 
                     // Kết nối điểm Pn với Pn'
-                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position);
+                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position,firstDoorBasePoint, firstDoorTopPoint);
                     // return;
                 }
                 else
@@ -776,12 +788,12 @@ public class BtnController : MonoBehaviour
                     Vector3 p2 = secondDoorBasePoint.transform.position;
 
                     // 1. Kết nối Pn với Pn' của mỗi điểm
-                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position);   // p1 ↔ p1'
-                    lineManager.DrawLineAndDistance(secondDoorBasePoint.transform.position, secondDoorTopPoint.transform.position); // p2 ↔ p2'
+                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position,firstDoorBasePoint, firstDoorTopPoint);   // p1 ↔ p1'
+                    lineManager.DrawLineAndDistance(secondDoorBasePoint.transform.position, secondDoorTopPoint.transform.position,secondDoorBasePoint, secondDoorTopPoint); // p2 ↔ p2'
 
                     // 2. Kết nối base và top: p1 → p2, p1' → p2'
-                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, secondDoorBasePoint.transform.position); // p1 → p2
-                    lineManager.DrawLineAndDistance(firstDoorTopPoint.transform.position, secondDoorTopPoint.transform.position);   // p1' → p2'
+                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, secondDoorBasePoint.transform.position,firstDoorBasePoint, secondDoorBasePoint); // p1 → p2
+                    lineManager.DrawLineAndDistance(firstDoorTopPoint.transform.position, secondDoorTopPoint.transform.position,firstDoorTopPoint, secondDoorTopPoint);   // p1' → p2'
 
                     // Vẽ tường cửa riêng biệt
                     modelView.CreateWall(
@@ -836,31 +848,31 @@ public class BtnController : MonoBehaviour
                     Debug.Log("insertIndex pts.Count = " + pts.Count);
                     Debug.Log("insertIndex Door = " + insertIndex);
 
-                    if (insertIndex != -1)
-                    {
-                        if (insertIndex == pts.Count - 1)
-                        {
-                            // Chèn sau điểm cuối và đầu vòng (cuối danh sách → đầu)
-                            pts.Insert(0, doorEnd);
-                            hts.Insert(0, heightDoor);
-                            pts.Insert(0, doorStart);
-                            hts.Insert(0, heightDoor);
-                        }
-                        else
-                        {
-                            // Chèn giữa đoạn bình thường
-                            pts.Insert(insertIndex + 1, doorStart);
-                            hts.Insert(insertIndex + 1, heightDoor);
-                            pts.Insert(insertIndex + 2, doorEnd);
-                            hts.Insert(insertIndex + 2, heightDoor);
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogWarning("Không tìm thấy đoạn để chèn cửa. Thêm vào cuối.");
-                        pts.Add(doorStart); hts.Add(heightDoor);
-                        pts.Add(doorEnd); hts.Add(heightDoor);
-                    }
+                    // if (insertIndex != -1)
+                    // {
+                    //     if (insertIndex == pts.Count - 1)
+                    //     {
+                    //         // Chèn sau điểm cuối và đầu vòng (cuối danh sách → đầu)
+                    //         pts.Insert(0, doorEnd);
+                    //         hts.Insert(0, heightDoor);
+                    //         pts.Insert(0, doorStart);
+                    //         hts.Insert(0, heightDoor);
+                    //     }
+                    //     else
+                    //     {
+                    //         // Chèn giữa đoạn bình thường
+                    //         pts.Insert(insertIndex + 1, doorStart);
+                    //         hts.Insert(insertIndex + 1, heightDoor);
+                    //         pts.Insert(insertIndex + 2, doorEnd);
+                    //         hts.Insert(insertIndex + 2, heightDoor);
+                    //     }
+                    // }
+                    // else
+                    // {
+                    //     Debug.LogWarning("Không tìm thấy đoạn để chèn cửa. Thêm vào cuối.");
+                    //     pts.Add(doorStart); hts.Add(heightDoor);
+                    //     pts.Add(doorEnd); hts.Add(heightDoor);
+                    // }
 
                     // === Cập nhật lại wallLines: chia đoạn ban đầu thành 3 ===
                     WallLine lineToRemove = targetRoom.wallLines.FirstOrDefault(
@@ -914,10 +926,8 @@ public class BtnController : MonoBehaviour
 
         if (heightValue == 0)
         {
-            Debug.Log("1 btn co vao day ko? heightValue = 0");
             if (measure)
             {
-                Debug.Log("2 btn co vao day ko? measure = false");
                 measure = false;
 
                 // Tạo base point và lưu lại tạm
@@ -937,7 +947,6 @@ public class BtnController : MonoBehaviour
             else
             {
                 // Lần nhấn thứ hai - Kết thúc đo chiều cao
-                Debug.Log("Lần nhấn 2 - Lưu chiều cao");
 
                 if (previewPoint != null)
                 {
@@ -976,41 +985,74 @@ public class BtnController : MonoBehaviour
             return;
         }
 
-        GameObject newBasePoint = GetOrCreatePoint(currentBasePoints, hitPose.position);
-        GameObject newHeightPoint = referenceHeightPoint != null
-            ? GetOrCreatePoint(currentHeightPoints, new Vector3(hitPose.position.x, referenceHeightPoint.transform.position.y, hitPose.position.z))
-            : GetOrCreatePoint(currentHeightPoints, hitPose.position + new Vector3(0, heightValue, 0));
+        // Pose hitPose = hits[0].pose;
+        ARPlane hitPlane = planeManager.GetPlane(hits[0].trackableId);
+        ARAnchor anchor = anchorManager.AttachAnchor(hitPlane, hitPose);
 
-        if (referenceHeightPoint == null)
-            referenceHeightPoint = newHeightPoint;
+        if (anchor == null)
+        {
+            Debug.LogWarning("Khong tao duoc Anchor!");
+            return;
+        }
 
-        currentBasePoints.Add(newBasePoint);
-        currentHeightPoints.Add(newHeightPoint);
+        GameObject newBasePoint = Instantiate(pointPrefab, anchor.transform);
+    newBasePoint.transform.localPosition = Vector3.zero; // Snap to anchor
 
-        int count = currentBasePoints.Count;
+    Vector3 localOffset = referenceHeightPoint != null
+    ? new Vector3(0, referenceHeightPoint.transform.position.y - anchor.transform.position.y, 0)
+    : new Vector3(0, heightValue, 0);
 
-        // Tự động nối Pn với Pn-1
+    // Tạo newHeightPoint dưới cùng anchor
+    GameObject newHeightPoint = Instantiate(pointPrefab, anchor.transform);
+    newHeightPoint.transform.localPosition = localOffset;
+
+    currentBasePoints.Add(newBasePoint);
+    currentHeightPoints.Add(newHeightPoint);
+
+    if (referenceHeightPoint == null)
+        referenceHeightPoint = newHeightPoint;
+
+    int count = currentBasePoints.Count;
+
         if (count > 1)
         {
-            lineManager.DrawLineAndDistance(currentBasePoints[count - 2].transform.position, newBasePoint.transform.position);
-            lineManager.DrawLineAndDistance(currentHeightPoints[count - 2].transform.position, newHeightPoint.transform.position);
-
-            modelView.CreateWall(currentBasePoints[count - 2].transform.position, newBasePoint.transform.position, currentHeightPoints[count - 2].transform.position, newHeightPoint.transform.position);
+            lineManager.DrawLineAndDistance(
+            currentBasePoints[count - 2].transform.position,
+            newBasePoint.transform.position,
+            currentBasePoints[count - 2],
+            newBasePoint
+            );
+            lineManager.DrawLineAndDistance(
+            currentHeightPoints[count - 2].transform.position,
+            newHeightPoint.transform.position,
+            currentHeightPoints[count - 2],
+            newHeightPoint
+            );
+            modelView.CreateWall(
+                currentBasePoints[count - 2].transform.position,
+                newBasePoint.transform.position,
+                currentHeightPoints[count - 2].transform.position,
+                newHeightPoint.transform.position
+            );
         }
 
         // Kiểm tra nếu Pn gần P1, tự động khép kín đường
         if (count > 2 && Vector3.Distance(newBasePoint.transform.position, currentBasePoints[0].transform.position) < closeThreshold)
         {
-            lineManager.DrawLineAndDistance(newBasePoint.transform.position, currentBasePoints[0].transform.position);
-            lineManager.DrawLineAndDistance(newHeightPoint.transform.position, currentHeightPoints[0].transform.position);
+            // Snap Pn về đúng P1
+            newBasePoint.transform.position = currentBasePoints[0].transform.position;
+            newHeightPoint.transform.position = currentHeightPoints[0].transform.position;
+
+            // Vẽ đoạn nối chốt vòng
+            lineManager.DrawLineAndDistance(newBasePoint.transform.position, currentBasePoints[0].transform.position, newBasePoint, currentBasePoints[0]);
+            lineManager.DrawLineAndDistance(newHeightPoint.transform.position, currentHeightPoints[0].transform.position, newHeightPoint, currentHeightPoints[0]);
 
             flag = 1; // Đánh dấu đã khép kín đường
+            PanelManagerDoorWindow.Instance.IsClicked = true;
 
             // Tính diện tích giữa các mặt đáy và mặt trên
-            float baseArea = AreaCalculator.CalculateArea(GetBasePoints());
-            float heightArea = AreaCalculator.CalculateArea(GetHeightPoints());
-            Debug.Log("Dien tich base = " + baseArea); // Diện tích đáy
-            Debug.Log("Dien tich height = " + heightArea); // Diện tích mặt trên
+            float baseArea = AreaCalculator.CalculateArea(GetBasePoints());// Diện tích đáy
+            float heightArea = AreaCalculator.CalculateArea(GetHeightPoints());// Diện tích mặt trên
             AreaValue = baseArea;
             CeilingValue = heightArea;
             // PerimeterValue = AreaCalculator.CalculateArea(currentBasePoints); // Tính chu vi (tổng chiều dài các cạnh)
@@ -1062,7 +1104,12 @@ public class BtnController : MonoBehaviour
                 segmentWallLines.Add(wl);
             }
             // Lưu chính xác các WallLine này vào Room hiện tại
+            string selectedID = PlayerPrefs.GetString("SelectedRoomID", "");
             Room room = new Room();
+            if (!string.IsNullOrEmpty(selectedID))
+            {
+                room.SetID(selectedID); // Gán lại ID để overwrite
+            }
             room.wallLines.AddRange(segmentWallLines);
             Debug.Log("Done 1: " + segmentWallLines.Count);
 
@@ -1081,7 +1128,8 @@ public class BtnController : MonoBehaviour
             room.heights.AddRange(heightList);
             Debug.Log("Done 3");
 
-            RoomStorage.rooms.Add(room);
+            // RoomStorage.rooms.Add(room);
+            RoomStorage.UpdateOrAddRoom(room);
 
             // Tính diện tích mặt đứng **phải làm ở đây**, trước khi clear
             for (int i = 0; i < count; i++)
@@ -1114,7 +1162,7 @@ public class BtnController : MonoBehaviour
         }
 
         // Nối Pn với Pn' (điểm chiều cao)
-        lineManager.DrawLineAndDistance(newBasePoint.transform.position, newHeightPoint.transform.position);
+        lineManager.DrawLineAndDistance(newBasePoint.transform.position, newHeightPoint.transform.position,newBasePoint,newHeightPoint);
 
         RoomModelBuilder roomBuilder = FindObjectOfType<RoomModelBuilder>();
         if (roomBuilder != null)
@@ -1122,10 +1170,10 @@ public class BtnController : MonoBehaviour
             List<Vector3> basePositions = GetBasePoints();
             List<Vector3> heightPositions = GetHeightPoints();
 
-            roomBuilder.SetRoomData(basePositions, heightPositions); // Truyền dữ liệu vào RoomModelBuilder
-            roomBuilder.BuildWalls(); // Gọi vẽ vật liệu
+            roomBuilder.SetAnchorParent(anchor.transform); // Gắn anchor làm cha
+            roomBuilder.SetRoomData(basePositions, heightPositions);
+            roomBuilder.BuildWalls(); // Vẽ mesh và bám vào anchor
         }
-
     }
 
     GameObject GetOrCreatePoint(List<GameObject> points, Vector3 position)
@@ -1211,10 +1259,6 @@ public class BtnController : MonoBehaviour
                 return i;
             }
         }
-
-        // Debug để phát hiện vấn đề
-        Debug.LogWarning($"Không tìm thấy đoạn tường. Wall start: {wallStart}, Wall end: {wallEnd}");
-        Debug.LogWarning($"Đang tìm trong {checkpoints.Count} điểm checkpoint");
 
         // In ra tất cả các đoạn để debug
         for (int i = 0; i < checkpoints.Count; i++)

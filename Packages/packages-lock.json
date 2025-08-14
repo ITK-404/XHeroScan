@@ -37,6 +37,13 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.device-simulator.devices": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.unity.editorcoroutines": {
       "version": "1.0.0",
       "depth": 1,
@@ -61,7 +68,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.22",
+      "version": "2.0.23",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -93,7 +100,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.mobile.android-logcat": {
-      "version": "1.4.4",
+      "version": "1.4.5",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
@@ -164,6 +171,13 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
+    "com.unity.settings-manager": {
+      "version": "2.0.1",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.unity.shadergraph": {
       "version": "17.0.4",
       "depth": 1,
@@ -172,6 +186,16 @@
         "com.unity.render-pipelines.core": "17.0.4",
         "com.unity.searcher": "4.9.3"
       }
+    },
+    "com.unity.splines": {
+      "version": "2.7.2",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.mathematics": "1.2.1",
+        "com.unity.settings-manager": "1.0.3"
+      },
+      "url": "https://packages.unity.com"
     },
     "com.unity.test-framework": {
       "version": "1.4.6",
@@ -239,8 +263,8 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.arfoundation": {
-      "version": "6.0.5",
-      "depth": 0,
+      "version": "6.0.6",
+      "depth": 1,
       "source": "registry",
       "dependencies": {
         "com.unity.ugui": "2.0.0",
@@ -257,23 +281,14 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.arkit": {
-      "version": "6.0.5",
+      "version": "6.0.6",
       "depth": 0,
       "source": "registry",
       "dependencies": {
         "com.unity.xr.core-utils": "2.2.2",
         "com.unity.xr.management": "4.4.0",
-        "com.unity.xr.arfoundation": "6.0.5",
+        "com.unity.xr.arfoundation": "6.0.6",
         "com.unity.editorcoroutines": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.xr.arkit-face-tracking": {
-      "version": "5.0.2",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.xr.arkit": "5.0.2"
       },
       "url": "https://packages.unity.com"
     },
