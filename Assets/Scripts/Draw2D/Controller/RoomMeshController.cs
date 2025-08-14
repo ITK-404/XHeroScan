@@ -162,7 +162,7 @@ public class RoomMeshController : MonoBehaviour
                         }
                     }
 
-                    checkPointManager.DrawingTool.ClearAllLines();
+                    checkPointManager.ClearAllLines();
                     checkPointManager.RedrawAllRooms();
                 }
             }

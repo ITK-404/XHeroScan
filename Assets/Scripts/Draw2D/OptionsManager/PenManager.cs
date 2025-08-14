@@ -62,7 +62,7 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
 
     void LateUpdate()
     {
-        if (ConnectManager.isConnectActive) return; // đang nối line thì bỏ qua
+        if (ConnectManager.isConnectActive) return;
 
         if (!isPenActive)
         {
@@ -72,29 +72,31 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
         else
         {
             checkpointManager.enabled = false;
-
-            // Khóa pan/zoom khi đang kéo room
             HandleZoomAndPan(!isRoomFloorBeingDragged);
 
             if (Input.GetMouseButtonDown(0))
             {
-                // Ưu tiên: click trúng floor -> kéo ROOM
-                if (TryHitRoomFloor(out _dragRoomID))
+                // 1) Thử chọn checkpoint TRƯỚC
+                checkpointManager.SelectCheckpoint();
+
+                if (checkpointManager.selectedCheckpoint != null)
                 {
+                    // chuẩn bị kéo điểm
+                    _dragRoom = false;
+                    _dragRoomID = null;
+                    isRoomFloorBeingDragged = false;
+                    _lastWorld = GetWorldOnXZ(Input.mousePosition);
+                }
+                else if (TryHitRoomFloor(out _dragRoomID))
+                {
+                    // 2) Không trúng điểm -> mới thử kéo room
                     _dragRoom = true;
                     isRoomFloorBeingDragged = true;
 
-                    // tránh lẫn chế độ kéo điểm
                     checkpointManager.DeselectCheckpoint();
                     checkpointManager.selectedCheckpoint = null;
                     checkpointManager.isMovingCheckpoint = false;
 
-                    _lastWorld = GetWorldOnXZ(Input.mousePosition);
-                }
-                else
-                {
-                    // Không trúng floor -> kéo checkpoint như cũ
-                    checkpointManager.SelectCheckpoint();
                     _lastWorld = GetWorldOnXZ(Input.mousePosition);
                 }
             }
@@ -106,24 +108,19 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
 
                 if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
                 {
-                    // Kéo phòng: chỉ clamp/magnet (khựng 1 nhịp), không snap đối tác lúc đang kéo
                     movePointManager.MoveRoomSnap(_dragRoomID, delta);
                 }
                 else if (checkpointManager.selectedCheckpoint != null)
                 {
-                    // Kéo 1 điểm: giữ logic snap-point hiện có
                     checkpointManager.isMovingCheckpoint = true;
-                    movePointManager.MoveSelectedCheckpoint();
+                    movePointManager.MoveSelectedCheckpoint(); // hoặc checkpointManager.MoveSelectedCheckpoint()
                     checkpointManager.isDragging = true;
                 }
             }
             else if (Input.GetMouseButtonUp(0))
             {
-                // Thả chuột: nếu đang kéo room thì mới snap & weld
                 if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
-                {
                     movePointManager.CommitRoomMagnet(_dragRoomID);
-                }
 
                 _dragRoom = false;
                 _dragRoomID = null;
@@ -135,7 +132,6 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
             }
         }
 
-        // Giữ camera trong bound
         mainCamera.transform.position =
             GPUInstancedGrid.Instance.GetCameraBoundsPosition(mainCamera.transform.position);
     }

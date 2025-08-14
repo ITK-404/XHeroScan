@@ -17,7 +17,6 @@ public class DrawingTool : MonoBehaviour
 
     [Header("Materials")]
     public Material dashedMaterial;
-
     public Material solidMaterial;
     public Material doorMaterial;
     public Material windowMaterial;
@@ -74,9 +73,7 @@ public class DrawingTool : MonoBehaviour
         Material matInstance;
         if (currentLineType == LineType.Door || currentLineType == LineType.Window)
         {
-            matInstance =
-                new Material(
-                    GetMaterialForType(currentLineType)); // dashedMaterial phải là Unlit và có WrapMode = Repeat
+            matInstance = new Material(GetMaterialForType(currentLineType)); // dashedMaterial phải là Unlit và có WrapMode = Repeat
         }
         else
         {
@@ -249,7 +246,7 @@ public class DrawingTool : MonoBehaviour
     }
 
 
-    public LineRenderer GetOrCreateLine()
+    private LineRenderer GetOrCreateLine()
     {
         foreach (var line in linePool)
         {
@@ -265,8 +262,8 @@ public class DrawingTool : MonoBehaviour
         linePool.Add(newLine);
         return newLine;
     }
-
-    public TextMeshPro GetOrCreateText()
+    
+    private TextMeshPro GetOrCreateText()
     {
         foreach (var text in textPool)
         {
@@ -281,7 +278,6 @@ public class DrawingTool : MonoBehaviour
                     meshRenderer.enabled = true;
                     meshRenderer.sortingOrder = 50; // Đặt giá trị cao hơn để không bị AR che khuất
                 }
-
                 return text;
             }
         }
@@ -369,5 +365,45 @@ public class DrawingTool : MonoBehaviour
                 DrawLineAndDistance(wall.start, wall.end);
             }
         }
+    }
+
+    public void DrawLineAndDistance(WallLine wl)
+    {
+        LineRenderer lr = GetOrCreateLine();
+        lr.SetPosition(0, wl.start);
+        lr.SetPosition(1, wl.end);
+        lr.textureMode = LineTextureMode.Tile;
+        lr.alignment = LineAlignment.View;
+        lr.numCapVertices = 0;
+        lr.widthMultiplier = 0.04f;
+        lr.positionCount = 2;
+
+        float len = Vector3.Distance(wl.start, wl.end);
+
+        // Material theo type
+        Material matInstance = new Material(GetMaterialForType(wl.type));
+        if (matInstance.HasProperty("_MainTex"))
+            matInstance.mainTextureScale = new Vector2(len * 2f, 1f);
+
+        matInstance.renderQueue = 3100;
+        lr.material = matInstance;
+        lr.sortingOrder = (wl.type == LineType.Door || wl.type == LineType.Window) ? 20 : 10;
+
+        if (!lines.Contains(lr)) lines.Add(lr);
+
+        // Hiển thị text
+        TextMeshPro textMesh = GetOrCreateText();
+        textMesh.text = $"{len:F2}";
+
+        Vector3 dir = (wl.end - wl.start).normalized;
+        Vector3 perp = Vector3.Cross(dir, Vector3.up).normalized;
+        Vector3 aux1 = wl.start + perp * auxiliaryLineLength / 2;
+        Vector3 aux2 = wl.end + perp * auxiliaryLineLength / 2;
+        Vector3 textPos = (aux1 + aux2) / 2;
+        float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
+
+        textMesh.transform.rotation = Quaternion.Euler(90, 0, angle);
+        textMesh.transform.position = textPos + textMesh.transform.up * GetTextOffset(wl.type);
+        textMesh.color = GetTextColor(wl.type);
     }
 }

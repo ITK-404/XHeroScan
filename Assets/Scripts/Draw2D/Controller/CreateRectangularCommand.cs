@@ -30,8 +30,8 @@ public class CreateRectangularCommand : IUndoRedoCommand
         roomFloorMap.Remove(roomID);
         
         checkPointManager.RedrawAllRooms();
-        checkPointManager.DrawingTool.DrawAllLinesFromRoomStorage();
-        // checkPointManager.DrawingTool.ClearAllLines();
+        checkPointManager.DrawAllLinesFromRoomStorage();
+        // checkPointManager.ClearAllLines();
         
     }
 

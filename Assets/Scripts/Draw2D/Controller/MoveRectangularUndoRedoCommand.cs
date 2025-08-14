@@ -33,7 +33,7 @@ public class MoveRectangularUndoRedoCommand : IUndoRedoCommand
         movingObject.transform.position = position;
 
         RoomStorage.UpdateOrAddRoom(room);
-        checkPointManager.DrawingTool.ClearAllLines();
+        checkPointManager.ClearAllLines();
         checkPointManager.RedrawAllRooms();
 
         UpdateCheckPoint(RoomStorage.GetRoomByID(room.ID));

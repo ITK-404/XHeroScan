@@ -2244,7 +2244,7 @@ PrefabInstance:
     - target: {fileID: 992107465200868559, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 1162.3734
+      value: 1162.3738
       objectReference: {fileID: 0}
     - target: {fileID: 1000340046188535589, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
@@ -7523,6 +7523,7 @@ GameObject:
   - component: {fileID: 667801201}
   - component: {fileID: 667801202}
   - component: {fileID: 667801203}
+  - component: {fileID: 667801204}
   m_Layer: 0
   m_Name: DrawingManager
   m_TagString: Untagged
@@ -7640,6 +7641,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 43c33f216b3608045a33765f9c8f26bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &667801204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 667801194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0c499393077c4e4b938b2bd11853f20, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &713410881

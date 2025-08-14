@@ -142,7 +142,7 @@ public class ClearAllRoomsButton : MonoBehaviour
         // 5. Vẽ lại
         if (checkpointManager != null)
         {
-            checkpointManager.DrawingTool.ClearAllLines();
+            checkpointManager.ClearAllLines();
             checkpointManager.RedrawAllRooms();
         }
 
@@ -195,7 +195,7 @@ public class ClearAllRoomsButton : MonoBehaviour
             checkpointManager.DeleteCurrentDrawingData();
 
             // Clear line trong DrawingTool
-            checkpointManager.DrawingTool.ClearAllLines();
+            checkpointManager.ClearAllLines();
         }
 
         Debug.Log("Đã xóa toàn bộ Room, checkpoint, mesh, line!");
