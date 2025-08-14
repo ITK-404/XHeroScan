@@ -13,8 +13,8 @@ public class ClearAllRoomsButton : MonoBehaviour
     [SerializeField] private PenManager penManager;
     [SerializeField] private DrawingTool drawingTool;
 
-    private const string CLEAR_ALL_WARNING = "Bạn có chắc muốn xóa TẤT CẢ các Room?\nDữ liệu sẽ mất vĩnh viễn!";
-    private const string CLEAR_ONE_WARNING = "Xóa phòng \"{0}\"?\nDữ liệu phòng này sẽ mất vĩnh viễn!";
+    private const string CLEAR_ALL_WARNING = "Bạn có chắc chắn muốn xóa tất cả khung đã chọn?";
+    private const string CLEAR_ONE_WARNING = "Bạn có chắc chắn muốn xóa khung đã chọn?";
 
 
     void Start()
@@ -42,7 +42,7 @@ public class ClearAllRoomsButton : MonoBehaviour
             var room = RoomStorage.GetRoomByID(currentRoomID);
             string displayName = !string.IsNullOrEmpty(room?.roomName) ? room.roomName : currentRoomID;
 
-            var popupOne = Instantiate(ModularPopup.Prefab);
+            var popupOne = Instantiate(ModularPopup.PopupAsset.modularPopupWarningDelete).GetComponent<ModularPopup>();
             popupOne.AutoFindCanvasAndSetup();
             popupOne.Header = string.Format(CLEAR_ONE_WARNING, displayName);
             popupOne.ClickYesEvent = () =>
@@ -61,7 +61,7 @@ public class ClearAllRoomsButton : MonoBehaviour
         }
 
         // Không có phòng được chọn -> hỏi xác nhận xóa tất cả
-        var popup = Instantiate(ModularPopup.Prefab);
+        var popup = Instantiate(ModularPopup.PopupAsset.modularPopupWarningDelete).GetComponent<ModularPopup>();
         popup.AutoFindCanvasAndSetup();
         popup.Header = CLEAR_ALL_WARNING;
         popup.ClickYesEvent = () =>

@@ -119,7 +119,7 @@ public class InputCreateRectangularRoom : MonoBehaviour
     private void ShowInformationToast(string descriptionText)
     {
         failedPopup.gameObject.SetActive(true);
-        failedPopup.DescriptionText = HeightErrorLog;
+        failedPopup.DescriptionText = descriptionText;
     }
     public void CreateRectangleRoom(float width, float height)
     {
