@@ -50,10 +50,17 @@ public partial class FurnitureItem : MonoBehaviour
     [Header("Bounds")]
     [SerializeField] private Bounds bounds;
 
+    private float currentRotation
+    {
+        get => data.rotation;
+        set => data.rotation = value;
+    }
+
     private FurnitureVisuals furnitureVisuals;
     
     private FurniturePoint[] pointsArray;
     private Vector3 startPos;
+    private DrawingTool drawingTool;
 
     public float width
     {
@@ -67,9 +74,7 @@ public partial class FurnitureItem : MonoBehaviour
         set => data.Height = value;
     }
 
-    [SerializeField] private float currentRotation;
 
-    private DrawingTool drawingTool;
 
     private void Awake()
     {
@@ -247,7 +252,7 @@ public partial class FurnitureItem : MonoBehaviour
             dragLocalUnrot.z = anchorLocalUnrot.z;
 
         // --- Clamp trong không gian unrotated (giữ nguyên logic theo checkpoint type) ---
-        var type = dragPoint.checkpointType;
+        CheckpointType type = dragPoint.checkpointType;
 
         dragLocalUnrot = furnitureVisuals.ClampPointToBounds(
             dragLocalUnrot, type);
@@ -369,14 +374,26 @@ public partial class FurnitureItem : MonoBehaviour
     {
         checkPointParent.gameObject.SetActive(true);
     }
+
+    public Vector3 GetWorldPosition()
+    {
+        return spriteRender.transform.position;
+    }
+
+    public void SetWorldPosition(Vector3 worldPosition)
+    {
+        spriteRender.transform.position = worldPosition;
+    }
 }
 
 [Serializable]
 public class FurnitureData
 {
-    public string ItemID = "Item";
+    public string RoomID = string.Empty;
     public float Width = 1;
     public float Height = 1;
     public float ObjectHeight = 0.5f;
+    public Vector3 worldPosition = Vector3.zero;
+    public float rotation = 0f; // rotation in degrees around Y axis
 }
 

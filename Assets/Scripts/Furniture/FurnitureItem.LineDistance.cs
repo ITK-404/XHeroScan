@@ -35,7 +35,7 @@ public partial class FurnitureItem
             lineRenderer.SetPosition(0, startPosition);
             lineRenderer.SetPosition(1, endPosition);
             
-            Debug.Log($"Start Position {startPosition} End Position {endPosition}");
+            // Debug.Log($"Start Position {startPosition} End Position {endPosition}");
         }
 
         public void UpdateWhenCameraZoom()
@@ -82,8 +82,8 @@ public partial class FurnitureItem
         public void Recalculator(Transform point, CheckpointType type, Bounds bounds, Vector3 offset)
         {
             Vector3 newPosition = point.transform.localPosition;
-            float xExtend = Mathf.Max(bounds.extents.x, FurnitureItem.LIMIT_SIZE);
-            float yExtend = Mathf.Max(bounds.extents.z, FurnitureItem.LIMIT_SIZE);
+            float xExtend = Mathf.Max(bounds.extents.x, furnitureItem.minSizeX);
+            float yExtend = Mathf.Max(bounds.extents.z, furnitureItem.minSizeZ);
 
             if (type == CheckpointType.Left || type == CheckpointType.TopLeft || type == CheckpointType.BottomLeft)
             {
@@ -119,6 +119,11 @@ public partial class FurnitureItem
             // dragLocalUnrot là vị trí hiện tại của điểm kéo, type là loại điểm
             // kéo (Left, Right, Top, Bottom, v.v.)
             // Left
+            float minX = -furnitureItem.minSizeX;
+            float maxX = furnitureItem.minSizeX;
+            float minZ = -furnitureItem.minSizeZ;
+            float maxZ = furnitureItem.minSizeZ;
+            
             if (type == CheckpointType.Left || type == CheckpointType.TopLeft || type == CheckpointType.BottomLeft)
             {
                 if (dragLocalUnrot.x > -LIMIT_SIZE) dragLocalUnrot.x = -LIMIT_SIZE;

@@ -70,6 +70,19 @@ public class FurnitureManager : MonoBehaviour
                 SelectFurniture(null);
             }
         }
+
+        if (currentFurniture && Input.GetKeyDown(KeyCode.A))
+        {
+            var roomID = CheckpointManager.Instance.FindRoomIDByPoint(currentFurniture.GetWorldPosition());
+            if (string.IsNullOrEmpty(roomID))
+            {
+                Debug.LogWarning("No room found for the current furniture position.");
+                currentFurniture.data.RoomID = null;
+                return;
+            }
+            Debug.Log("Is in room: " + roomID);
+            currentFurniture.data.RoomID = roomID;
+        }
     }
 
     public void ClearAllFurnitures()
