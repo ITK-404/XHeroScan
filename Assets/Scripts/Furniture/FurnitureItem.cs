@@ -401,10 +401,12 @@ public partial class FurnitureItem : MonoBehaviour
 
         // Cách 1 — trực tiếp với Atan2: trả về angle (deg) với 0 = +Z (forward)
         float angleDeg = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-
+        Debug.Log("Angle in degrees: " + angleDeg);
         // chuẩn hoá góc vào [0,360)
         angleDeg = (angleDeg % 360f + 360f) % 360f;
 
+        angleDeg = FurnitureManager.Instance.CheckSnapRotation(angleDeg);
+    
         currentRotation = (angleDeg + 180f) % 360f;
 
         spriteRender.transform.localRotation = Quaternion.Euler(90f, currentRotation, 0f);

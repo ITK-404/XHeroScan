@@ -1,8 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections;
-using UnityEngine.EventSystems;
 
 public class InputCreateRectangularRoom : MonoBehaviour
 {
@@ -45,32 +43,8 @@ public class InputCreateRectangularRoom : MonoBehaviour
         // Tự động focus vào chiều dài sau 1 frame
     }
 
-    public void FocusOnInputField()
-    {
-        Debug.Log("Da goi method focus khi bật lên");
-        if (string.IsNullOrWhiteSpace(_lengthInputField.text))
-        {
-            StartCoroutine(FocusLengthInputNextFrame(_lengthInputField));
-            return;
-        }
-        if (string.IsNullOrWhiteSpace(_widthInputField.text))
-        {
-            StartCoroutine(FocusLengthInputNextFrame(_widthInputField));
-            return;
-        }
-    }
 
-    private IEnumerator FocusLengthInputNextFrame(TMP_InputField inputField)
-    {
-        yield return null; // Đợi 1 frame
-
-        if (inputField != null)
-        {
-            // Set selected game object để Unity UI focus đúng
-            EventSystem.current.SetSelectedGameObject(inputField.gameObject);
-            inputField.OnPointerClick(new PointerEventData(EventSystem.current)); // kích hoạt caret
-        }
-    }
+  
 
     private const string WidthErrorLog = "Chiều rộng cạnh không hợp lệ! (>0)";
     private const string HeightErrorLog = "Chiều dài cạnh không hợp lệ! (>0)";
@@ -118,9 +92,13 @@ public class InputCreateRectangularRoom : MonoBehaviour
 
     private void ShowInformationToast(string descriptionText)
     {
-        failedPopup.gameObject.SetActive(true);
-        failedPopup.DescriptionText = descriptionText;
+        var popup = Instantiate(ModularPopup.PopupAsset.toastPopupError).GetComponent<ModularPopup>();
+        popup.Description = descriptionText;
+        popup.AutoFindCanvasAndSetup();
+        popup.SetParent(targetPanel.transform.parent,targetPanel.transform.GetSiblingIndex() + 1);
+        popup.AutoDestruct(2f);
     }
+
     public void CreateRectangleRoom(float width, float height)
     {
         if (width <= 0 || height <= 0)

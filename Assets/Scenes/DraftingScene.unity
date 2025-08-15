@@ -2053,6 +2053,11 @@ PrefabInstance:
       propertyPath: m_PixelsPerUnitMultiplier
       value: 1.65
       objectReference: {fileID: 0}
+    - target: {fileID: 510126985333735452, guid: 56d1117d9e482db4390a426d371d2486,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 582840107360395213, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
       propertyPath: m_fontSize
@@ -2102,7 +2107,7 @@ PrefabInstance:
     - target: {fileID: 992107465200868559, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 1799.9996
+      value: 1800.0001
       objectReference: {fileID: 0}
     - target: {fileID: 1017419622915814032, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
@@ -2137,7 +2142,7 @@ PrefabInstance:
     - target: {fileID: 1096783217439380342, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -398.30304
+      value: -398.30048
       objectReference: {fileID: 0}
     - target: {fileID: 1099334954491201323, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
@@ -3410,6 +3415,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: -40.16005
+      objectReference: {fileID: 0}
+    - target: {fileID: 7128663525548818877, guid: 56d1117d9e482db4390a426d371d2486,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7271789744270431694, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
@@ -14204,6 +14214,8 @@ MonoBehaviour:
   furnitureItemPrefab: {fileID: 7234985322380843007, guid: 1dbcc122087dc784d836ad3f337c2482,
     type: 3}
   ScaleByCameraZoom: {fileID: 1339119840}
+  IsSnapRotation: 1
+  snapThreshold: 10
 --- !u!4 &1339119839
 Transform:
   m_ObjectHideFlags: 0

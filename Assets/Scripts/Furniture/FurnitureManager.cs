@@ -7,12 +7,16 @@ public class FurnitureManager : MonoBehaviour
     public static FurnitureManager Instance;
 
     public FurnitureItem furnitureItemPrefab;
+    public ScaleByCameraZoom ScaleByCameraZoom;
 
+    [Header("Snap Rotation Settings")]
+    public bool IsSnapRotation;
+    private List<float> snapAngles = new List<float> { -90, 90f, 180f, 0 };
+    [SerializeField] private float snapThreshold = 15f;
+    
     private FurnitureItem tempDragItem;
     private Camera mainCam;
     private List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
-
-    public ScaleByCameraZoom ScaleByCameraZoom;
     
     private void Awake()
     {
@@ -116,5 +120,22 @@ public class FurnitureManager : MonoBehaviour
     public bool IsSelectFurniture(FurnitureItem furnitureItem)
     {
         return currentFurniture == furnitureItem;
+    }
+
+   
+    public float CheckSnapRotation(float angle)
+    {
+        if (!IsSnapRotation) return angle;
+        
+        foreach (var item in snapAngles)
+        {
+            var deltaAngle = Mathf.DeltaAngle(angle, item);
+            if(Mathf.Abs(deltaAngle) < snapThreshold)
+            {
+                return item;
+            }
+        }
+
+        return angle;
     }
 }
