@@ -45,7 +45,6 @@ public class FurnitureManager : MonoBehaviour
             runtimeFurnitures.Add(item);
         }
         
-        tempSaveDataFurnitureDatas.Clear();
         Debug.Log("Loading furniture data: " + tempSaveDataFurnitureDatas.Count);
     }
 
