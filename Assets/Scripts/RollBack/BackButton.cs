@@ -30,11 +30,11 @@ public class BackButton : MonoBehaviour
 
     private void ShowPopupPrefab()
     {
-        var popup = Instantiate(ModularPopup.PopupAsset.modularPopupYesNo).GetComponent<ModularPopup>();
+        var popup = Instantiate(ModularPopup.PopupAsset.saveBeforeLeftPopupWarning).GetComponent<ModularPopup>();
         popup.AutoFindCanvasAndSetup();
         popup.transform.rotation = Quaternion.identity;
         popup.transform.localEulerAngles = Vector3.zero;
-        popup.Header = "Dữ liệu của bạn chưa được lưu!\nNếu thoát ra sẽ mất dữ liệu!";
+        // popup.Header = "Dữ liệu của bạn chưa được lưu!\nNếu thoát ra sẽ mất dữ liệu!";
         popup.ClickYesEvent = OnClickYes;
         popup.EventWhenClickButtons = () =>
         {

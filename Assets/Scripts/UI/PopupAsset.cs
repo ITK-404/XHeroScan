@@ -4,6 +4,7 @@
 public class PopupAsset : ScriptableObject
 {
     public GameObject modularPopupYesNo;
+    public GameObject saveBeforeLeftPopupWarning;
     public GameObject modularPopupWarningDelete;
     public GameObject toastPopupComplete;
     public GameObject toastPopupError;

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2049287888711623409}
   - component: {fileID: -1550783496544347399}
   - component: {fileID: -8413941234239208715}
+  - component: {fileID: 4841491813626052056}
   m_Layer: 5
   m_Name: Delete Room Selected
   m_TagString: Untagged
@@ -59,6 +60,18 @@ MonoBehaviour:
   noBtn: {fileID: 5536081197106756691}
   autoClearWhenClick: 0
 --- !u!114 &-8413941234239208715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1197438629999062631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22279588c42e4c76aef8264161ccc458, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4841491813626052056
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
