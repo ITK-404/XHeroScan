@@ -17,8 +17,6 @@ public class SavePanelUI : MonoBehaviour
     [SerializeField] private TMP_InputField fileNameInputField;
 
     [SerializeField] private GameObject savePanelContainer;
-    [SerializeField] private GameObject successPopup;
-    [SerializeField] private GameObject failedPopup;
 
     private void Awake()
     {

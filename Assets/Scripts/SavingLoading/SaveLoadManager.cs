@@ -49,6 +49,7 @@ public static class SaveLoadManager
             saveData.paths.Add(path);
         }
 
+        saveData.furnitureDatas = FurnitureManager.GetAllFurnitureData();
         // Tạo timestamp phù hợp cho tên file
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
@@ -76,7 +77,7 @@ public static class SaveLoadManager
         SaveData saveData = JsonUtility.FromJson<SaveData>(json);
 
         RoomStorage.rooms = new List<Room>();
-
+        FurnitureManager.AddFurnitures(saveData.furnitureDatas);
         foreach (var path in saveData.paths)
         {
             Room room = new Room();

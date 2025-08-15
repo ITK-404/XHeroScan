@@ -2187,6 +2187,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -1560
       objectReference: {fileID: 0}
+    - target: {fileID: 2198343999679574774, guid: 56d1117d9e482db4390a426d371d2486,
+        type: 3}
+      propertyPath: ItemID
+      value: bed_1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2317517977252156808, guid: 56d1117d9e482db4390a426d371d2486,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2501684177605121230, guid: 56d1117d9e482db4390a426d371d2486,
         type: 3}
       propertyPath: m_Size
@@ -13229,6 +13239,8 @@ MonoBehaviour:
   furnitureItemPrefab: {fileID: 7234985322380843007, guid: 1dbcc122087dc784d836ad3f337c2482,
     type: 3}
   ScaleByCameraZoom: {fileID: 1339119840}
+  furnitureItems:
+  - {fileID: 7234985322380843007, guid: 1dbcc122087dc784d836ad3f337c2482, type: 3}
   IsSnapRotation: 1
   snapThreshold: 10
 --- !u!4 &1339119839

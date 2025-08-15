@@ -259,14 +259,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1187a795b804dd40a411a676a838340, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  minSizeX: 0.1
+  minSizeZ: 0.1
   data:
-    ItemID: 
+    RoomID: 
+    ItemID: bed_1
+    worldPosition: {x: 0, y: 0, z: 0}
     Width: 1
     Height: 1
     ObjectHeight: 0
+    rotation: 0
   spriteRender: {fileID: 6447085774176705639}
-  linePrefab: {fileID: 0}
-  textMeshPrefab: {fileID: 0}
   checkPointParent: {fileID: 9142053234481993226}
   leftPoint: {fileID: 3946280342027712294}
   rightPoint: {fileID: 4280884400013859840}
@@ -280,7 +283,6 @@ MonoBehaviour:
   bounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0, y: 0, z: 0}
-  currentRotation: 0
   lineRendererPrefab: {fileID: 2537071323837183285, guid: e5714c44a40cb0041b4e46102aebced5,
     type: 3}
   textMeshProPrefab: {fileID: 4512470224821213514, guid: 3af0173042a2bfd468e70f9011b7fdb0,

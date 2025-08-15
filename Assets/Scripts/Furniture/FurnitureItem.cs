@@ -233,6 +233,11 @@ public partial class FurnitureItem : MonoBehaviour
         {
             item.UpdateWhenCameraZoom();
         }
+
+        if (data != null)
+        {
+            data.worldPosition = spriteRender.transform.position;
+        }
     }
 
     public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint,
@@ -384,16 +389,37 @@ public partial class FurnitureItem : MonoBehaviour
     {
         spriteRender.transform.position = worldPosition;
     }
+
+    public void FetchData(FurnitureData furnitureData)
+    {
+        data = furnitureData;
+
+        // Cập nhật các thuộc tính từ dữ liệu
+        width = data.Width;
+        height = data.Height;
+        currentRotation = data.rotation;
+
+        // Cập nhật vị trí và kích thước của sprite
+        spriteRender.transform.position = data.worldPosition;
+        spriteRender.transform.localScale = new Vector3(width, height, 1 * height * 0.5f);
+
+        // Cập nhật bounds
+        bounds.center = spriteRender.transform.localPosition;
+        bounds.size = new Vector3(width, 1, height);
+
+        RefreshCheckPoints();
+    }
 }
 
 [Serializable]
 public class FurnitureData
 {
     public string RoomID = string.Empty;
+    public string ItemID = string.Empty; // ID duy nhất của item
+    public Vector3 worldPosition = Vector3.zero;
     public float Width = 1;
     public float Height = 1;
     public float ObjectHeight = 0.5f;
-    public Vector3 worldPosition = Vector3.zero;
     public float rotation = 0f; // rotation in degrees around Y axis
 }
 

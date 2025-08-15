@@ -9,15 +9,18 @@ public class FurnitureManager : MonoBehaviour
     public FurnitureItem furnitureItemPrefab;
     public ScaleByCameraZoom ScaleByCameraZoom;
 
+    [SerializeField] private List<FurnitureItem> furnitureItems = new List<FurnitureItem>();
+    
     [Header("Snap Rotation Settings")]
     public bool IsSnapRotation;
+
     private List<float> snapAngles = new List<float> { -90, 90f, 180f, 0 };
     [SerializeField] private float snapThreshold = 15f;
-    
+
     private FurnitureItem tempDragItem;
     private Camera mainCam;
-    private List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
-    
+    private static List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
+
     private void Awake()
     {
         Instance = this;
@@ -25,9 +28,44 @@ public class FurnitureManager : MonoBehaviour
         ScaleByCameraZoom = GetComponent<ScaleByCameraZoom>();
     }
 
-    public void StartDragItem(FurnitureItem prefab)
+    private void Start()
     {
+        if(tempSaveDataFurnitureDatas == null || tempSaveDataFurnitureDatas.Count == 0)
+        {
+            Debug.LogWarning("No furniture data to load.");
+            return;
+        }
+        foreach (var data in tempSaveDataFurnitureDatas)
+        {
+            var prefab = Instance.GetFurniturePrefabByID(data.ItemID);
+            if(prefab == null) continue;
+            var item = GameObject.Instantiate(prefab);
+            item.FetchData(data);
+            item.InitLineAndText();
+            runtimeFurnitures.Add(item);
+        }
+        
+        tempSaveDataFurnitureDatas.Clear();
+        Debug.Log("Loading furniture data: " + tempSaveDataFurnitureDatas.Count);
+    }
+
+    public void StartDragItem(string ItemID)
+    {
+        var prefab = GetFurniturePrefabByID(ItemID);
+     
+        if (prefab == null)
+        {
+            Debug.LogWarning("Furniture item with ID " + ItemID + " not found.");
+            return;
+        }
+        
         tempDragItem = Instantiate(prefab != null ? prefab : furnitureItemPrefab);
+        SelectFurniture(tempDragItem);
+    }
+    
+    private FurnitureItem GetFurniturePrefabByID(string itemID)
+    {
+        return furnitureItems.Find(item => item.data.ItemID == itemID);
     }
 
     public void ClearDragItem()
@@ -80,6 +118,7 @@ public class FurnitureManager : MonoBehaviour
                 currentFurniture.data.RoomID = null;
                 return;
             }
+
             Debug.Log("Is in room: " + roomID);
             currentFurniture.data.RoomID = roomID;
         }
@@ -135,20 +174,37 @@ public class FurnitureManager : MonoBehaviour
         return currentFurniture == furnitureItem;
     }
 
-   
+
     public float CheckSnapRotation(float angle)
     {
         if (!IsSnapRotation) return angle;
-        
+
         foreach (var item in snapAngles)
         {
             var deltaAngle = Mathf.DeltaAngle(angle, item);
-            if(Mathf.Abs(deltaAngle) < snapThreshold)
+            if (Mathf.Abs(deltaAngle) < snapThreshold)
             {
                 return item;
             }
         }
 
         return angle;
+    }
+
+    public static List<FurnitureData> GetAllFurnitureData()
+    {
+        List<FurnitureData> dataList = new List<FurnitureData>();
+        foreach (var furniture in runtimeFurnitures)
+        {
+            dataList.Add(furniture.data);
+        }
+
+        return dataList;
+    }
+
+    public static List<FurnitureData> tempSaveDataFurnitureDatas = new List<FurnitureData>();
+    public static void AddFurnitures(List<FurnitureData> saveDataFurnitureDatas)
+    {
+        tempSaveDataFurnitureDatas = saveDataFurnitureDatas;
     }
 }
