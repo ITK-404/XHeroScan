@@ -17,8 +17,6 @@ public class SavePanelUI : MonoBehaviour
     [SerializeField] private TMP_InputField fileNameInputField;
 
     [SerializeField] private GameObject savePanelContainer;
-    [SerializeField] private GameObject successPopup;
-    [SerializeField] private GameObject failedPopup;
 
     private void Awake()
     {
@@ -54,17 +52,17 @@ public class SavePanelUI : MonoBehaviour
 
         if (isFileNameEmpty)
         {
-            ShowPopup(ErrorMessage_FileNameEmpty,ModularPopup.PopupAsset.toastPopupError);
+            ShowPopup(ErrorMessage_FileNameEmpty, ModularPopup.PopupAsset.toastPopupError);
             return;
         }
 
         if (isFileExit)
         {
-            ShowPopup(ErrorMessage_FileNameExit,ModularPopup.PopupAsset.toastPopupError);
+            ShowPopup(ErrorMessage_FileNameExit, ModularPopup.PopupAsset.toastPopupError);
             return;
         }
 
-        ShowPopup(SuccessMessage_ExportFileComplete,ModularPopup.PopupAsset.toastPopupComplete);
+        ShowPopup(SuccessMessage_ExportFileComplete, ModularPopup.PopupAsset.toastPopupComplete);
         SaveLoadManager.Save(fileName);
         Close();
     }
@@ -79,5 +77,4 @@ public class SavePanelUI : MonoBehaviour
         // successPopup.GetComponent<ToastUI>().DescriptionText = description;
         // successPopup.gameObject.SetActive(true);
     }
-
 }

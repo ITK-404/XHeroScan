@@ -4639,8 +4639,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   btnExportPDF: {fileID: 252190236}
-  SuccessPanel: {fileID: 803845045}
-  ErrorPanel: {fileID: 474126262}
   unit: m
 --- !u!1001 &533213483
 PrefabInstance:
@@ -8191,6 +8189,52 @@ MonoBehaviour:
   textPerimeter: {fileID: 1778716241}
   textHeight: {fileID: 211467016}
   textVolume: {fileID: 1568399731}
+--- !u!1 &1074692206
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1074692208}
+  - component: {fileID: 1074692207}
+  m_Layer: 0
+  m_Name: Furniture Mapping 3D
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1074692207
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1074692206}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 304af41ceabcdac4594f6a2bd24030dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  furniturePrefabs:
+  - {fileID: 5069680133550443953, guid: b198a2b09d680324bb90f78ca72c8725, type: 3}
+--- !u!4 &1074692208
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1074692206}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1098969900
 GameObject:
   m_ObjectHideFlags: 0
@@ -11504,6 +11548,7 @@ MonoBehaviour:
   - {fileID: 511767870}
   - {fileID: 97550033}
   - {fileID: 44001195}
+  viewChanger: {fileID: 1829306923}
 --- !u!1 &1433336418
 GameObject:
   m_ObjectHideFlags: 0
@@ -15029,6 +15074,52 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bc769a61b0887c64eb2ec0b56b57329a, type: 3}
+--- !u!1 &1829306922
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1829306924}
+  - component: {fileID: 1829306923}
+  m_Layer: 0
+  m_Name: View Changer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1829306923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1829306922}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbe7ff09f05c4a4e96fdaf9a3e7dd7d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canvas2D: {fileID: 1620621391}
+  canvas3D: {fileID: 1398984922}
+--- !u!4 &1829306924
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1829306922}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!224 &1833453116 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4500970558979014657, guid: 4c3a4ff3f3c14504897c7bb51c84fdaf,
@@ -17350,3 +17441,5 @@ SceneRoots:
   - {fileID: 1620621392}
   - {fileID: 402001922}
   - {fileID: 1640806979}
+  - {fileID: 1074692208}
+  - {fileID: 1829306924}

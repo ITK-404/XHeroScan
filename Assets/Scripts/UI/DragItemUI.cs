@@ -3,7 +3,7 @@ using UnityEngine.EventSystems;
 
 public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
 {
-    public FurnitureItem furnitureItemPrefab;
+    public string ItemID;
     public void OnDrag(PointerEventData eventData)
     {
         Debug.Log("On Drag UI: over gameobject: " + IsOverUI());
@@ -13,7 +13,7 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
     {
         // start drag
         FurnitureItem.OnDragFurniture = true;
-        FurnitureManager.Instance.StartDragItem(furnitureItemPrefab);
+        FurnitureManager.Instance.StartDragItem(ItemID);
     }
 
     public void OnEndDrag(PointerEventData eventData)

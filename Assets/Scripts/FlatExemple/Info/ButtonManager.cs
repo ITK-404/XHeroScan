@@ -28,9 +28,9 @@ public class ButtonManager : MonoBehaviour
 
     [Header("PreviewCamera")]
     public Camera PreviewCamera;
-
+    
     [SerializeField] private List<ToggleButtonUI> togglesButtonList = new();
-
+    public ViewChanger viewChanger;
     private void Start()
     {
         previewTexture.SetActive(false);
@@ -112,6 +112,7 @@ public class ButtonManager : MonoBehaviour
             PreviewCamera.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
             Debug.Log($"[CameraFloorPlan] position: {PreviewCamera.transform.position}, rotation: {PreviewCamera.transform.rotation}");
         }
+        viewChanger.ChangeView(ViewType.VIew2D);
     }
 
     private void OnButton3D(GameObject selectedPanel)
@@ -130,6 +131,8 @@ public class ButtonManager : MonoBehaviour
             PreviewCamera.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
             Debug.Log($"[Camera3D] position: {PreviewCamera.transform.position}, rotation: {PreviewCamera.transform.rotation}");
         }
+
+        viewChanger.ChangeView(ViewType.View3D);
     }
 
     private void OnButtonInfo(GameObject selectedPanel)
