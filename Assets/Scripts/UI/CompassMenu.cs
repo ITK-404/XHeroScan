@@ -33,7 +33,7 @@ public class CompassMenu : MonoBehaviour
         turnOffCompassBtn.onClick.AddListener(() => { Show(false); });
     }
 
-    private void Show(bool iShow)
+    public void Show(bool iShow)
     {
         directionalsObject.gameObject.SetActive(iShow);
         turnOnBtn.gameObject.SetActive(!iShow);
@@ -51,9 +51,23 @@ public class CompassMenu : MonoBehaviour
     {
         for (int i = 0; i < directions.Count; i++)
         {
-            var item = Instantiate(directionalItemPrefab, directionalsObject.transform);
-            itemList.Add(item);
             
+            var item = Instantiate(directionalItemPrefab, directionalsObject.transform);
+            var direction = directions[i];
+            if(direction == Direction.East || directions[i] == Direction.West)
+            {
+                item.anchorIcon = AnchorPosition.MiddleBottom;
+            }
+            else if(direction == Direction.North )
+            {
+                item.anchorIcon = AnchorPosition.MiddleBottom;
+            }
+            else if(direction == Direction.South)
+            {
+                item.anchorIcon = AnchorPosition.MiddleTop;
+            }
+            
+            itemList.Add(item);
         }
 
     }
@@ -69,7 +83,7 @@ public class CompassMenu : MonoBehaviour
 
             item.Set(directions[i]);
             item.SetAnchor(itemRect, anchor);
-            item.SetAnchor(item.Icon, anchor);
+            item.SetAnchor(item.Icon, item.anchorIcon);
 
             DirectionRotationCalculator.SetZRotation(item.Icon, direction);
         }

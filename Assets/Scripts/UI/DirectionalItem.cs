@@ -93,6 +93,7 @@ public class DirectionRotationCalculator
 
 public class DirectionalItem : MonoBehaviour
 {
+    public AnchorPosition anchorIcon;
     [SerializeField] private TextMeshProUGUI Text;
     private Direction direction;
     
