@@ -30,8 +30,10 @@ public class SavePanelUI : MonoBehaviour
 
     private void Close()
     {
-        savePanelContainer.gameObject.SetActive(false);
+        // savePanelContainer.gameObject.SetActive(false);
         BackgroundUI.Instance.Hide();
+        savePanelContainer.GetComponent<BottomSheetUI>().Close();
+        
     }
 
     public void Show()
@@ -39,7 +41,8 @@ public class SavePanelUI : MonoBehaviour
         EventSystem.current.SetSelectedGameObject(fileNameInputField.gameObject);
         fileNameInputField.OnPointerClick(new PointerEventData(EventSystem.current));
         // BackgroundUI.Instance.Show(transform.gameObject, Close);
-        savePanelContainer.gameObject.SetActive(true);
+        // savePanelContainer.gameObject.SetActive(true);
+        savePanelContainer.GetComponent<BottomSheetUI>().Open();
     }
 
 
