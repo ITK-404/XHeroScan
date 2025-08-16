@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -28,10 +29,7 @@ public class ModularPopup : MonoBehaviour
     [SerializeField] private Button yesBtn;
     [SerializeField] private Button noBtn;
 
-    public Button YesBtn
-    {
-        get => yesBtn;
-    }
+    [SerializeField] private bool canAnimate = false;
 
     public Button NoBtn
     {
@@ -75,6 +73,14 @@ public class ModularPopup : MonoBehaviour
             yesBtn.onClick.AddListener(OnYesClicked);
         if (noBtn)
             noBtn.onClick.AddListener(OnNoClicked);
+    }
+
+    private void Start()
+    {
+        if (canAnimate)
+        {
+            UIAnimationUltils.PopupScaleAnimation(gameObject,0.2f);
+        }
     }
 
     private void OnYesClicked()
@@ -122,14 +128,21 @@ public class ModularPopup : MonoBehaviour
 
     public void AutoDestruct(float delay = 0.5f)
     {
-        if (delay > 0)
+        StartCoroutine(PlayDelayDestroy(delay));
+    }
+    
+    private IEnumerator PlayDelayDestroy(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (canAnimate)
         {
-            Invoke(nameof(DestroySelf), delay);
+            UIAnimationUltils.PopoutScaleAnimation(gameObject, 0.2f, true);
         }
         else
         {
             DestroySelf();
         }
+        
     }
     
     private void DestroySelf()

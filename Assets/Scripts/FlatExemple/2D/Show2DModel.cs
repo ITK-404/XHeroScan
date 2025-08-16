@@ -22,9 +22,9 @@ public class Show2DModel : MonoBehaviour
     public List<List<GameObject>> AllCheckpoints =>
         allCheckpoints; // Truy cập danh sách tất cả các checkpoint từ bên ngoài
 
-    [SerializeField] private List<ToggleButtonUI> togglesButtonList = new();
+    [SerializeField] private List<ToggleButtonAssignEventUI> togglesButtonList = new();
     
-    private ToggleButtonUI currentButton;
+    private ToggleButtonAssignEventUI currentButton;
 
     private CheckpointManager checkPointManager;
     public Dictionary<string, List<(WallLine, GameObject, GameObject)>> tempDoorWindowPoints = new();
@@ -37,11 +37,11 @@ public class Show2DModel : MonoBehaviour
         LoadPointsFromRoomStorage();
     }
 
-    private void OnClickBtn(ToggleButtonUI toggleButtonUI)
+    private void OnClickBtn(ToggleButtonAssignEventUI toggleButtonUI)
     {
         foreach (var item in togglesButtonList)
         {
-            var state = item == toggleButtonUI ? ToggleButtonUI.State.Active : ToggleButtonUI.State.DeActive;
+            var state = item == toggleButtonUI ? ToggleButtonAssignEventUI.State.Active : ToggleButtonAssignEventUI.State.DeActive;
             if (item == toggleButtonUI)
             {
                 if (item == currentButton) break;

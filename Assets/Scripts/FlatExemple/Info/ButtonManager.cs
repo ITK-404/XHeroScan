@@ -8,10 +8,10 @@ using UnityEngine.EventSystems;
 public class ButtonManager : MonoBehaviour
 {
     [Header("Buttons")]
-    public ToggleButtonUI btnFloor;
+    public ToggleButtonAssignEventUI btnFloor;
 
-    public ToggleButtonUI btn3D;
-    public ToggleButtonUI btnInfo;
+    public ToggleButtonAssignEventUI btn3D;
+    public ToggleButtonAssignEventUI btnInfo;
 
     [Header("Buttons Child")]
     public Button btnEdit;
@@ -29,7 +29,7 @@ public class ButtonManager : MonoBehaviour
     [Header("PreviewCamera")]
     public Camera PreviewCamera;
     
-    [SerializeField] private List<ToggleButtonUI> togglesButtonList = new();
+    [SerializeField] private List<ToggleButtonAssignEventUI> togglesButtonList = new();
     public ViewChanger viewChanger;
     private void Start()
     {
@@ -77,13 +77,13 @@ public class ButtonManager : MonoBehaviour
         OnClickBtn(btnFloor);
     }
 
-    private ToggleButtonUI currentButton;
+    private ToggleButtonAssignEventUI currentButton;
 
-    private void OnClickBtn(ToggleButtonUI toggleButtonUI)
+    private void OnClickBtn(ToggleButtonAssignEventUI toggleButtonUI)
     {
         foreach (var item in togglesButtonList)
         {
-            var state = item == toggleButtonUI ? ToggleButtonUI.State.Active : ToggleButtonUI.State.DeActive;
+            var state = item == toggleButtonUI ? ToggleButtonAssignEventUI.State.Active : ToggleButtonAssignEventUI.State.DeActive;
             if (item == toggleButtonUI)
             {
                 if (item == currentButton) break;
