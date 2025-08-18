@@ -76,98 +76,91 @@ public class RoomMeshController : MonoBehaviour
 
     // Hàm di chuyển Room theo vị trí chạm for Android
     void DragRoom(Vector2 screenPos)
+{
+    if (this == null || !this) return;                // Đã bị destroy
+    if (gameObject == null || !gameObject.activeInHierarchy) return;
+    if (transform == null) return;
+
+    if (IsClickingOnBackgroundBlackUI(Input.mousePosition))
     {
-        
-        if (this == null || !this) return;                // Đã bị destroy
-        if (gameObject == null || !gameObject.activeInHierarchy) return;
-        if (transform == null) return;
+        Debug.Log("Đang nhấn Background Black ➜ Không move Mesh");
+        return;
+    }
 
-        if (IsClickingOnBackgroundBlackUI(Input.mousePosition))
+    Ray ray = mainCam.ScreenPointToRay(screenPos);
+    if (floorPlane.Raycast(ray, out float distance))
+    {
+        Vector3 currentPos = ray.GetPoint(distance);
+        Vector3 delta = currentPos - dragStartWorldPos;
+        dragStartWorldPos = currentPos;
+
+        // 1) Move sàn (mesh)
+        transform.position += delta;
+
+        // 2) Update DATA của room (world-space)
+        Room room = RoomStorage.GetRoomByID(RoomID);
+        if (room != null)
         {
-            Debug.Log("Đang nhấn Background Black ➜ Không move Mesh");
-            return;
-        }
-
-        Ray ray = mainCam.ScreenPointToRay(screenPos);
-        if (floorPlane.Raycast(ray, out float distance))
-        {
-            Vector3 currentPos = ray.GetPoint(distance);
-            Vector3 delta = currentPos - dragStartWorldPos;
-            dragStartWorldPos = currentPos;
-
-            // Di chuyển chính GameObject Mesh sàn
-            transform.position += delta;
-
-            // Update tất cả checkpoint và wallLine theo
-            Room room = RoomStorage.GetRoomByID(RoomID);
-            if (room != null)
+            // Main checkpoints
+            for (int i = 0; i < room.checkpoints.Count; i++)
             {
-                for (int i = 0; i < room.checkpoints.Count; i++)
+                Vector2 old = room.checkpoints[i];
+                room.checkpoints[i] = new Vector2(old.x + delta.x, old.y + delta.z);
+            }
+
+            // Extra checkpoints (đồng cấp, world-space)
+            for (int i = 0; i < room.extraCheckpoints.Count; i++)
+            {
+                Vector2 old = room.extraCheckpoints[i];
+                room.extraCheckpoints[i] = new Vector2(old.x + delta.x, old.y + delta.z);
+            }
+
+            // Wall lines
+            for (int i = 0; i < room.wallLines.Count; i++)
+            {
+                room.wallLines[i].start += delta;
+                room.wallLines[i].end   += delta;
+            }
+
+            // 3) Update các GameObject hiển thị (KHÔNG vẽ lại)
+            if (checkPointManager != null)
+            {
+                // 3a) Main checkpoint GOs
+                var mapping = checkPointManager.AllCheckpoints.Find(loop =>
+                    checkPointManager.FindRoomIDForLoop(loop) == RoomID);
+                if (mapping != null)
                 {
-                    Vector2 old = room.checkpoints[i];
-                    Vector2 moved = new Vector2(old.x + delta.x, old.y + delta.z);
-                    room.checkpoints[i] = moved;
+                    foreach (var cp in mapping)
+                        if (cp) cp.transform.position += delta;
                 }
 
-                // for (int i = 0; i < room.extraCheckpoints.Count; i++)
-                // {
-                //     Vector2 pt = room.extraCheckpoints[i];
-                //     room.extraCheckpoints[i] = new Vector2(pt.x + delta.x, pt.y + delta.z);
-                // }
-
-                for (int i = 0; i < room.wallLines.Count; i++)
+                // 3b) Door/Window GOs
+                if (checkPointManager.tempDoorWindowPoints.TryGetValue(RoomID, out var doorsInRoom))
                 {
-                    room.wallLines[i].start += delta;
-                    room.wallLines[i].end += delta;
+                    foreach (var (line, p1GO, p2GO) in doorsInRoom)
+                    {
+                        if (p1GO) p1GO.transform.position += delta;
+                        if (p2GO) p2GO.transform.position += delta;
+                    }
                 }
 
-                // RoomStorage.UpdateOrAddRoom(room);
-
-                // Cập nhật checkpoint GameObjects bên ngoài
-                // CheckpointManager checkpointMgr = FindObjectOfType<CheckpointManager>();
-
-                if (checkPointManager != null)
+                // 3c) Extra GOs (đồng cấp, không còn là child của floor)
+                var extras = GameObject.FindGameObjectsWithTag("CheckpointExtra");
+                for (int i = 0; i < extras.Length; i++)
                 {
-                    // === Move checkpoint phụ (extraCheckpoints) ===
-                    if (checkPointManager.RoomFloorMap.TryGetValue(RoomID, out var floorGO))
-                    {
-                        foreach (Transform child in floorGO.transform)
-                        {
-                            if (child.CompareTag("CheckpointExtra")) // <-- tag riêng cho point phụ
-                            {
-                                // Debug.Log($"[MoveCheck] Child: {child.name}, Tag: {child.tag}");
-                                // child.position += delta;
-                            }
-                        }
-                    }
+                    var go = extras[i];
+                    if (!go) continue;
 
-                    var mapping =
-                        checkPointManager.AllCheckpoints.Find(loop =>
-                            checkPointManager.FindRoomIDForLoop(loop) == RoomID);
-                    if (mapping != null)
-                    {
-                        foreach (var cp in mapping)
-                        {
-                            cp.transform.position += delta;
-                        }
-                    }
-
-                    // === di chuyển point door/ window theo room
-                    if (checkPointManager.tempDoorWindowPoints.TryGetValue(RoomID, out var doorsInRoom))
-                    {
-                        foreach (var (line, p1GO, p2GO) in doorsInRoom)
-                        {
-                            p1GO.transform.position += delta;
-                            p2GO.transform.position += delta;
-                        }
-                    }
-
-                    checkPointManager.ClearAllLines();
-                    checkPointManager.RedrawAllRooms();
+                    Vector3 projected = go.transform.position + delta; // vị trí nếu đi theo room
+                    string rid = checkPointManager.FindRoomIDByPoint(projected);
+                    if (!string.IsNullOrEmpty(rid) && rid == RoomID)
+                        go.transform.position += delta;
                 }
             }
         }
     }
+}
+
 
     public void Initialize(string roomID, Color color = default)
     {
