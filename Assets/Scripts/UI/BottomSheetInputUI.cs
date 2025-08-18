@@ -19,8 +19,8 @@ public class BottomSheetInputUI : BottomSheetUI
                 return;
             }
             previousState = TouchScreenKeyboard.visible;
-            OnInputFocus();
             delayTime = 1;
+            OnInputFocus();
         }
     }
 
@@ -29,6 +29,6 @@ public class BottomSheetInputUI : BottomSheetUI
         float height = KeyboardHeight.GetHeight();
         float scaleHeight = height * ((RectTransform)sheet.parent).rect.height / Screen.height;
         PlayAnim(openPos + new Vector2(0, scaleHeight));
-        Debug.Log($"On Input Focus: {height} {scaleHeight}");
+        Debug.Log($"On Input Focus: {height} {scaleHeight} {TouchScreenKeyboard.visible}");
     }
 }

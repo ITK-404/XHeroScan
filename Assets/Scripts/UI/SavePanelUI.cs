@@ -1,3 +1,4 @@
+using System.Collections;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -68,16 +69,24 @@ public class SavePanelUI : MonoBehaviour
         ShowPopup(SuccessMessage_ExportFileComplete, ModularPopup.PopupAsset.toastPopupComplete);
         SaveLoadManager.Save(fileName);
         Close();
+        
+        EventSystem.current.SetSelectedGameObject(null);
     }
 
     private void ShowPopup(string description, GameObject popupPrefab)
     {
+        StartCoroutine(Delay(description, popupPrefab));
+        // successPopup.GetComponent<ToastUI>().DescriptionText = description;
+        // successPopup.gameObject.SetActive(true);
+    }
+
+    private IEnumerator Delay(string description, GameObject popupPrefab)
+    {
+        yield return new WaitForSeconds(0.2f);
         var popup = Instantiate(popupPrefab).GetComponent<ModularPopup>();
         popup.AutoFindCanvasAndSetup();
         popup.SetParent(transform, savePanelContainer.transform.GetSiblingIndex() + 1);
         popup.Description = description;
         popup.AutoDestruct(2f);
-        // successPopup.GetComponent<ToastUI>().DescriptionText = description;
-        // successPopup.gameObject.SetActive(true);
     }
 }
