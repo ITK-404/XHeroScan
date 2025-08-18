@@ -6,12 +6,13 @@ public class BottomSheetUI : MonoBehaviour
     [SerializeField] private float animDuration = 0.3f;
     [SerializeField] private Ease animEase = Ease.OutCubic;
 
-    private RectTransform sheet;
-    private Vector2 openPos;
-    private Vector2 closedPos;
-    private Tweener currentTween;
+    protected RectTransform sheet;
+    protected Vector2 openPos;
+    protected Vector2 closedPos;
+    protected Vector2 keyboardOpenPos;
+    protected Tweener currentTween;
 
-    private void Awake()
+    private void Start()
     {
         sheet = GetComponent<RectTransform>();
 
@@ -27,6 +28,11 @@ public class BottomSheetUI : MonoBehaviour
         sheet.anchoredPosition = closedPos;
     }
 
+    private void OnDestroy()
+    {
+        currentTween?.Kill();
+    }
+
     public void Open()
     {
         PlayAnim(openPos);
@@ -37,18 +43,24 @@ public class BottomSheetUI : MonoBehaviour
         PlayAnim(closedPos);
     }
 
-    private void PlayAnim(Vector2 targetPos)
+    protected void PlayAnim(Vector2 targetPos)
     {
         // Hủy tween cũ nếu còn đang chạy
         currentTween?.Kill();
 
         currentTween = sheet.DOAnchorPos(targetPos, animDuration)
             .SetEase(animEase);
+        Debug.Log("Anchored position : "+targetPos);
     }
 
-    // Test nhanh bằng phím O và C
-    private void Update()
+    [SerializeField] protected bool testByKeyboard;
+    [SerializeField] protected bool activeWithPanel;
+
+
+    protected virtual void Update()
     {
+        
+        if (!testByKeyboard) return;
         if (Input.GetKeyDown(KeyCode.O)) Open();
         if (Input.GetKeyDown(KeyCode.C)) Close();
     }
