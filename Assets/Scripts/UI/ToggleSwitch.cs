@@ -16,15 +16,15 @@ public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
     [SerializeField, Range(0, 1f)] private float animationDuration = 0.2f;
 
     [SerializeField] private AnimationCurve easeCurve;
-
-    [SerializeField] private UnityEvent OnToggleOn;
-    [SerializeField] private UnityEvent OnToggleOff;
-
-    private ToggleSwitchGroupManager toggleSwitchGroupManager;
+    [SerializeField] private Image toggleIcon;
+    public UnityEvent OnToggleOn;
+    public UnityEvent OnToggleOff;
+    public UnityEvent<bool> OnToggleChanged;
 
     private bool previousValue;
     private Coroutine animatedCoroutine;
-    
+
+    public Image ToggleIcon => toggleIcon;    
     private void OnValidate()
     {
         SetupComponents();
@@ -54,14 +54,7 @@ public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
 
     private void Toggle()
     {
-        if (toggleSwitchGroupManager != null)
-        {
-            toggleSwitchGroupManager.ToggleGroup(this);
-        }
-        else
-        {
-            SetStateAndStartAnimation(!CurrentValue);
-        }
+        SetStateAndStartAnimation(!CurrentValue);
     }
 
     private void SetStateAndStartAnimation(bool state)
@@ -79,6 +72,7 @@ public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
             }
 
             previousValue = CurrentValue;
+            OnToggleChanged?.Invoke(CurrentValue);
         }
 
         if (animatedCoroutine != null)
@@ -117,22 +111,5 @@ public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
     public void OnPointerClick(PointerEventData eventData)
     {
         Toggle();
-    }
-}
-
-public class ToggleSwitchGroupManager : MonoBehaviour
-{
-
-    private void Awake()
-    {
-        
-    }
-
-    private void OnToggleChanged(ToggleSwitch toggledSwitch)
-    {
-    }
-
-    public void ToggleGroup(ToggleSwitch toggleSwitch)
-    {
     }
 }

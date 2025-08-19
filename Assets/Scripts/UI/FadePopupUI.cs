@@ -1,6 +1,7 @@
 ﻿using System;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class FadePopupUI : BaseAnimUI
 {
@@ -32,5 +33,19 @@ public class FadePopupUI : BaseAnimUI
         }
         currentTween?.Kill();
         currentTween = canvasGroup.DOFade(value, duration).SetEase(ease).OnComplete(() => { playDoneCallback?.Invoke(); });
+    }
+
+    private void Update()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            if (EventSystem.current.IsPointerOverGameObject())
+            {
+                if (container.activeSelf && currentTween == null)
+                {
+                    Close();
+                }
+            }
+        }
     }
 }

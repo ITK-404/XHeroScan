@@ -21,7 +21,7 @@ public class CompassMenu : MonoBehaviour
 
         SetupToggleButton();
 
-        InitDirections();
+        InitIconDirections();
         
         Refresh();
         
@@ -43,11 +43,11 @@ public class CompassMenu : MonoBehaviour
     List<Direction> directions = new()
     {
         Direction.East, // icon is look to this direction so this is default rotation
-        Direction.South,
         Direction.North,
+        Direction.South,
         Direction.West
     };
-    private void InitDirections()
+    private void InitIconDirections()
     {
         for (int i = 0; i < directions.Count; i++)
         {
@@ -56,15 +56,17 @@ public class CompassMenu : MonoBehaviour
             var direction = directions[i];
             if(direction == Direction.East || directions[i] == Direction.West)
             {
-                item.anchorIcon = AnchorPosition.MiddleBottom;
+                item.anchorIcon = AnchorPosition.MiddleBottom; // icon luôn nằm dưới text
             }
             else if(direction == Direction.North )
             {
-                item.anchorIcon = AnchorPosition.MiddleBottom;
+                // item.anchorIcon = AnchorPosition.MiddleBottom;
+                item.anchorIcon = AnchorPosition.MiddleTop; // icon nằm trên text
             }
             else if(direction == Direction.South)
             {
-                item.anchorIcon = AnchorPosition.MiddleTop;
+                // item.anchorIcon = AnchorPosition.MiddleTop;
+                item.anchorIcon = AnchorPosition.MiddleBottom; // icon nằm dưới text
             }
             
             itemList.Add(item);
@@ -82,8 +84,8 @@ public class CompassMenu : MonoBehaviour
             var anchor = direction.ToAnchor();
 
             item.Set(directions[i]);
-            item.SetAnchor(itemRect, anchor);
-            item.SetAnchor(item.Icon, item.anchorIcon);
+            item.SetAnchor(itemRect, anchor); // chỉnh anchor của item
+            item.SetAnchor(item.Icon, item.anchorIcon); // chỉnh anchor của icon item
 
             DirectionRotationCalculator.SetZRotation(item.Icon, direction);
         }
@@ -93,12 +95,13 @@ public class CompassMenu : MonoBehaviour
 
     private void InitRotationCalculator()
     {
+        // góc mà UI nằm
         DirectionRotationCalculator = new();
         DirectionRotationCalculator.circleDirection = new()
         {
-            Direction.North, // 0
+            Direction.South, // 0
             Direction.East, // 90
-            Direction.South, // 180
+            Direction.North, // 180
             Direction.West // 270
         };
         DirectionRotationCalculator.Init();
