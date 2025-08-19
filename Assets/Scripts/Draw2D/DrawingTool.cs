@@ -5,6 +5,7 @@ using TMPro;
 
 public class DrawingTool : MonoBehaviour
 {
+    #region Variables
     public static DrawingTool Instance;
     public float wallTextOffset = 0.2f;
     public float doorTextOffset = 0.2f;
@@ -35,6 +36,7 @@ public class DrawingTool : MonoBehaviour
 
     private float auxiliaryLineLength = 0.1f; // Độ dài line phụ (10cm)
     private GameObject selectedCheckpoint = null; // Điểm được chọn để di chuyển    
+    #endregion
 
     private void Awake()
     {
@@ -192,6 +194,10 @@ public class DrawingTool : MonoBehaviour
             return;
         }
 
+        const int BASE_ORDER = 0;        // nếu bạn đang dùng order nào khác, đổi ở đây
+        const int PREVIEW_OFFSET = 99;   // “+99” như yêu cầu        
+        int previewOrder = BASE_ORDER + PREVIEW_OFFSET;
+    
         // Kiểm tra xem đã có previewLine chưa
         if (previewLine == null)
         {
@@ -204,6 +210,19 @@ public class DrawingTool : MonoBehaviour
         previewLine.SetPosition(0, start);
         previewLine.SetPosition(1, end);
 
+        // đảm bảo render trên cùng
+        var lineRenderer = previewLine.GetComponent<Renderer>();
+        if (lineRenderer != null)
+        {
+            // Sorting Layer giữ "Default" (hoặc layer bạn đang dùng)
+            // lineRenderer.sortingLayerName = "Default";
+            lineRenderer.sortingOrder = previewOrder;
+
+            // đẩy renderQueue cao để vẽ sau cùng (overlay)
+            if (lineRenderer.material != null) lineRenderer.material.renderQueue = 5000;
+        }
+
+        // TEXT
         float distanceInM = Vector3.Distance(start, end) * 1f;
 
         // Kiểm tra xem đã có previewText chưa
@@ -303,12 +322,33 @@ public class DrawingTool : MonoBehaviour
 
     public void ClearAllLines()
     {
-        foreach (var lr in linePool)
-            lr.gameObject.SetActive(false);
+        // Xoá toàn bộ LineRenderer trong pool
+        for (int i = linePool.Count - 1; i >= 0; i--)
+        {
+            var lr = linePool[i];
+            if (lr)
+            {
+                var go = lr.gameObject;
+                linePool[i] = null;
+                Destroy(go);
+            }
+        }
+        linePool.Clear();
 
-        foreach (var tmp in textPool)
-            tmp.gameObject.SetActive(false);
+        // Xoá toàn bộ Text (TMP_Text / TextMeshProUGUI / Text) trong pool
+        for (int i = textPool.Count - 1; i >= 0; i--)
+        {
+            var txt = textPool[i];
+            if (txt)
+            {
+                var go = txt.gameObject;
+                textPool[i] = null;
+                Destroy(go);
+            }
+        }
+        textPool.Clear();
 
+        // Xoá toàn bộ WallLine
         wallLines.Clear();
     }
 

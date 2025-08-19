@@ -53,6 +53,7 @@ public static class SaveLoadManager
                 roomName = room.roomName,                // lưu name
                 floorMaterial = room.floorMaterial,      // lưu vật liệu sàn
                 points = room.checkpoints.ConvertAll(p => new Vector2Serializable(p)),
+                pointsExtra = room.extraCheckpoints.ConvertAll(p => new Vector2Serializable(p)),
                 heights = new List<float>(room.heights),
                 wallLines = room.wallLines.ConvertAll(w => new SavedWallLine
                 {
@@ -62,6 +63,7 @@ public static class SaveLoadManager
                     isVisible = w.isVisible,
                     distanceHeight = w.distanceHeight,
                     Height = w.Height,
+                    isManualConnection = w.isManualConnection,
                     materialFront = w.materialFront,
                     materialBack = w.materialBack
                 }),
@@ -112,11 +114,13 @@ public static class SaveLoadManager
             room.floorMaterial = path.floorMaterial;        // load vật liệu sàn
 
             room.checkpoints = path.points.ConvertAll(p => p.ToVector2());
+            room.extraCheckpoints = path.pointsExtra.ConvertAll(p => p.ToVector2());
             room.heights = new List<float>(path.heights);
 
             room.wallLines = path.wallLines.ConvertAll(w =>
             {
                 var line = new WallLine(w.start, w.end, w.type, w.distanceHeight, w.Height, w.materialFront, w.materialBack);
+                line.isManualConnection = w.isManualConnection;
                 line.isVisible = w.isVisible;
                 return line;
             });

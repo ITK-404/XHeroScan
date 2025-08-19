@@ -15,48 +15,31 @@ public class SplitRoomManager: MonoBehaviour
     {
         if (originalRoom == null) return;
 
-        var allLoops = GeometryUtils.ListLoopsInRoom(originalRoom); // list of loops
-
+        var allLoops = GeometryUtils.ListLoopsInRoom(originalRoom);
         if (allLoops.Count <= 1) return;
 
-        var originalArea = GeometryUtils.AbsArea(originalRoom.checkpoints);
-        // const float AREA_RATIO_EPS = 0.01f; // 1% sai số
-
-        // var innerLoops = allLoops
-        //     .Where(lp =>
-        //         !GeometryUtils.IsSamePolygonFlexible(lp, originalRoom.checkpoints) &&
-        //         Mathf.Abs(GeometryUtils.AbsArea(lp) - originalArea) > originalArea * AREA_RATIO_EPS &&
-        //         GeometryUtils.AbsArea(lp) < originalArea * (1f - AREA_RATIO_EPS)) //|A - A₀| < 0.02 * A₀  --> chỉ đúng nếu phòng đó gần bằng 98% diện tích gốc
-        //     .ToList();
-
         const float AREA_MIN = 0.001f;
-
-        var validLoops = allLoops
-            .Where(lp => GeometryUtils.AbsArea(lp) > AREA_MIN)
-            .ToList();
-
+        var validLoops = allLoops.Where(lp => GeometryUtils.AbsArea(lp) > AREA_MIN).ToList();
         if (validLoops.Count <= 1) return;
 
         var largestLoop = validLoops.OrderByDescending(lp => GeometryUtils.AbsArea(lp)).First();
-
-        var innerLoops = validLoops
-            .Where(lp => !GeometryUtils.IsSamePolygonFlexible(lp, largestLoop))
-            .ToList();
-
-        List<List<Vector2>> uniqueLoops = new();
-        foreach (var lp in innerLoops)
-            if (!uniqueLoops.Any(u => GeometryUtils.IsSamePolygonFlexible(u, lp)))
-                uniqueLoops.Add(lp);
-
+        var uniqueLoops = validLoops.Where(lp => !GeometryUtils.IsSamePolygonFlexible(lp, largestLoop))
+                                    .Aggregate(new List<List<Vector2>>(), (acc, lp) =>
+                                    { if (!acc.Any(u => GeometryUtils.IsSamePolygonFlexible(u, lp))) acc.Add(lp); return acc; });
         if (uniqueLoops.Count == 0) return;
 
-        // Giữ groupID gốc nếu có, nếu chưa thì dùng ID hiện tại
-        string gid = !string.IsNullOrEmpty(originalRoom.groupID)
-                    ? originalRoom.groupID
-                    : originalRoom.ID;
+        string gid = !string.IsNullOrEmpty(originalRoom.groupID) ? originalRoom.groupID : originalRoom.ID;
 
+        // === BACKUP trước khi mutate
         var backupWalls = originalRoom.wallLines.Select(w => new WallLine(w)).ToList();
 
+        // GOM NHỮNG LINE CẦN GIỮ (door/window + manual) TỪ BACKUP 
+        var preservedLines = backupWalls
+            .Where(w => w.isManualConnection || w.type != LineType.Wall)
+            .Select(w => new WallLine(w)) // clone
+            .ToList();
+
+        // --- mutate các room theo loops ---
         var loop0 = uniqueLoops[0];
         originalRoom.groupID = gid;
         originalRoom.checkpoints = loop0;
@@ -70,13 +53,12 @@ public class SplitRoomManager: MonoBehaviour
         var floorGO = GameObject.Find($"RoomFloor_{originalRoom.ID}");
         if (floorGO != null) GameObject.Destroy(floorGO);
 
-        // Tạo lại danh sách các Room mới dựa trên các vòng kín
         for (int i = 1; i < uniqueLoops.Count; i++)
         {
             var lp = uniqueLoops[i];
             Room r = new Room();
             r.SetID(Guid.NewGuid().ToString());
-            r.groupID = gid; // Giữ cùng groupID
+            r.groupID = gid;
             r.checkpoints = lp;
             r.wallLines = backupWalls
                 .Where(w => GeometryUtils.EdgeInLoop(lp,
@@ -87,9 +69,11 @@ public class SplitRoomManager: MonoBehaviour
         }
 
         var rooms = RoomStorage.GetRoomsByGroupID(gid);
-        Color[] palette = { new(1f, .95f, .6f), new(.7f, 1f, .7f), new(.7f, .9f, 1f), new(1f, .75f, .85f) };
+
+        // Xoá visual cũ
         ClearAllRoomVisuals(gid);
 
+        // (nếu bạn có tag RoomFloor, giữ lại phần này)
         var oldFloors = GameObject.FindGameObjectsWithTag("RoomFloor");
         foreach (var floor in oldFloors)
         {
@@ -97,10 +81,12 @@ public class SplitRoomManager: MonoBehaviour
                 GameObject.Destroy(floor);
         }
 
-        RebuildSplitRoom(rooms, palette);
+        // >>> TRUYỀN preservedLines VÀO HÀM REBUILD <<<
+        // Color[] palette = { new(1f, .95f, .6f), new(.7f, 1f, .7f), new(.7f, .9f, 1f), new(1f, .75f, .85f) };
+        Color[] palette = null;
+        RebuildSplitRoom(rooms, palette, preservedLines);
     }
-
-    public void RebuildSplitRoom(List<Room> rooms, Color[] colors = null)
+    public void RebuildSplitRoom(List<Room> rooms, Color[] colors = null, List<WallLine> preservedLines = null)
     {
         if (rooms == null || rooms.Count == 0)
         {
@@ -108,90 +94,112 @@ public class SplitRoomManager: MonoBehaviour
             return;
         }
 
-        // Lấy groupID từ phòng đầu tiên (cùng group)
         string groupID = rooms[0].groupID;
 
-        // === Xoá checkpoints, loopMaps, door/window cũ chỉ thuộc group này ===
-        var roomsToRemove = RoomStorage.GetRoomsByGroupID(groupID);
-
-        foreach (var room in roomsToRemove)
-        {
-            var loopMap = checkPointManager.loopMappings.FirstOrDefault(lm => lm.RoomID == room.ID);
-            if (loopMap != null)
-            {
-                foreach (var checkpointGO in loopMap.CheckpointsGO)
-                {
-                    if (checkpointGO != null) Destroy(checkpointGO);
-                }
-                checkPointManager.loopMappings.Remove(loopMap);
-                checkPointManager.AllCheckpoints.Remove(loopMap.CheckpointsGO);
-            }
-
-            // Xóa cửa sổ, cửa cũ liên quan room này
-            if (checkPointManager.tempDoorWindowPoints.ContainsKey(room.ID))
-            {
-                foreach (var (_, p1, p2) in checkPointManager.tempDoorWindowPoints[room.ID])
-                {
-                    if (p1 != null) Destroy(p1);
-                    if (p2 != null) Destroy(p2);
-                }
-                checkPointManager.tempDoorWindowPoints.Remove(room.ID);
-            }
-
-            // Xóa mesh cũ của room này
-            var oldFloor = GameObject.Find($"RoomFloor_{room.ID}");
-            if (oldFloor != null) Destroy(oldFloor);
-        }
-
-        // === Rebuild lại toàn bộ các room vừa chia mới ===
+        // === REBUILD VISUAL CHO CÁC ROOM MỚI ===
         for (int i = 0; i < rooms.Count; i++)
         {
             Room room = rooms[i];
 
-            // === Tạo lại checkpoint GameObject từ room.checkpoints
-            List<GameObject> loopGO = new List<GameObject>();
+            // Checkpoint GOs
+            var loopGO = new List<GameObject>();
             foreach (var pt in room.checkpoints)
             {
-                Vector3 worldPos = new Vector3(pt.x, 0, pt.y);
-                GameObject cp = Instantiate(checkPointManager.checkpointPrefab, worldPos, Quaternion.identity);
+                var cp = Instantiate(checkPointManager.checkpointPrefab, new Vector3(pt.x, 0f, pt.y), Quaternion.identity);
                 loopGO.Add(cp);
             }
-
             checkPointManager.AllCheckpoints.Add(loopGO);
             checkPointManager.loopMappings.Add(new LoopMap(room.ID, loopGO));
 
-            // === Tạo lại mesh sàn
+            // Mesh floor (nhớ gán tag nếu bạn có logic find-by-tag)
             GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
+            floorGO.tag = "RoomFloor";
             floorGO.transform.position = Vector3.zero;
             var meshCtrl = floorGO.AddComponent<RoomMeshController>();
-
             Color floorColor = (colors != null && i < colors.Length) ? colors[i] : Color.white;
             meshCtrl.Initialize(room.ID, floorColor);
 
-            // === Vẽ lại wallLines
+            // Vẽ lines sẵn có của room (nếu room đã có door/window từ bước trước)
             foreach (var wl in room.wallLines)
             {
                 checkPointManager.DrawingTool.currentLineType = wl.type;
                 checkPointManager.DrawLineAndDistance(wl.start, wl.end);
 
-                // Nếu là cửa/cửa sổ
                 if (wl.type == LineType.Door || wl.type == LineType.Window)
                 {
-                    GameObject p1 = Instantiate(checkPointManager.checkpointPrefab, wl.start, Quaternion.identity);
-                    GameObject p2 = Instantiate(checkPointManager.checkpointPrefab, wl.end, Quaternion.identity);
-                    p1.name = $"{wl.type}_P1";
-                    p2.name = $"{wl.type}_P2";
+                    Vector3 s = wl.start; if (s.y < 0.02f) s.y = 0.02f;
+                    Vector3 e = wl.end; if (e.y < 0.02f) e.y = 0.02f;
+                    var p1 = Instantiate(checkPointManager.checkpointPrefab, s, Quaternion.identity);
+                    var p2 = Instantiate(checkPointManager.checkpointPrefab, e, Quaternion.identity);
 
+                    checkPointManager.tempDoorWindowPoints ??= new Dictionary<string, List<(WallLine, GameObject, GameObject)>>();
                     if (!checkPointManager.tempDoorWindowPoints.ContainsKey(room.ID))
                         checkPointManager.tempDoorWindowPoints[room.ID] = new List<(WallLine, GameObject, GameObject)>();
-
                     checkPointManager.tempDoorWindowPoints[room.ID].Add((wl, p1, p2));
                 }
             }
         }
 
-        Debug.Log($"[RebuildSplitRoom] Đã build lại {rooms.Count} phòng từ group {groupID}.");
+        // === GẮN LẠI preservedLines VÀO PHÒNG MỚI PHÙ HỢP NHẤT ===
+        if (preservedLines != null && preservedLines.Count > 0)
+        {
+            foreach (var w in preservedLines)
+            {
+                Vector2 s2 = new Vector2(w.start.x, w.start.z);
+                Vector2 e2 = new Vector2(w.end.x, w.end.z);
+
+                Room bestRoom = null; int bestEdge = -1;
+                float bestScore = float.MaxValue, bestTA = 0f, bestTB = 0f;
+
+                foreach (var r in rooms)
+                {
+                    var cps = r.checkpoints; int n = cps.Count; if (n < 2) continue;
+                    for (int i = 0; i < n; i++)
+                    {
+                        Vector2 A = cps[i], B = cps[(i + 1) % n];
+                        Vector2 AB = B - A; float len2 = AB.sqrMagnitude < 1e-12f ? 1e-12f : AB.sqrMagnitude;
+                        float t1 = Mathf.Clamp01(Vector2.Dot(s2 - A, AB) / len2);
+                        float t2 = Mathf.Clamp01(Vector2.Dot(e2 - A, AB) / len2);
+                        Vector2 ps = A + t1 * AB, pe = A + t2 * AB;
+                        float score = Mathf.Max(Vector2.Distance(s2, ps), Vector2.Distance(e2, pe));
+                        if (score < bestScore) { bestScore = score; bestEdge = i; bestTA = t1; bestTB = t2; bestRoom = r; }
+                    }
+                }
+
+                if (bestRoom == null || bestEdge < 0) continue;
+
+                Vector2 AA = bestRoom.checkpoints[bestEdge];
+                Vector2 BB = bestRoom.checkpoints[(bestEdge + 1) % bestRoom.checkpoints.Count];
+
+                Vector3 sNew = new Vector3(Mathf.Lerp(AA.x, BB.x, bestTA), 0f, Mathf.Lerp(AA.y, BB.y, bestTA));
+                Vector3 eNew = new Vector3(Mathf.Lerp(AA.x, BB.x, bestTB), 0f, Mathf.Lerp(AA.y, BB.y, bestTB));
+
+                w.start = sNew; w.end = eNew;
+
+                bestRoom.wallLines.Add(w);
+
+                checkPointManager.DrawingTool.currentLineType = w.type;
+                checkPointManager.DrawLineAndDistance(w.start, w.end);
+
+                if (w.type == LineType.Door || w.type == LineType.Window)
+                {
+                    Vector3 sH = sNew; if (sH.y < 0.02f) sH.y = 0.02f;
+                    Vector3 eH = eNew; if (eH.y < 0.02f) eH.y = 0.02f;
+
+                    var p1 = Instantiate(checkPointManager.checkpointPrefab, sH, Quaternion.identity);
+                    var p2 = Instantiate(checkPointManager.checkpointPrefab, eH, Quaternion.identity);
+
+                    checkPointManager.tempDoorWindowPoints ??= new Dictionary<string, List<(WallLine, GameObject, GameObject)>>();
+                    if (!checkPointManager.tempDoorWindowPoints.ContainsKey(bestRoom.ID))
+                        checkPointManager.tempDoorWindowPoints[bestRoom.ID] = new List<(WallLine, GameObject, GameObject)>();
+                    checkPointManager.tempDoorWindowPoints[bestRoom.ID].Add((w, p1, p2));
+                }
+            }
+        }
+
+        Debug.Log($"[RebuildSplitRoom] Đã build lại {rooms.Count} phòng từ group {groupID} (giữ {(preservedLines?.Count ?? 0)} line non-wall/manual).");
     }
+
     void ClearAllRoomVisuals(string groupID)
     {
         var roomsInGroup = RoomStorage.GetRoomsByGroupID(groupID);
@@ -230,15 +238,15 @@ public class SplitRoomManager: MonoBehaviour
             }
 
             // 4. Xóa cửa / cửa sổ
-            if (checkPointManager.tempDoorWindowPoints.ContainsKey(room.ID))
-            {
-                foreach (var (_, p1, p2) in checkPointManager.tempDoorWindowPoints[room.ID])
-                {
-                    if (p1 != null) Destroy(p1);
-                    if (p2 != null) Destroy(p2);
-                }
-                checkPointManager.tempDoorWindowPoints.Remove(room.ID);
-            }
+            // if (checkPointManager.tempDoorWindowPoints.ContainsKey(room.ID))
+            // {
+            //     foreach (var (_, p1, p2) in checkPointManager.tempDoorWindowPoints[room.ID])
+            //     {
+            //         if (p1 != null) Destroy(p1);
+            //         if (p2 != null) Destroy(p2);
+            //     }
+            //     checkPointManager.tempDoorWindowPoints.Remove(room.ID);
+            // }
         }
     }
 }

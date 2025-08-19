@@ -10,25 +10,37 @@ using System.Collections;
 
 public class HandleCheckpointManger : MonoBehaviour
 {
+    #region Variables
     private Vector3? firstDoorPoint = null; // lưu P1
     private WallLine selectedWallLineForDoor; // đoạn tường được chọn
     private Room selectedRoomForDoor;
 
     private CheckpointManager checkPointManager;
     private SplitRoomManager splitRoomManager;
-    void Start()
-    {
-        splitRoomManager = FindFirstObjectByType<SplitRoomManager>();
-        checkPointManager = FindFirstObjectByType<CheckpointManager>();
-    }
-
-    // ==== Đặt Point thường và chia tường ====
-
     private const float EDGE_EPS = 0.001f; // kiểm tra nằm trên biên
     private const float DUP_EPS2 = 1e-6f;  // bỏ giao trùng A/B
     private const float DEDUP_EPS2 = 1e-6f;  // dedup intersections
     private const float SNAP_EPS = 0.01f;   // ~ 1cm
     static float Dist2(Vector2 a, Vector2 b) => (a - b).magnitude;
+    #endregion
+    /// <summary>
+    /// Khởi tạo các tham chiếu đến các manager
+    /// </summary>
+    void Start()
+    {
+        // Tìm kiếm các manager
+        splitRoomManager = FindFirstObjectByType<SplitRoomManager>();
+        checkPointManager = FindFirstObjectByType<CheckpointManager>();
+
+        // Đảm bảo các manager đã được tìm thấy
+        if (splitRoomManager == null)
+            Debug.LogError("Ch a t m th  SplitRoomManager");
+        if (checkPointManager == null)
+            Debug.LogError("Ch a t m th  CheckpointManager");
+    }
+
+    // ==== Đặt Point thường và chia tường ====
+
 
     // Project p lên đoạn ab (clamp trong đoạn)
     static Vector2 ProjectOnSeg(Vector2 a, Vector2 b, Vector2 p)
@@ -212,6 +224,23 @@ public class HandleCheckpointManger : MonoBehaviour
                 Vector3 main3D = new(main2D.x, 0, main2D.y);
                 Vector3 extra3D = new(extra2D.x, 0, extra2D.y);
 
+                // --- so sánh line gần bằng ---
+                bool Nearly(Vector3 u, Vector3 v, float eps) => (u - v).sqrMagnitude <= eps * eps;
+                bool SameLine(WallLine a, WallLine b, float eps) =>
+                    (Nearly(a.start, b.start, EDGE_EPS) && Nearly(a.end, b.end, EDGE_EPS)) ||
+                    (Nearly(a.start, b.end, EDGE_EPS) && Nearly(a.end, b.start, EDGE_EPS));
+
+                void AddManualIfMissing(Room r, WallLine m)
+                {
+                    if (!r.wallLines.Any(x => SameLine(x, m, EDGE_EPS)))
+                        r.wallLines.Add(m);
+                }
+
+                // BẢO TOÀN các line thủ công hiện có trước khi rebuild
+                var manualBefore = room.wallLines?
+                    .Where(w => w.isManualConnection && (w.isVisible /*nên true*/))
+                    .ToList() ?? new List<WallLine>();
+
                 // Chèn main vào polygon đúng cạnh
                 int n = room.checkpoints.Count, insertIndex = -1;
                 for (int i = 0; i < n; i++)
@@ -224,7 +253,10 @@ public class HandleCheckpointManger : MonoBehaviour
 
                 int exactIdx = room.checkpoints.FindIndex(p => (p - main2D).sqrMagnitude <= EDGE_EPS * EDGE_EPS);
                 if (exactIdx >= 0) insertIndex = exactIdx; else room.checkpoints.Insert(insertIndex, main2D);
+
+                // Rebuild room (có thể xoá mất manual lines) -> merge thủ công lại
                 RoomStorage.UpdateOrAddRoom(room);
+                foreach (var m in manualBefore) AddManualIfMissing(room, m);
 
                 // GO main đặt đúng index
                 GameObject mainGO;
@@ -253,25 +285,29 @@ public class HandleCheckpointManger : MonoBehaviour
                     if (!list.Contains(extraGO)) list.Add(extraGO);
                 }
 
-                // Lưu extra vào DATA (world) – tránh trùng
+                // Lưu extra vào DATA – tránh trùng
                 float eps2 = EDGE_EPS * EDGE_EPS;
                 if (!room.extraCheckpoints.Any(p => (p - extra2D).sqrMagnitude <= eps2))
                     room.extraCheckpoints.Add(extra2D);
 
-                // Vẽ line phụ
-                checkPointManager.DrawingTool.currentLineType = checkPointManager.currentLineType;
-                checkPointManager.DrawLineAndDistance(main3D, extra3D);
-
-                room.wallLines.Add(new WallLine
+                // Tạo line phụ mới (đánh dấu và hiển thị)
+                var newline = new WallLine
                 {
                     start = main3D,
                     end = extra3D,
                     type = checkPointManager.currentLineType,
-                    isManualConnection = true
-                });
-                checkPointManager.DrawingTool.wallLines.Add(room.wallLines[^1]);
+                    isManualConnection = true,
+                    isVisible = true   // <<< đảm bảo redraw không lọc bỏ
+                };
+                AddManualIfMissing(room, newline); // thêm theo dạng “giữ nếu chưa có”
 
-                RoomStorage.UpdateOrAddRoom(room);
+                // Vẽ ngay trên DrawingTool (chỉ để preview tức thời)
+                checkPointManager.DrawingTool.currentLineType = checkPointManager.currentLineType;
+                checkPointManager.DrawLineAndDistance(newline.start, newline.end);
+                checkPointManager.DrawingTool.wallLines.Add(newline);
+
+                // Lưu lại room
+                RoomStorage.UpdateOrAddRoom(room); // (tuỳ code của bạn, có thể bỏ lần này – vì ta đã merge rồi)
                 anyRoomUpdated = true;
                 continue;
             }
@@ -308,7 +344,7 @@ public class HandleCheckpointManger : MonoBehaviour
 
                 room.wallLines.Add(new WallLine
                 {
-                    start = a3,
+                    start = a3, 
                     end = b3,
                     type = checkPointManager.currentLineType,
                     isManualConnection = true
