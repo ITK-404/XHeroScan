@@ -16,16 +16,16 @@ public class UIShiftOnBottomShift : MonoBehaviour
     
     private void Awake()
     {
-        bottomSheetUI.OnOpenEvent += OnOpenEvent;
-        bottomSheetUI.OnCloseEvent += OnCloseEvent;
+        bottomSheetUI.OnStartShowAnim += OnOpenEvent;
+        bottomSheetUI.OnEndHideAnim += OnCloseEvent;
 
         itemShift.anchoredPosition = closePosition.anchoredPosition;
     }
 
     private void OnDestroy()
     {
-        bottomSheetUI.OnOpenEvent -= OnOpenEvent;
-        bottomSheetUI.OnCloseEvent -= OnCloseEvent;
+        bottomSheetUI.OnStartShowAnim -= OnOpenEvent;
+        bottomSheetUI.OnEndHideAnim -= OnCloseEvent;
     }
 
     private void OnCloseEvent()

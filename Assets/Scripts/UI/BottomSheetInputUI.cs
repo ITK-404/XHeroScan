@@ -12,7 +12,7 @@ public class BottomSheetInputUI : BottomSheetUI
         base.Update();
         bool isVisible = TouchScreenKeyboard.visible;
 
-        if (isVisible != previousState && sheet.gameObject.activeSelf)
+        if (isVisible != previousState && container.gameObject.activeSelf)
         {
             if (delayTime > 0)
             {
@@ -29,8 +29,8 @@ public class BottomSheetInputUI : BottomSheetUI
     public void OnInputFocus()
     {
         float height = KeyboardHeight.GetHeight();
-        float scaleHeight = height * ((RectTransform)sheet.parent).rect.height / Screen.height;
-        PlayAnim(openPos + new Vector2(0, scaleHeight), openEase);
+        float scaleHeight = height * ((RectTransform)rectContainer.parent).rect.height / Screen.height;
+        PlayAnim(openPos + new Vector2(0, scaleHeight), openDuration, showEase);
         Debug.Log($"On Input Focus: {height} {scaleHeight} {TouchScreenKeyboard.visible}");
     }
 }

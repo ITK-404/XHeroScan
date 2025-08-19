@@ -2,36 +2,25 @@
 using DG.Tweening;
 using UnityEngine;
 
-public class FadePopupUI : MonoBehaviour
+public class FadePopupUI : BaseAnimUI
 {
-    [SerializeField] private GameObject container;
-    [SerializeField] private CanvasGroup canvasGroup;
 
-    private Ease fadeIn = Ease.OutCubic;
-    private Ease fadeOut = Ease.InCubic;
-
-    private Tween currentTween;
-    
-    private void Awake()
+    protected override void Awake()
     {
-        canvasGroup = container.GetComponent<CanvasGroup>();
-        if (canvasGroup == null)
-        {
-            canvasGroup = container.AddComponent<CanvasGroup>();
-        }
+        base.Awake();
         container.gameObject.SetActive(false);
         canvasGroup.alpha = 0;
     }
 
-    public void Open()
+    public override void Open()
     {
         container.gameObject.SetActive(true);
-        Fade(1, 0.15f, fadeIn);
+        Fade(1, openDuration,showEase);
     }
 
-    public void Close()
+    public override void Close()
     {
-        Fade(0, 0.15f, fadeOut, () => { container.gameObject.SetActive(false); });
+        Fade(0, hideDuration, hideEase, () => { container.gameObject.SetActive(false); });
     }
 
     private void Fade(float value, float duration, Ease ease, Action playDoneCallback = null)
@@ -43,27 +32,5 @@ public class FadePopupUI : MonoBehaviour
         }
         currentTween?.Kill();
         currentTween = canvasGroup.DOFade(value, duration).SetEase(ease).OnComplete(() => { playDoneCallback?.Invoke(); });
-    }
-}
-
-public class BaseAnimUI : MonoBehaviour
-{
-    [SerializeField] protected GameObject container;
-    [Header("Animation Settings")]
-    [SerializeField] protected Ease showEase = Ease.InOutSine;
-    [SerializeField] protected Ease hideEase = Ease.InOutSine;
-    [SerializeField] protected float openDuration = 0.1f;
-    [SerializeField] protected float hideDuration = 0.1f;
-
-    protected Tween currentTween;
-    protected CanvasGroup canvasGroup;
-    
-
-    public Action OnStartShowAnim;
-    public Action OnEndHideAnim;
-
-    protected virtual void Awake()
-    {
-        canvasGroup = container.gameObject.GetComponent<CanvasGroup>();
     }
 }

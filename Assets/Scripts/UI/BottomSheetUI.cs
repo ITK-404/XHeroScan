@@ -3,63 +3,54 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class BottomSheetUI : MonoBehaviour
+public class BottomSheetUI : BaseAnimUI
 {
-    [Header("UI")]
-    [SerializeField] protected RectTransform sheet;
-
-    [SerializeField] private float animDuration = 0.3f;
     [SerializeField] private float yOffset;
-
-    [Header("Ease Settings")]
-    [SerializeField] protected Ease openEase = Ease.OutQuart;
-
-    [SerializeField] protected Ease closeEase = Ease.InOutQuad;
 
     protected Vector2 openPos;
     protected Vector2 closedPos;
     protected Vector2 keyboardOpenPos;
 
-    protected Tweener currentTween;
-
-    public UnityAction OnOpenEvent;
-    public UnityAction OnCloseEvent;
 
     private void Start()
     {
-        float height = sheet.rect.height;
+        float height = rectContainer.rect.height;
 
         // Vị trí mở (ngay vị trí hiện tại)
-        openPos = sheet.anchoredPosition;
+        openPos = rectContainer.anchoredPosition;
 
         // Vị trí đóng (ẩn xuống dưới)
         closedPos = openPos + new Vector2(0, -(height + yOffset));
 
         // Khởi tạo ở trạng thái đóng
-        sheet.anchoredPosition = closedPos;
+        rectContainer.anchoredPosition = closedPos;
 
-        sheet.gameObject.SetActive(false);
+        rectContainer.gameObject.SetActive(false);
     }
 
-    public void Open()
+    public override void Open()
     {
-        sheet.gameObject.SetActive(true);
-        PlayAnim(openPos, openEase);
-        OnOpenEvent?.Invoke();
+        container.gameObject.SetActive(true);
+        PlayAnim(openPos, openDuration, showEase);
+        OnStartShowAnim?.Invoke();
     }
 
-    public void Close()
+    public override void Close()
     {
-        PlayAnim(closedPos, closeEase, () => { sheet.gameObject.SetActive(false); });
-        OnCloseEvent?.Invoke();
+        OnEndHideAnim?.Invoke();
+        PlayAnim(closedPos, hideDuration, hideEase, () =>
+        {
+            container.gameObject.SetActive(false);
+            OnEndHideAnim?.Invoke();
+        });
     }
 
-    protected void PlayAnim(Vector2 targetPos, Ease animEase, Action endCallback = null)
+    protected void PlayAnim(Vector2 targetPos, float animDuration, Ease animEase, Action endCallback = null)
     {
         // Hủy tween cũ nếu còn đang chạy
         currentTween?.Kill();
 
-        currentTween = sheet.DOAnchorPos(targetPos, animDuration)
+        currentTween = rectContainer.DOAnchorPos(targetPos, animDuration)
             .SetEase(animEase).OnComplete(() => { endCallback?.Invoke(); });
         Debug.Log("Anchored position : " + targetPos);
     }
