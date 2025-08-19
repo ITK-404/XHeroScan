@@ -75,6 +75,7 @@ public class BackgroundUI : MonoBehaviour
             int targetIndex = target.transform.GetSiblingIndex();
             int newIndex = Mathf.Max(0, targetIndex - (background.transform.GetSiblingIndex() < targetIndex ? 1 : 0));
             background.transform.SetSiblingIndex(newIndex);
+            Debug.Log("On Show Background");
         }
         else
         {
@@ -120,6 +121,7 @@ public class BackgroundUI : MonoBehaviour
             SceneManager.sceneLoaded += SceneManagerOnsceneLoaded;
             SceneManager.sceneUnloaded += SceneManagerOnsceneUnloaded;
             backgroundRect.gameObject.SetActive(false);
+            Debug.Log("Init Background Complete");
         }
     }
 

@@ -1,17 +1,16 @@
-using System;
-using UnityEngine.Events;
-
-public class ToggleButtonUI : ToggleButtonColorUI
+﻿public class ToggleButtonUI : ToggleButtonUIBase
 {
-    public Action ActiveEvent;
     protected override void Awake()
     {
         base.Awake();
-        ChangeState(currentState);
+        btn.onClick.AddListener(Toggle);
     }
-    
-    public void OnActive()
+
+    private void OnDestroy()
     {
-        ActiveEvent?.Invoke();
+        if (btn != null)
+        {
+            btn.onClick.RemoveListener(Toggle);
+        }
     }
 }

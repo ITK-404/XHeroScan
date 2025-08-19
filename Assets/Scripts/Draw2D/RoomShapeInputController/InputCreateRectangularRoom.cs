@@ -88,6 +88,8 @@ public class InputCreateRectangularRoom : MonoBehaviour
 
         Debug.Log($"[RoomShapeInputController] Gửi yêu cầu tạo Room hình chữ nhật chiều dài {length}m , cạnh rộng {width}m");
         panelToggleController.Show(false);
+        
+        SaveLoadManager.MakeDirty();
     }
 
     private void ShowInformationToast(string descriptionText)

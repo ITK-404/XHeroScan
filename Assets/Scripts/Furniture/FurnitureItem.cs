@@ -193,6 +193,8 @@ public partial class FurnitureItem : MonoBehaviour
         height = bounds.size.z;
         spriteRender.transform.localPosition = bounds.center;
         RefreshCheckPoints();
+        
+        MakeDirty();
     }
 
     public void RefreshCheckPoints()
@@ -315,6 +317,8 @@ public partial class FurnitureItem : MonoBehaviour
         RefreshCheckPoints();
         UpdateWorldSizeFromLocal();
         OnDragPoint = true;
+        
+        MakeDirty();
     }
 
     public void DeActiveDrag()
@@ -368,6 +372,9 @@ public partial class FurnitureItem : MonoBehaviour
         // cập nhật point/size nếu cần
         RefreshCheckPoints();
         UpdateWorldSizeFromLocal(); // nếu bạn đang dùng
+
+        MakeDirty();
+
     }
 
     public void DisableCheckPoint()
@@ -408,6 +415,11 @@ public partial class FurnitureItem : MonoBehaviour
         bounds.size = new Vector3(width, 1, height);
 
         RefreshCheckPoints();
+    }
+
+    private void MakeDirty()
+    {
+        SaveLoadManager.MakeDirty();
     }
 }
 
