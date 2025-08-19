@@ -126,8 +126,8 @@ public class ModularPopup : MonoBehaviour
         transform.SetSiblingIndex(childIndex);
     }
 
-    public void AutoDestruct(float delay = 0.5f)
-    {
+    public void AutoDestruct(float delay = 2)
+    {   
         StartCoroutine(PlayDelayDestroy(delay));
     }
     

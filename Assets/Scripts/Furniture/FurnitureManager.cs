@@ -79,6 +79,8 @@ public class FurnitureManager : MonoBehaviour
         tempDragItem?.InitLineAndText();
         runtimeFurnitures.Add(tempDragItem);
         tempDragItem = null;
+        
+        SaveLoadManager.MakeDirty();
     }
 
     private void Update()

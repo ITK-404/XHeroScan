@@ -24,6 +24,7 @@ public class FurnitureDrag : MonoBehaviour
         {
             FurnitureManager.Instance.SelectFurniture(furnitureItem);
         }
+        
     }
 
     private void OnMouseUp()

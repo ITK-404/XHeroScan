@@ -6,8 +6,30 @@ using UnityEngine.SceneManagement;
 
 public static class SaveLoadManager
 {
-    public static string saveName = "DrawingData";
+    private static readonly string DefaultSaveFileName = "DrawingData";
 
+    private static string currentFileName;
+    private static bool isDirty = false;
+    
+    public static bool IsDirty() => isDirty;
+    public static void Clear() => currentFileName = string.Empty;
+    public static void MakeDirty()
+    {
+        isDirty = true;
+    }
+    
+    public static bool IsFileLoaded()
+    {
+        if (string.IsNullOrEmpty(currentFileName)) return false;
+        Debug.Log("Current File Name " +currentFileName);
+        return true;
+    }
+    
+    public static void Save()
+    {
+        Save(currentFileName);
+    }
+    
     public static void Save(string customName = null)
     {
         SaveData saveData = new SaveData
@@ -54,13 +76,16 @@ public static class SaveLoadManager
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
         // Dùng custom name nếu có, ngược lại dùng mặc định
-        string baseName = string.IsNullOrEmpty(customName) ? saveName : customName;
+        string baseName = string.IsNullOrEmpty(customName) ? String.Empty : customName;
         string fileName = $"{baseName}.json";
 
         string pathToSave = Path.Combine(Application.persistentDataPath, fileName);
         File.WriteAllText(pathToSave, JsonUtility.ToJson(saveData, true));
 
         Debug.Log($"[Save] OK: {pathToSave}");
+
+        currentFileName = customName;
+        isDirty = false;
     }
 
     public static void Load(string fileName = "DrawingData.json")
@@ -101,6 +126,8 @@ public static class SaveLoadManager
             RoomStorage.rooms.Add(room);
         }
 
+        currentFileName = fileName;
+        
         Debug.Log("[Load] Loaded " + RoomStorage.rooms.Count + " rooms from: " + fileName);
         SceneManager.LoadScene("FlatExampleScene");
     }

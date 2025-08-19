@@ -34,7 +34,8 @@ public class ClearAllRoomsButton : MonoBehaviour
     void OnClearAllClicked()
     {
         if (checkpointManager == null) return;
-
+        
+        SaveLoadManager.MakeDirty();
         // Nếu có phòng đang chọn -> xóa ngay phòng đó (không popup)
         string currentRoomID = checkpointManager.GetSelectedRoomID();
         if (!string.IsNullOrEmpty(currentRoomID))
