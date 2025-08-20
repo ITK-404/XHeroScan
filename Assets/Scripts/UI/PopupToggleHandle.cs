@@ -7,7 +7,7 @@ public class PopupToggleHandle : MonoBehaviour
     [SerializeField] private FadePopupUI popupUI;
     [SerializeField] private PopupHideButtons popupHideButtons;
     [SerializeField] private bool isToggle;
-
+    
     private void Start()
     {
         toggleBtn.onClick.AddListener(Toggle);
@@ -34,19 +34,14 @@ public class PopupToggleHandle : MonoBehaviour
         ToggleByState(isToggle);
     }
 
-    private void ToggleByState(bool state)
+    public void ToggleByState(bool state)
     {
         if (state)
         {
             popupUI.Open();
-            BackgroundUI.Instance.Show(popupUI.gameObject, () =>
-            {
-                ToggleByState(false);
-            }, 0);
         }
         else
         {
-            BackgroundUI.Instance.Hide();
             popupUI.Close();
         }
 

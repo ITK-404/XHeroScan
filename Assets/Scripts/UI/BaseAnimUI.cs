@@ -1,6 +1,7 @@
 ﻿using System;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 
 public abstract class BaseAnimUI : MonoBehaviour
@@ -16,9 +17,8 @@ public abstract class BaseAnimUI : MonoBehaviour
     protected Tween currentTween;
     protected CanvasGroup canvasGroup;
     
-
-    public Action OnStartShowAnim;
-    public Action OnEndHideAnim;
+    public UnityEvent OnStartShowAnim;
+    public UnityEvent OnEndHideAnim;
 
     protected virtual void Awake()
     {

@@ -16,11 +16,12 @@ public class FadePopupUI : BaseAnimUI
     {
         container.gameObject.SetActive(true);
         Fade(1, openDuration, showEase);
-        
+        OnStartShowAnim?.Invoke();
     }
 
     public override void Close()
     {
+        OnEndHideAnim?.Invoke();
         Fade(0, hideDuration, hideEase, () => { container.gameObject.SetActive(false); });
     }
 
@@ -35,9 +36,5 @@ public class FadePopupUI : BaseAnimUI
         currentTween?.Kill();
         currentTween = canvasGroup.DOFade(value, duration).SetEase(ease)
             .OnComplete(() => { playDoneCallback?.Invoke(); });
-    }
-
-    private void Update()
-    {
     }
 }

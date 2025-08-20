@@ -151,15 +151,14 @@ public class BackgroundUI : MonoBehaviour
         background.gameObject.SetActive(isActive);
     }
 
-
     private void ResetEverything()
     {
         background.transform.localScale = Vector3.one;
         background.transform.localPosition = Vector3.zero;
     }
 
-    public void SetBackgroundAlpha(float alpha)
+    public bool IsActive()
     {
-        this.alpha = alpha;
+        return background.gameObject.activeSelf;
     }
 }
