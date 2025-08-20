@@ -7,21 +7,19 @@ public class PopupToggleHandle : MonoBehaviour
     [SerializeField] private FadePopupUI popupUI;
     [SerializeField] private PopupHideButtons popupHideButtons;
     [SerializeField] private bool isToggle;
+
     private void Start()
     {
         toggleBtn.onClick.AddListener(Toggle);
-        popupHideButtons.OnClickBtnHide = () =>
-        {
-            ToggleByState(false);
-        };
+        popupHideButtons.OnClickBtnHide = () => { ToggleByState(false); };
     }
 
     private void OnValidate()
     {
-        if(!popupUI)
+        if (!popupUI)
             popupUI = GetComponent<FadePopupUI>();
-     
-        if(!popupHideButtons)
+
+        if (!popupHideButtons)
             popupHideButtons = GetComponent<PopupHideButtons>();
     }
 
@@ -41,12 +39,17 @@ public class PopupToggleHandle : MonoBehaviour
         if (state)
         {
             popupUI.Open();
+            BackgroundUI.Instance.Show(popupUI.gameObject, () =>
+            {
+                ToggleByState(false);
+            }, 0);
         }
         else
         {
+            BackgroundUI.Instance.Hide();
             popupUI.Close();
         }
+
         isToggle = state;
-    
     }
 }

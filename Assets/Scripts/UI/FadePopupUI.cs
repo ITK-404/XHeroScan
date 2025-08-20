@@ -5,7 +5,6 @@ using UnityEngine.EventSystems;
 
 public class FadePopupUI : BaseAnimUI
 {
-
     protected override void Awake()
     {
         base.Awake();
@@ -16,7 +15,8 @@ public class FadePopupUI : BaseAnimUI
     public override void Open()
     {
         container.gameObject.SetActive(true);
-        Fade(1, openDuration,showEase);
+        Fade(1, openDuration, showEase);
+        
     }
 
     public override void Close()
@@ -28,24 +28,16 @@ public class FadePopupUI : BaseAnimUI
     {
         if (canvasGroup == null)
         {
-            Debug.Log("Canvas group is null, cannot using fade",gameObject);
+            Debug.Log("Canvas group is null, cannot using fade", gameObject);
             return;
         }
+
         currentTween?.Kill();
-        currentTween = canvasGroup.DOFade(value, duration).SetEase(ease).OnComplete(() => { playDoneCallback?.Invoke(); });
+        currentTween = canvasGroup.DOFade(value, duration).SetEase(ease)
+            .OnComplete(() => { playDoneCallback?.Invoke(); });
     }
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
-        {
-            if (EventSystem.current.IsPointerOverGameObject())
-            {
-                if (container.activeSelf && currentTween == null)
-                {
-                    Close();
-                }
-            }
-        }
     }
 }

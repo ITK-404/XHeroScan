@@ -5,26 +5,30 @@ using UnityEngine.UI;
 
 public class HeightInputController : MonoBehaviour
 {
-    private TMP_InputField inputField;
-    private Button minusBtn;
-    private Button plusBtn;
+    [SerializeField] private TMP_InputField inputField;
+    [SerializeField] private Button minusBtn;
+    [SerializeField] private Button plusBtn;
 
-    private float minHeight = 0;
-    private float maxHeight = 300;
+    [SerializeField] private float minHeight = 0;
+    [SerializeField] private float maxHeight = 300;
 
-    private float currentHeight;
+    [SerializeField] private float currentHeight;
 
 
     private void Awake()
     {
         minusBtn.onClick.AddListener(DecreaseHeight);
         plusBtn.onClick.AddListener(IncreaseHeight);
+
+        inputField.onValueChanged.AddListener(OnHeightInputChanged);
     }
 
     private void OnDestroy()
     {
         minusBtn.onClick.RemoveListener(DecreaseHeight);
         plusBtn.onClick.RemoveListener(IncreaseHeight);
+
+        inputField.onValueChanged.RemoveListener(OnHeightInputChanged);
     }
 
     private void IncreaseHeight()
@@ -42,5 +46,18 @@ public class HeightInputController : MonoBehaviour
         currentHeight += value;
         currentHeight = Mathf.Clamp(currentHeight, minHeight, maxHeight);
         inputField.text = currentHeight.ToString(CultureInfo.InvariantCulture);
+    }
+
+    void OnHeightInputChanged(string input)
+    {
+        if (int.TryParse(input, out int newHeight))
+        {
+            currentHeight = Mathf.Clamp(newHeight, minHeight, maxHeight);
+            inputField.text = currentHeight.ToString(CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            inputField.text = currentHeight.ToString(CultureInfo.InvariantCulture);
+        }
     }
 }

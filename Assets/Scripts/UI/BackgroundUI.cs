@@ -15,7 +15,7 @@ public class BackgroundUI : MonoBehaviour
     private Canvas canvas;
 
     private Action clickCallback;
-
+    private float alpha = 0.7f;
     public static BackgroundUI Instance
     {
         get
@@ -52,8 +52,9 @@ public class BackgroundUI : MonoBehaviour
 
     private Coroutine playDelayCoroutine;
     
-    public void Show(GameObject target, Action onClickCallback)
+    public void Show(GameObject target, Action onClickCallback,float alpha = 0.7f)
     {
+        this.alpha = alpha; 
         if (playDelayCoroutine != null)
         {
             CoroutineManager.Stop(playDelayCoroutine);
@@ -91,7 +92,7 @@ public class BackgroundUI : MonoBehaviour
         if (!background)
         {
             background = new GameObject().AddComponent<Image>();
-            background.color = new Color(0, 0, 0, 0.7f);
+            background.color = new Color(0, 0, 0, alpha);
             background.raycastTarget = true;
             background.gameObject.name = "Background Black";
 
@@ -155,5 +156,10 @@ public class BackgroundUI : MonoBehaviour
     {
         background.transform.localScale = Vector3.one;
         background.transform.localPosition = Vector3.zero;
+    }
+
+    public void SetBackgroundAlpha(float alpha)
+    {
+        this.alpha = alpha;
     }
 }
