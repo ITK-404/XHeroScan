@@ -5,7 +5,7 @@ public class BackFromDraw2DButton : MonoBehaviour
 {
     [SerializeField] private Button backButton;
     [SerializeField] private SavePanelUI savePanel;
-
+    
     private void Start()
     {
         if (backButton != null)
@@ -22,9 +22,7 @@ public class BackFromDraw2DButton : MonoBehaviour
         Debug.Log("is File Not Load And Room Is Empty" + isFileNotLoadAndRoomIsEmpty);
         if (isFileLoadedAndIsDirty || isFileNotLoadAndRoomIsEmpty)
         {
-            BackButton.OnClickYes();
-            SceneHistoryManager.LoadPreviousScene();
-            SaveLoadManager.Clear();
+            ExitDraw2D();
             return;
         }
 
@@ -32,8 +30,21 @@ public class BackFromDraw2DButton : MonoBehaviour
         popup.AutoFindCanvasAndSetup();
         popup.Header = "Bạn có muốn thoát khỏi chế độ vẽ 2D?";
         popup.ClickYesEvent = OpenSavePanel;
+        popup.ClickNoEvent = ExitDraw2D;
+        popup.autoClearWhenClickYes = true;
 
-        popup.autoClearWhenClick = true;
+        BackgroundUI.Instance.Show(popup.gameObject, () =>
+        {
+            popup.AutoDestruct(0);
+        });
+
+    }
+
+    private void ExitDraw2D()
+    {
+        BackButton.OnClickYes();
+        SceneHistoryManager.LoadPreviousScene();
+        SaveLoadManager.Clear();
     }
 
     private void OpenSavePanel()

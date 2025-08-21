@@ -31,6 +31,8 @@ public class ModularPopup : MonoBehaviour
 
     [SerializeField] private bool canAnimate = false;
 
+    private bool isClicked = false;
+
     public Button NoBtn
     {
         get => noBtn;
@@ -41,7 +43,8 @@ public class ModularPopup : MonoBehaviour
     public Action EventWhenClickButtons;
 
     public bool autoClearWhenClick = false;
-
+    public bool autoClearWhenClickYes = false;
+    public bool autoClearWhenClickNo = false;
     public string Header
     {
         get => headerText.text;
@@ -73,36 +76,47 @@ public class ModularPopup : MonoBehaviour
             yesBtn.onClick.AddListener(OnYesClicked);
         if (noBtn)
             noBtn.onClick.AddListener(OnNoClicked);
+
+        isClicked = false;
     }
 
     private void Start()
     {
         if (canAnimate)
         {
-            UIAnimationUltils.PopupScaleAnimation(gameObject,0.2f);
+            UIAnimationUltils.PopupScaleAnimation(gameObject, 0.2f);
         }
     }
 
     private void OnYesClicked()
     {
+        if (isClicked) return;
+        isClicked = true;
+
         ClickYesEvent?.Invoke();
         EventWhenClickButtons?.Invoke();
-        TryToClear();
+        if (autoClearWhenClick || autoClearWhenClickYes)
+        {
+            TryToClear();
+        }
     }
 
     private void OnNoClicked()
     {
+        if (isClicked) return;
+        isClicked = true;
+
         ClickNoEvent?.Invoke();
         EventWhenClickButtons?.Invoke();
-        TryToClear();
+        if (autoClearWhenClick || autoClearWhenClickNo)
+        {
+            TryToClear();
+        }
     }
 
     private void TryToClear()
     {
-        if (autoClearWhenClick)
-        {
-            Destroy(gameObject);
-        }
+        Destroy(gameObject);
     }
 
     public void ResetAnchorOffsetAndScale()
@@ -127,10 +141,10 @@ public class ModularPopup : MonoBehaviour
     }
 
     public void AutoDestruct(float delay = 2)
-    {   
+    {
         StartCoroutine(PlayDelayDestroy(delay));
     }
-    
+
     private IEnumerator PlayDelayDestroy(float delay)
     {
         yield return new WaitForSeconds(delay);
@@ -142,9 +156,9 @@ public class ModularPopup : MonoBehaviour
         {
             DestroySelf();
         }
-        
+
     }
-    
+
     private void DestroySelf()
     {
         Destroy(gameObject);
