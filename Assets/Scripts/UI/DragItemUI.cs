@@ -3,7 +3,7 @@ using UnityEngine.EventSystems;
 
 public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
 {
-    public string ItemID;
+    [SerializeField] private string ItemID;
     public void OnDrag(PointerEventData eventData)
     {
         Debug.Log("On Drag UI: over gameobject: " + IsOverUI());

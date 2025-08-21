@@ -5,22 +5,24 @@ using UnityEngine.EventSystems;
 public class FurnitureManager : MonoBehaviour
 {
     public static FurnitureManager Instance;
+    public static List<FurnitureData> tempSaveDataFurnitureDatas = new List<FurnitureData>();
 
     public FurnitureItem furnitureItemPrefab;
     public ScaleByCameraZoom ScaleByCameraZoom;
-
-    [SerializeField] private List<FurnitureItem> furnitureItems = new List<FurnitureItem>();
     
     [Header("Snap Rotation Settings")]
+    [SerializeField] private float snapThreshold = 15f;
+    [SerializeField] private List<FurnitureItem> furnitureItems = new List<FurnitureItem>();
     public bool IsSnapRotation;
 
-    private List<float> snapAngles = new List<float> { -90, 90f, 180f, 0 };
-    [SerializeField] private float snapThreshold = 15f;
-
     private FurnitureItem tempDragItem;
-    private Camera mainCam;
-    private static List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
+    private FurnitureItem currentFurniture;
 
+    private List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
+    private List<float> snapAngles = new List<float> { -90, 90f, 180f, 0 };
+    
+    private Camera mainCam;
+    
     private void Awake()
     {
         Instance = this;
@@ -50,16 +52,28 @@ public class FurnitureManager : MonoBehaviour
 
     public void StartDragItem(string ItemID)
     {
-        var prefab = GetFurniturePrefabByID(ItemID);
+        tempDragItem = InitItemByID(ItemID);
      
-        if (prefab == null)
+        if (tempDragItem == null)
         {
             Debug.LogWarning("Furniture item with ID " + ItemID + " not found.");
             return;
         }
         
-        tempDragItem = Instantiate(prefab != null ? prefab : furnitureItemPrefab);
         SelectFurniture(tempDragItem);
+    }
+
+    private FurnitureItem InitItemByID(string ItemID)
+    {
+        var prefab = GetFurniturePrefabByID(ItemID);
+
+        if (prefab == null)
+        {
+            Debug.LogWarning("Furniture item with ID " + ItemID + " not found.");
+            return null;
+        }
+
+        return Instantiate(prefab != null ? prefab : furnitureItemPrefab);
     }
     
     private FurnitureItem GetFurniturePrefabByID(string itemID)
@@ -83,6 +97,18 @@ public class FurnitureManager : MonoBehaviour
         SaveLoadManager.MakeDirty();
     }
 
+    public void SpawnFurnitureCenterScreen(string itemID)
+    {
+        var furniture = InitItemByID(itemID);
+        var worldPointFromViewPort = mainCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f));
+        var centerPosition = new Vector3(worldPointFromViewPort.x, 0, worldPointFromViewPort.z);
+        
+        furniture.transform.position = centerPosition;
+        
+        Debug.Log("Spawn Position: " + centerPosition);
+
+    }
+
     private void Update()
     {
         if (tempDragItem)
@@ -95,7 +121,7 @@ public class FurnitureManager : MonoBehaviour
             SelectFurniture(null);
             return;
         }
-
+        // select handle
         if (currentFurniture && Input.GetMouseButtonDown(0))
         {
             if (EventSystem.current.IsPointerOverGameObject())
@@ -109,7 +135,7 @@ public class FurnitureManager : MonoBehaviour
                 SelectFurniture(null);
             }
         }
-
+        // for testing 
         if (currentFurniture && Input.GetKeyDown(KeyCode.A))
         {
             var roomID = CheckpointManager.Instance.FindRoomIDByPoint(currentFurniture.GetWorldPosition());
@@ -135,7 +161,6 @@ public class FurnitureManager : MonoBehaviour
         runtimeFurnitures.Clear();
     }
 
-    private FurnitureItem currentFurniture;
 
     public void SelectFurniture(FurnitureItem furniture)
     {
@@ -192,7 +217,7 @@ public class FurnitureManager : MonoBehaviour
         return angle;
     }
 
-    public static List<FurnitureData> GetAllFurnitureData()
+    public List<FurnitureData> GetAllFurnitureData()
     {
         List<FurnitureData> dataList = new List<FurnitureData>();
         foreach (var furniture in runtimeFurnitures)
@@ -203,9 +228,9 @@ public class FurnitureManager : MonoBehaviour
         return dataList;
     }
 
-    public static List<FurnitureData> tempSaveDataFurnitureDatas = new List<FurnitureData>();
     public static void AddFurnitures(List<FurnitureData> saveDataFurnitureDatas)
     {
         tempSaveDataFurnitureDatas = saveDataFurnitureDatas;
     }
+
 }

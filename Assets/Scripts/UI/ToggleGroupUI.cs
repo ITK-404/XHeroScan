@@ -44,8 +44,6 @@ public class ToggleGroupUI : MonoBehaviour
     {
         if (RoomStorage.rooms.Count == 0)
         {
-            // Show popup
-            toastUI.gameObject.SetActive(true);
             return;
         }
         

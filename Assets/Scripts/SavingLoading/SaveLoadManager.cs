@@ -73,7 +73,7 @@ public static class SaveLoadManager
             saveData.paths.Add(path);
         }
 
-        saveData.furnitureDatas = FurnitureManager.GetAllFurnitureData();
+        saveData.furnitureDatas = FurnitureManager.Instance.GetAllFurnitureData();
         // Tạo timestamp phù hợp cho tên file
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
