@@ -49,7 +49,7 @@ public class RoomMeshController : MonoBehaviour
 
                 case TouchPhase.Moved:
                     if (!isDragging) return;
-                    DragRoom(touch.position);
+                    // DragRoom(touch.position);
                     break;
 
                 case TouchPhase.Ended:
@@ -332,7 +332,7 @@ public class RoomMeshController : MonoBehaviour
             return;
         if (!PenManager.isPenActive) return;
         if (!isDragging) return;
-        DragRoom(Input.mousePosition);
+        // DragRoom(Input.mousePosition);
     }
 #endif
     private Vector2 oldPosition;

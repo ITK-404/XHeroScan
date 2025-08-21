@@ -25,9 +25,9 @@ public class PenManager : MonoBehaviour
     private ToggleColorImage toggleColorImage;
 
     // == Thêm vào PenManager ==
-private bool _dragRoom = false;
-private string _dragRoomID = null;
-private Vector3 _lastWorld; // world pos frame trước khi drag
+    private bool _dragRoom = false;
+    private string _dragRoomID = null;
+    private Vector3 _lastWorld; // world pos frame trước khi drag
 
     // public bool IsPenActive => isPenActive;  // Getter để cung cấp trạng thái Pen
     private Vector3 previewPosition; // Vị trí preview
@@ -46,13 +46,6 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
         // Lấy tham chiếu đến CheckpointManager
         checkpointManager = FindFirstObjectByType<CheckpointManager>();
         movePointManager = FindFirstObjectByType<MovePointManager>();
-
-        // // Tự gán Collider nếu chưa có
-        // GameObject bg = GameObject.Find("Background Black");
-        // if (bg != null && bg.GetComponent<Collider>() == null)
-        // {
-        //     bg.AddComponent<BoxCollider>();
-        // }
 
         // Đảm bảo trạng thái ban đầu của Pen là tắt
         UpdatePenState();
