@@ -27,11 +27,13 @@ public static class SaveLoadManager
     
     public static void Save()
     {
+        Debug.Log("Save without parameter");
         Save(currentFileName);
     }
     
     public static void Save(string customName = null)
     {
+        Debug.Log("Save with parameter");
         SaveData saveData = new SaveData
         {
             timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -73,7 +75,7 @@ public static class SaveLoadManager
             saveData.paths.Add(path);
         }
 
-        saveData.furnitureDatas = FurnitureManager.Instance.GetAllFurnitureData();
+        saveData.furnitureDatas = FurnitureManager.GetAllFurnitureData();
         // Tạo timestamp phù hợp cho tên file
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
@@ -130,7 +132,7 @@ public static class SaveLoadManager
             RoomStorage.rooms.Add(room);
         }
 
-        currentFileName = fileName;
+        currentFileName = RemoveExtension(fileName);
         
         Debug.Log("[Load] Loaded " + RoomStorage.rooms.Count + " rooms from: " + fileName);
         SceneManager.LoadScene("FlatExampleScene");
@@ -261,14 +263,33 @@ public static class SaveLoadManager
 
     public static string EnsureJsonExtension(string fileName)
     {
+        return EnsureExtension(fileName, ".json");
+    }
+
+    private static string EnsureExtension(string fileName,string extension)
+    {
         if (string.IsNullOrWhiteSpace(fileName))
             return null;
 
-        if (!fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+        if (!fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
         {
-            fileName += ".json";
+            fileName += extension;
         }
 
         return fileName;
+    }
+
+    private static string RemoveExtension(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return null;
+
+        int dotIndex = fileName.LastIndexOf('.');
+        if (dotIndex > 0)
+        {
+            return fileName.Substring(0, dotIndex);
+        }
+
+        return fileName; 
     }
 }

@@ -18,7 +18,7 @@ public class FurnitureManager : MonoBehaviour
     private FurnitureItem tempDragItem;
     private FurnitureItem currentFurniture;
 
-    private List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
+    private static List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
     private List<float> snapAngles = new List<float> { -90, 90f, 180f, 0 };
     
     private Camera mainCam;
@@ -105,6 +105,7 @@ public class FurnitureManager : MonoBehaviour
         
         furniture.transform.position = centerPosition;
         
+        runtimeFurnitures.Add(furniture);
         Debug.Log("Spawn Position: " + centerPosition);
 
     }
@@ -217,7 +218,7 @@ public class FurnitureManager : MonoBehaviour
         return angle;
     }
 
-    public List<FurnitureData> GetAllFurnitureData()
+    public static List<FurnitureData> GetAllFurnitureData()
     {
         List<FurnitureData> dataList = new List<FurnitureData>();
         foreach (var furniture in runtimeFurnitures)
