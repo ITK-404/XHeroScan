@@ -37,6 +37,9 @@ public class FurnitureManager : MonoBehaviour
             Debug.LogWarning("No furniture data to load.");
             return;
         }
+        // clear before run
+        runtimeFurnitures.Clear();
+        
         foreach (var data in tempSaveDataFurnitureDatas)
         {
             var prefab = Instance.GetFurniturePrefabByID(data.ItemID);
@@ -46,7 +49,9 @@ public class FurnitureManager : MonoBehaviour
             item.InitLineAndText();
             runtimeFurnitures.Add(item);
         }
-        
+
+        // clear after using
+        tempSaveDataFurnitureDatas.Clear();
         Debug.Log("Loading furniture data: " + tempSaveDataFurnitureDatas.Count);
     }
 
