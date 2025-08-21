@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting.Antlr3.Runtime.Tree;
@@ -296,11 +295,6 @@ public partial class FurnitureItem : MonoBehaviour
         float lx = bounds.size.x; // local width (X)
         float lz = bounds.size.z; // local height (Z)
 
-        // AABB trên world X/Z
-        //worldWidth = c * lx + s * lz;   // full size along world X
-        //worldHeight = s * lx + c * lz;   // full size along world Z
-
-        // cho tiện, cũng cập nhật public width/height nếu bạn dùng 2 biến đó hiển thị
         width = bounds.size.x;
         height = bounds.size.z;
     }
@@ -310,15 +304,16 @@ public partial class FurnitureItem : MonoBehaviour
     {
         var currentPos = GetWorldMousePosition();
         var delta = currentPos - startPos;
+        
         dragTransform.localPosition += delta;
         startPos = currentPos;
         bounds.center = dragTransform.localPosition;
 
         RefreshCheckPoints();
         UpdateWorldSizeFromLocal();
-        OnDragPoint = true;
-        
         MakeDirty();
+       
+        OnDragPoint = true;
     }
 
     public void DeActiveDrag()
@@ -371,6 +366,7 @@ public partial class FurnitureItem : MonoBehaviour
 
         // cập nhật point/size nếu cần
         RefreshCheckPoints();
+        
         UpdateWorldSizeFromLocal(); // nếu bạn đang dùng
 
         MakeDirty();
@@ -407,13 +403,15 @@ public partial class FurnitureItem : MonoBehaviour
         currentRotation = data.rotation;
 
         // Cập nhật vị trí và kích thước của sprite
+        
         spriteRender.transform.position = data.worldPosition;
         spriteRender.transform.localScale = new Vector3(width, height, 1 * height * 0.5f);
+        spriteRender.transform.localRotation = Quaternion.Euler(90, currentRotation, 0);
 
         // Cập nhật bounds
         bounds.center = spriteRender.transform.localPosition;
         bounds.size = new Vector3(width, 1, height);
-
+        // cập nhật lại rotation và position theo check point
         RefreshCheckPoints();
     }
 
@@ -421,17 +419,5 @@ public partial class FurnitureItem : MonoBehaviour
     {
         SaveLoadManager.MakeDirty();
     }
-}
-
-[Serializable]
-public class FurnitureData
-{
-    public string RoomID = string.Empty;
-    public string ItemID = string.Empty; // ID duy nhất của item
-    public Vector3 worldPosition = Vector3.zero;
-    public float Width = 1;
-    public float Height = 1;
-    public float ObjectHeight = 0.5f;
-    public float rotation = 0f; // rotation in degrees around Y axis
 }
 
