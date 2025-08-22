@@ -101,6 +101,10 @@ public partial class FurnitureItem : MonoBehaviour
     private void Start()
     {
         drawingTool = DrawingTool.Instance;
+        
+        Debug.Log($"sprite renderer: {spriteRender.bounds}");
+        Debug.Log($"sprite renderer: {spriteRender.localBounds}");
+        Debug.Log($"sprite renderer: {spriteRender.sprite.bounds}");
     }
 
 
