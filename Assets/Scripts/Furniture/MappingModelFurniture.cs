@@ -17,6 +17,11 @@ public class MappingModelFurniture : MonoBehaviour
         // Initialize the model based on the current view type
     }
 
+    private void OnDestroy()
+    {
+        ViewChanger.ViewChanged -= OnViewChanged;
+    }
+
     private void InitModel()
     {
         var furnitureKey = storage.GetFurnitureKeyByID(ItemID);

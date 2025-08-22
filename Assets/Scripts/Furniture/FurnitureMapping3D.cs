@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class FurnitureMapping3D : MonoBehaviour
 {
-    [SerializeField] private List<MappingModelFurniture> furniturePrefabs;
+    [SerializeField] private MappingModelFurniture furniturePrefab;
     private void Start()
     {
         var list = FurnitureManager.tempSaveDataFurnitureDatas;
@@ -14,22 +14,10 @@ public class FurnitureMapping3D : MonoBehaviour
         }
         foreach(var item in list)
         {
-            var prefab = GetFurniturePrefabByID(item.ItemID);
+            var prefab = furniturePrefab;
             if (prefab == null) continue;
             var furnitureInstance = Instantiate(prefab, item.worldPosition, Quaternion.Euler(0, item.rotation, 0));
             furnitureInstance.SetData(item);
         }
-    }
-
-    private MappingModelFurniture GetFurniturePrefabByID(string itemItemID)
-    {
-        foreach (var furniture in furniturePrefabs)
-        {
-            if (furniture.ItemID == itemItemID)
-            {
-                return furniture;
-            }
-        }
-        return null;
     }
 }
