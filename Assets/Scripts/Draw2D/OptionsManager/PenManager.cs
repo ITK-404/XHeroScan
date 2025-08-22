@@ -124,9 +124,6 @@ public class PenManager : MonoBehaviour
                 checkpointManager.isMovingCheckpoint = false;
             }
         }
-
-        mainCamera.transform.position =
-            GPUInstancedGrid.Instance.GetCameraBoundsPosition(mainCamera.transform.position);
     }
 
     // Raycast trúng mesh sàn phòng -> lấy roomID từ tên "RoomFloor_<id>" hoặc component
@@ -289,7 +286,6 @@ public class PenManager : MonoBehaviour
                         mainCamera.nearClipPlane)) -
                     mainCamera.ScreenToWorldPoint(new Vector3(touch.position.x - touchDelta.x,
                         touch.position.y - touchDelta.y, mainCamera.nearClipPlane));
-                GPUInstancedGrid.Instance.GetCameraBoundsPosition(mainCamera.transform.position + -move);
                 mainCamera.transform.Translate(-move, Space.World);
                 
             }
