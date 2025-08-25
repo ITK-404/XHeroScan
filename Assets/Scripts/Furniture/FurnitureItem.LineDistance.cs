@@ -77,7 +77,7 @@ public partial class FurnitureItem
         }
         
         private FurnitureItem furnitureItem;
-        private float currentRotation => furnitureItem.currentRotation;
+        private float currentRotation => furnitureItem.currentRotation.y;
         
         public void Recalculator(Transform point, CheckpointType type, Bounds bounds, Vector3 offset)
         {

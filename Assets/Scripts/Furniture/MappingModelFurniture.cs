@@ -3,10 +3,10 @@
 public class MappingModelFurniture : MonoBehaviour
 {
     public string ItemID;
-    [SerializeField] private FurnitureData Data;
     [SerializeField] private GameObject model2D;
     [SerializeField] private GameObject model3D;
     [SerializeField] private FurnitureKeyStorage storage;
+    [SerializeField] private DrawingInstanced Data;
 
     private void Awake()
     {
@@ -28,11 +28,11 @@ public class MappingModelFurniture : MonoBehaviour
         var spriteRenderer2D = model2D.GetComponent<SpriteRenderer>();
       
         spriteRenderer2D.sprite = furnitureKey.sprite2D;
-        SetSpriteSize(spriteRenderer2D, Data.Width, Data.Height);
+        SetSpriteSize(spriteRenderer2D, Data.size.width, Data.size.length);
         
         model3D = Instantiate(furnitureKey.model3D, transform);
         model3D.transform.localPosition = Vector3.zero;
-        SetModelSize(model3D.gameObject, new Vector3(Data.Width, Data.ObjectHeight, Data.Height));
+        SetModelSize(model3D.gameObject, Data.size.To3DSize());
     }
 
     void SetModelSize(GameObject model, Vector3 targetSize)
@@ -74,7 +74,7 @@ public class MappingModelFurniture : MonoBehaviour
         // sr.transform.localScale = newScale;
     }
 
-    public void SetData(FurnitureData data)
+    public void SetData(DrawingInstanced data)
     {
         Data = data;
         InitModel();
@@ -84,16 +84,11 @@ public class MappingModelFurniture : MonoBehaviour
 
     private void UpdateModel()
     {
-        if (Data == null)
-        {
-            Debug.LogWarning("FurnitureData is not set.");
-            return;
-        }
 
         // Assuming you have a method to update the model based on the data
         transform.localPosition = new Vector3(Data.worldPosition.x, -2.4f, Data.worldPosition.z);
-        transform.localRotation = Quaternion.Euler(0, Data.rotation, 0);
-        transform.localScale = new Vector3(Data.Width, Data.ObjectHeight, Data.Height);
+        transform.localRotation = Data.size.rotation;
+        transform.localScale = Data.size.To3DSize();
     }
 
     private void OnViewChanged(ViewType viewType)

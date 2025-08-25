@@ -16,7 +16,7 @@ public class FurnitureMapping3D : MonoBehaviour
         {
             var prefab = furniturePrefab;
             if (prefab == null) continue;
-            var furnitureInstance = Instantiate(prefab, item.worldPosition, Quaternion.Euler(0, item.rotation, 0));
+            var furnitureInstance = Instantiate(prefab, item.worldPosition, Quaternion.Euler(0, item.size.rotation.y, 0));
             furnitureInstance.SetData(item);
         }
     }

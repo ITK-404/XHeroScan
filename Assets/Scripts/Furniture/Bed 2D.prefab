@@ -262,13 +262,21 @@ MonoBehaviour:
   minSizeX: 0.1
   minSizeZ: 0.1
   data:
-    RoomID: 
-    ItemID: bed_1
+    roomID: 
+    instanceID: 
+    itemTemplateID: bed_1
+    itemVariantID: 
     worldPosition: {x: 0, y: 0, z: 0}
-    Width: 1
-    Height: 1
-    ObjectHeight: 0
-    rotation: 0
+    currentItemType: 0
+    size:
+      width: 1
+      height: 1
+      length: 1
+      rotation: {x: 0, y: 0, z: 0, w: 0}
+      widthMinMax: {x: 0, y: 0}
+      heightMinMax: {x: 0, y: 0}
+      lengthMinMax: {x: 0, y: 0}
+      offsetY: 0
   spriteRender: {fileID: 6447085774176705639}
   checkPointParent: {fileID: 9142053234481993226}
   leftPoint: {fileID: 3946280342027712294}

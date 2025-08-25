@@ -27,7 +27,16 @@ public struct DrawItemSize
     public Vector2 lengthMinMax;
 
     public float offsetY;
-    
+
+    public Vector2 To2DSize()
+    {
+        return new Vector2(width, length);
+    }
+
+    public Vector3 To3DSize()
+    {
+        return new Vector3(width, height, length);
+    }
 }
 
 public enum ItemType
@@ -49,6 +58,7 @@ public struct DrawingTemplate
 public struct DrawingInstanced
 {
     public string roomID;
+    public string instanceID;
     public string itemTemplateID;
     public string itemVariantID;
     public Vector3 worldPosition;

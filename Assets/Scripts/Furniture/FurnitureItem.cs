@@ -27,7 +27,7 @@ public partial class FurnitureItem : MonoBehaviour
     public float minSizeZ = 0.1f;
 
     [Header("References")]
-    public FurnitureData data;
+    public DrawingInstanced data;
 
     public SpriteRenderer spriteRender;
 
@@ -49,10 +49,10 @@ public partial class FurnitureItem : MonoBehaviour
     [Header("Bounds")]
     [SerializeField] private Bounds bounds;
 
-    private float currentRotation
+    private Quaternion currentRotation
     {
-        get => data.rotation;
-        set => data.rotation = value;
+        get => data.size.rotation;
+        set => data.size.rotation = value;
     }
 
     private FurnitureVisuals furnitureVisuals;
@@ -63,14 +63,14 @@ public partial class FurnitureItem : MonoBehaviour
 
     public float width
     {
-        get => data.Width;
-        set => data.Width = value;
+        get => data.size.width;
+        set => data.size.width = value;
     }
 
-    public float height
+    public float length
     {
-        get => data.Height;
-        set => data.Height = value;
+        get => data.size.length;
+        set => data.size.length = value;
     }
 
 
@@ -81,7 +81,7 @@ public partial class FurnitureItem : MonoBehaviour
         
         bounds = new Bounds();
         bounds.center = spriteRender.transform.localPosition;
-        bounds.size = new Vector3(width, 1, height);
+        bounds.size = new Vector3(width, 1, length);
        
         if (mainCam == null)
         {
@@ -193,7 +193,7 @@ public partial class FurnitureItem : MonoBehaviour
         }
 
         width = bounds.size.x;
-        height = bounds.size.z;
+        length = bounds.size.z;
         spriteRender.transform.localPosition = bounds.center;
         RefreshCheckPoints();
         
@@ -227,10 +227,10 @@ public partial class FurnitureItem : MonoBehaviour
     {
         // limit
         width = Mathf.Clamp(width, minSizeX, 100);
-        height = Mathf.Clamp(height, minSizeZ, 100);
+        length = Mathf.Clamp(length, minSizeZ, 100);
 
         // scale sprite
-        spriteRender.transform.localScale = new Vector3(width, height, 1 * height * 0.5f);
+        spriteRender.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
 
         // using for update by zoom in or zoom out
         if (IUpdateWhenMoves == null) return;
@@ -239,17 +239,15 @@ public partial class FurnitureItem : MonoBehaviour
             item.UpdateWhenCameraZoom();
         }
 
-        if (data != null)
-        {
-            data.worldPosition = spriteRender.transform.position;
-        }
+        data.worldPosition = spriteRender.transform.position;
+
     }
 
     public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint,
         ResizeAxis resizeAxis)
     {
         // rotation hiện tại (dùng currentRotation của bạn)
-        Quaternion rotation = Quaternion.Euler(0f, currentRotation, 0f);
+        Quaternion rotation = Quaternion.Euler(0f, currentRotation.y, 0f);
         Vector3 originalCenter = bounds.center;
         // Chuyển vị trí drag và anchor về "local chưa xoay" (unrotated local space)
         Vector3 dragLocalUnrot = Quaternion.Inverse(rotation) * (localPoint - originalCenter);
@@ -283,13 +281,13 @@ public partial class FurnitureItem : MonoBehaviour
 
         // Sau khi resize xong, cập nhật hiển thị / điểm:
         spriteRender.transform.localPosition = bounds.center;
-        spriteRender.transform.localRotation = Quaternion.Euler(90, currentRotation, 0);
+        spriteRender.transform.localRotation = Quaternion.Euler(90, currentRotation.y, 0);
     }
 
     private void UpdateWorldSizeFromLocal()
     {
         // rotation in degrees around Y
-        float angleDeg = currentRotation;
+        float angleDeg = currentRotation.y;
         float rad = angleDeg * Mathf.Deg2Rad;
 
         float c = Mathf.Abs(Mathf.Cos(rad));
@@ -300,7 +298,7 @@ public partial class FurnitureItem : MonoBehaviour
         float lz = bounds.size.z; // local height (Z)
 
         width = bounds.size.x;
-        height = bounds.size.z;
+        length = bounds.size.z;
     }
 
     
@@ -364,9 +362,11 @@ public partial class FurnitureItem : MonoBehaviour
 
         angleDeg = FurnitureManager.Instance.CheckSnapRotation(angleDeg);
     
-        currentRotation = (angleDeg + 180f) % 360f;
-
-        spriteRender.transform.localRotation = Quaternion.Euler(90f, currentRotation, 0f);
+        float yRotation = (angleDeg + 180f) % 360f;
+        Quaternion temp = currentRotation;
+        temp.y = yRotation;
+        currentRotation = temp;
+        spriteRender.transform.localRotation = Quaternion.Euler(90f, currentRotation.y, 0f);
 
         // cập nhật point/size nếu cần
         RefreshCheckPoints();
@@ -397,24 +397,21 @@ public partial class FurnitureItem : MonoBehaviour
         spriteRender.transform.position = worldPosition;
     }
 
-    public void FetchData(FurnitureData furnitureData)
+    public void FetchData(DrawingInstanced furnitureData)
     {
         data = furnitureData;
 
         // Cập nhật các thuộc tính từ dữ liệu
-        width = data.Width;
-        height = data.Height;
-        currentRotation = data.rotation;
 
         // Cập nhật vị trí và kích thước của sprite
         
         spriteRender.transform.position = data.worldPosition;
-        spriteRender.transform.localScale = new Vector3(width, height, 1 * height * 0.5f);
-        spriteRender.transform.localRotation = Quaternion.Euler(90, currentRotation, 0);
+        spriteRender.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
+        spriteRender.transform.localRotation = Quaternion.Euler(90, currentRotation.y, 0);
 
         // Cập nhật bounds
         bounds.center = spriteRender.transform.localPosition;
-        bounds.size = new Vector3(width, 1, height);
+        bounds.size = new Vector3(width, 1, length);
         // cập nhật lại rotation và position theo check point
         RefreshCheckPoints();
     }
