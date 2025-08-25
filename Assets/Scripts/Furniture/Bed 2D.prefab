@@ -135,6 +135,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5824219951104008082}
   - component: {fileID: 3354348105385316814}
+  - component: {fileID: 4057246774921060612}
   m_Layer: 0
   m_Name: Square
   m_TagString: Untagged
@@ -152,7 +153,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.0118, y: 0.02, z: -0.03}
-  m_LocalScale: {x: 0.34987435, y: 0.2717976, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5386840937885300725}
@@ -201,7 +202,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 466d79cc5ae8fda4a98d54cc7dbb8fa2, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 61299f3b716b8354dab605586dec8a1c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -212,6 +213,18 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &4057246774921060612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4349819414962350944}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6099fc3074a347e68918d91c42cbe2a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4657399046887679853
 GameObject:
   m_ObjectHideFlags: 0
@@ -259,17 +272,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1187a795b804dd40a411a676a838340, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minSizeX: 0.1
-  minSizeZ: 0.1
   data:
-    RoomID: 
-    ItemID: bed_1
+    roomID: 
+    instanceID: 
+    itemTemplateID: bed_1
+    itemVariantID: 
     worldPosition: {x: 0, y: 0, z: 0}
-    Width: 1
-    Height: 1
-    ObjectHeight: 0
-    rotation: 0
-  spriteRender: {fileID: 6447085774176705639}
+    currentItemType: 0
+    size:
+      width: 1
+      height: 1
+      length: 1
+      rotation: {x: 0, y: 0, z: 0, w: 0}
+      widthMinMax: {x: 1, y: 0}
+      heightMinMax: {x: 1, y: 0}
+      lengthMinMax: {x: -1, y: 0}
+      offsetY: 0
+  modelContainer: {fileID: 5386840937885300725}
+  model2D: {fileID: 3354348105385316814}
   checkPointParent: {fileID: 9142053234481993226}
   leftPoint: {fileID: 3946280342027712294}
   rightPoint: {fileID: 4280884400013859840}

@@ -7,7 +7,7 @@ public class SaveData
 {
     public string timestamp;
     public List<SavedPath> paths = new List<SavedPath>();
-    public List<FurnitureData> furnitureDatas = new List<FurnitureData>();
+    public List<DrawingInstanced> furnitureDatas = new List<DrawingInstanced>();
 }
 
 [System.Serializable]

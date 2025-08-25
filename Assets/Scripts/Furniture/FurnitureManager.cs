@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 public class FurnitureManager : MonoBehaviour
 {
     public static FurnitureManager Instance;
-    public static List<FurnitureData> tempSaveDataFurnitureDatas = new List<FurnitureData>();
+    public static List<DrawingInstanced> tempSaveDataFurnitureDatas = new List<DrawingInstanced>();
 
     public FurnitureItem furnitureItemPrefab;
     public ScaleByCameraZoom ScaleByCameraZoom;
@@ -42,7 +42,7 @@ public class FurnitureManager : MonoBehaviour
         
         foreach (var data in tempSaveDataFurnitureDatas)
         {
-            var prefab = Instance.GetFurniturePrefabByID(data.ItemID);
+            var prefab = Instance.GetFurniturePrefabByID(data.itemTemplateID);
             if(prefab == null) continue;
             var item = GameObject.Instantiate(prefab);
             item.FetchData(data);
@@ -83,7 +83,7 @@ public class FurnitureManager : MonoBehaviour
     
     private FurnitureItem GetFurniturePrefabByID(string itemID)
     {
-        return furnitureItems.Find(item => item.data.ItemID == itemID);
+        return furnitureItems.Find(item => item.data.itemTemplateID == itemID);
     }
 
     public void ClearDragItem()
@@ -148,12 +148,12 @@ public class FurnitureManager : MonoBehaviour
             if (string.IsNullOrEmpty(roomID))
             {
                 Debug.LogWarning("No room found for the current furniture position.");
-                currentFurniture.data.RoomID = null;
+                currentFurniture.data.roomID = null;
                 return;
             }
 
             Debug.Log("Is in room: " + roomID);
-            currentFurniture.data.RoomID = roomID;
+            currentFurniture.data.roomID = roomID;
         }
     }
 
@@ -223,9 +223,9 @@ public class FurnitureManager : MonoBehaviour
         return angle;
     }
 
-    public static List<FurnitureData> GetAllFurnitureData()
+    public static List<DrawingInstanced> GetAllFurnitureData()
     {
-        List<FurnitureData> dataList = new List<FurnitureData>();
+        List<DrawingInstanced> dataList = new List<DrawingInstanced>();
         foreach (var furniture in runtimeFurnitures)
         {
             dataList.Add(furniture.data);
@@ -234,7 +234,7 @@ public class FurnitureManager : MonoBehaviour
         return dataList;
     }
 
-    public static void AddFurnitures(List<FurnitureData> saveDataFurnitureDatas)
+    public static void AddFurnitures(List<DrawingInstanced> saveDataFurnitureDatas)
     {
         tempSaveDataFurnitureDatas = saveDataFurnitureDatas;
     }

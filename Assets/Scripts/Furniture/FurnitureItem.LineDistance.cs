@@ -71,16 +71,17 @@ public partial class FurnitureItem
 
     public class FurnitureVisuals
     {
-        public FurnitureVisuals(FurnitureItem furnitureItem)
+        public FurnitureVisuals(FurnitureItem _furnitureItem)
         {
-            this.furnitureItem = furnitureItem;
+            this.furnitureItem = _furnitureItem;
         }
         
         private FurnitureItem furnitureItem;
-        private float currentRotation => furnitureItem.currentRotation;
+        private float currentRotation => furnitureItem.currentRotation.y;
         
         public void Recalculator(Transform point, CheckpointType type, Bounds bounds, Vector3 offset)
         {
+            // tính toán tỉ lệ của bound dựa trên vị trí mới của point tương ứng
             Vector3 newPosition = point.transform.localPosition;
             float xExtend = Mathf.Max(bounds.extents.x, furnitureItem.minSizeX);
             float yExtend = Mathf.Max(bounds.extents.z, furnitureItem.minSizeZ);
@@ -123,28 +124,28 @@ public partial class FurnitureItem
             float maxX = furnitureItem.minSizeX;
             float minZ = -furnitureItem.minSizeZ;
             float maxZ = furnitureItem.minSizeZ;
-            
+            float LIMIT_SIZE = 0.5f;
             if (type == CheckpointType.Left || type == CheckpointType.TopLeft || type == CheckpointType.BottomLeft)
             {
-                if (dragLocalUnrot.x > -LIMIT_SIZE) dragLocalUnrot.x = -LIMIT_SIZE;
+                if (dragLocalUnrot.x > minX) dragLocalUnrot.x = minX;
             }
 
             // Right
             if (type == CheckpointType.Right || type == CheckpointType.TopRight || type == CheckpointType.BottomRight)
             {
-                if (dragLocalUnrot.x < LIMIT_SIZE) dragLocalUnrot.x = LIMIT_SIZE;
+                if (dragLocalUnrot.x < maxX) dragLocalUnrot.x = maxX;
             }
 
             // Top (positive Z in unrotated local)
             if (type == CheckpointType.Top || type == CheckpointType.TopLeft || type == CheckpointType.TopRight)
             {
-                if (dragLocalUnrot.z < LIMIT_SIZE) dragLocalUnrot.z = LIMIT_SIZE;
+                if (dragLocalUnrot.z < maxZ) dragLocalUnrot.z = maxZ;
             }
 
             // Bottom (negative Z in unrotated local)
             if (type == CheckpointType.Bottom || type == CheckpointType.BottomLeft || type == CheckpointType.BottomRight)
             {
-                if (dragLocalUnrot.z > -LIMIT_SIZE) dragLocalUnrot.z = -LIMIT_SIZE;
+                if (dragLocalUnrot.z > minZ) dragLocalUnrot.z = minZ;
             }
 
             return dragLocalUnrot;

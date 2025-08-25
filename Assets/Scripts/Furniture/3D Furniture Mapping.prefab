@@ -46,17 +46,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ItemID: bed_1
-  Data:
-    RoomID: 
-    ItemID: 
-    worldPosition: {x: 0, y: 0, z: 0}
-    Width: 1
-    Height: 1
-    ObjectHeight: 0.5
-    rotation: 0
   model2D: {fileID: 7087098633333053715}
   model3D: {fileID: 0}
   storage: {fileID: 11400000, guid: 077da4fc528c24146872c1c94288fbb9, type: 2}
+  Data:
+    roomID: 
+    instanceID: 
+    itemTemplateID: 
+    itemVariantID: 
+    worldPosition: {x: 0, y: 0, z: 0}
+    currentItemType: 0
+    size:
+      width: 0
+      height: 0
+      length: 0
+      rotation: {x: 0, y: 0, z: 0, w: 0}
+      widthMinMax: {x: 0, y: 0}
+      heightMinMax: {x: 0, y: 0}
+      lengthMinMax: {x: 0, y: 0}
+      offsetY: 0
 --- !u!1 &7087098633333053715
 GameObject:
   m_ObjectHideFlags: 0
