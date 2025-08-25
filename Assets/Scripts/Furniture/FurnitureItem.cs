@@ -22,9 +22,16 @@ public partial class FurnitureItem : MonoBehaviour
     public static bool OnDragPoint = false;
 
     private static Camera mainCam;
-    public const float LIMIT_SIZE = 0.5f;
-    public float minSizeX = 0.1f;
-    public float minSizeZ = 0.1f;
+    // public const float LIMIT_SIZE = 0.5f;
+    public float minSizeX
+    {
+        get => data.size.widthMinMax.x;
+    }
+
+    public float minSizeZ
+    {
+        get => data.size.heightMinMax.x;
+    }
 
     [Header("References")]
     public DrawingInstanced data;
@@ -49,6 +56,11 @@ public partial class FurnitureItem : MonoBehaviour
     [Header("Bounds")]
     [SerializeField] private Bounds bounds;
 
+    
+    
+    [SerializeField] private LineRenderer lineRendererPrefab;
+    [SerializeField] private TextMeshPro textMeshProPrefab;
+
     private Quaternion currentRotation
     {
         get => data.size.rotation;
@@ -56,10 +68,8 @@ public partial class FurnitureItem : MonoBehaviour
     }
 
     private FurnitureVisuals furnitureVisuals;
-    
     private FurniturePoint[] pointsArray;
     private Vector3 startPos;
-    private DrawingTool drawingTool;
 
     public float width
     {
@@ -101,12 +111,6 @@ public partial class FurnitureItem : MonoBehaviour
 
         DisableCheckPoint();
     }
-    
-    private void Start()
-    {
-        drawingTool = DrawingTool.Instance;
-    }
-
 
     private IUpdateWhenMove[] IUpdateWhenMoves;
 
@@ -131,9 +135,6 @@ public partial class FurnitureItem : MonoBehaviour
         IUpdateWhenMoves = new IUpdateWhenMove[]
             { topLine, leftLine, rightLine, bottomLine, topTextDistance, rightTextDistance };
     }
-
-    [SerializeField] private LineRenderer lineRendererPrefab;
-    [SerializeField] private TextMeshPro textMeshProPrefab;
 
     private LineRenderer CreateLineRenderer()
     {
@@ -208,15 +209,16 @@ public partial class FurnitureItem : MonoBehaviour
             furnitureVisuals.Recalculator(item.transform, item.checkpointType, bounds, new Vector3(0, 0.1f, 0));
         }
 
-        // update rotate point
+        // Cập nhật point dùng để xoay object 
         float z = bounds.size.y * 3 * FurnitureManager.Instance.ScaleByCameraZoom.Offset;
         z = Mathf.Clamp(z, 0.25f, float.MaxValue);
         Vector3 offset = new Vector3(0, 0.1f, -z);
 
+        
         furnitureVisuals.Recalculator(rotatePoint.transform, CheckpointType.Bottom, bounds, offset);
 
-        if (IUpdateWhenMoves == null) return;
         // update line
+        if (IUpdateWhenMoves == null) return;
         foreach (var item in IUpdateWhenMoves)
         {
             item.Update();
@@ -419,9 +421,9 @@ public partial class FurnitureItem : MonoBehaviour
 
     private void UpdateLocalScale()
     {
-        float x = width / model2D.sprite.bounds.size.x;
-        float y = length / model2D.sprite.bounds.size.y;
-        modelContainer.transform.localScale = new Vector3(x, y, height);
+        float x = 1 / model2D.sprite.bounds.size.x;
+        float y = 1 / model2D.sprite.bounds.size.y;
+        model2D.transform.localScale = new Vector3(x, y, 1);
         
     }
     

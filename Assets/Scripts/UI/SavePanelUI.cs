@@ -7,15 +7,11 @@ using UnityEngine.UI;
 
 public class SavePanelUI : MonoBehaviour
 {
-
-    
-
     [SerializeField] private Button closeBtn;
     [SerializeField] private Button confirmBtn;
     [SerializeField] private TMP_InputField fileNameInputField;
 
     [SerializeField] private GameObject savePanelContainer;
-
     private void Awake()
     {
         closeBtn.onClick.AddListener(Close);
@@ -72,10 +68,10 @@ public class SavePanelUI : MonoBehaviour
         }
 
         ShowPopup(MessageLog.SuccessMessage_ExportFileComplete, ModularPopup.PopupAsset.toastPopupComplete);
-        SaveLoadManager.Save(fileName);
         Close();
         
         EventSystem.current.SetSelectedGameObject(null);
+        SaveLoadManager.Save(fileName);
     }
 
     private void ShowPopup(string description, GameObject popupPrefab)

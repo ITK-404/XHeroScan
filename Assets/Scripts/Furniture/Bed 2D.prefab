@@ -272,8 +272,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1187a795b804dd40a411a676a838340, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minSizeX: 0.1
-  minSizeZ: 0.1
   data:
     roomID: 
     instanceID: 
@@ -286,9 +284,9 @@ MonoBehaviour:
       height: 1
       length: 1
       rotation: {x: 0, y: 0, z: 0, w: 0}
-      widthMinMax: {x: 0, y: 0}
-      heightMinMax: {x: 0, y: 0}
-      lengthMinMax: {x: 0, y: 0}
+      widthMinMax: {x: 1, y: 0}
+      heightMinMax: {x: 1, y: 0}
+      lengthMinMax: {x: -1, y: 0}
       offsetY: 0
   modelContainer: {fileID: 5386840937885300725}
   model2D: {fileID: 3354348105385316814}

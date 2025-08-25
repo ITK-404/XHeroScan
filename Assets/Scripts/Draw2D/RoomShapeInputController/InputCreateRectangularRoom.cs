@@ -4,15 +4,17 @@ using TMPro;
 
 public class InputCreateRectangularRoom : MonoBehaviour
 {
+    private const string WidthErrorLog = "Chiều rộng cạnh không hợp lệ! (>0)";
+    private const string HeightErrorLog = "Chiều dài cạnh không hợp lệ! (>0)";
+    
     [Header("UI References")]
-    public GameObject lengthInputField;   // Chiều dài cạnh (m)
-    public GameObject widthInputField;  // Chiều rộng cạnh (m)
-    public Button createButton;          // Nút "Tạo Room"
-    public GameObject targetPanel; // Panel đóng
-    [SerializeField] private ToastUI failedPopup;
+    [SerializeField] private GameObject lengthInputField;   // Chiều dài cạnh (m)
+    [SerializeField] private GameObject widthInputField;  // Chiều rộng cạnh (m)
+    [SerializeField] private GameObject targetPanel; // Panel đóng
+    [SerializeField] private Button createButton;
+    [SerializeField] private Toggle deleteDataToggle;
     [Header("References")]
-    public CheckpointManager checkpointManager; // Script vẽ
-
+    [SerializeField] private CheckpointManager checkpointManager; // Script vẽ
     [SerializeField] private PanelToggleController panelToggleController;
 
 
@@ -20,7 +22,7 @@ public class InputCreateRectangularRoom : MonoBehaviour
     private TMP_InputField _widthInputField;
 
     private const int LIMIT_CHARACTER_COUNT = 9;
-
+    private bool saveDataAfterCreateRoom = false;
 
     private void Awake()
     {
@@ -29,6 +31,12 @@ public class InputCreateRectangularRoom : MonoBehaviour
 
         _lengthInputField.characterLimit = LIMIT_CHARACTER_COUNT;
         _widthInputField.characterLimit = LIMIT_CHARACTER_COUNT;
+        
+        deleteDataToggle.SetIsOnWithoutNotify(saveDataAfterCreateRoom);
+        deleteDataToggle.onValueChanged.AddListener((state) =>
+        {
+            saveDataAfterCreateRoom = state;
+        });
     }
 
     void Start()
@@ -38,16 +46,11 @@ public class InputCreateRectangularRoom : MonoBehaviour
         else
             Debug.LogError("Chưa gán CreateButton!");
 
-        failedPopup.DescriptionText = "";
         panelToggleController = GetComponent<PanelToggleController>();
         // Tự động focus vào chiều dài sau 1 frame
     }
 
 
-  
-
-    private const string WidthErrorLog = "Chiều rộng cạnh không hợp lệ! (>0)";
-    private const string HeightErrorLog = "Chiều dài cạnh không hợp lệ! (>0)";
 
     void OnCreateRoomClicked()
     {
@@ -84,11 +87,17 @@ public class InputCreateRectangularRoom : MonoBehaviour
             checkpointManager.drawingCamera = Camera.main;
 
         // === Tạo Room hình chữ nhật ===
+        Debug.Log($"[RoomShapeInputController] Gửi yêu cầu tạo Room hình chữ nhật chiều dài {length}m , cạnh rộng {width}m");
+        
         CreateRectangleRoom(length, width);
 
-        Debug.Log($"[RoomShapeInputController] Gửi yêu cầu tạo Room hình chữ nhật chiều dài {length}m , cạnh rộng {width}m");
-        panelToggleController.Show(false);
+        if (!saveDataAfterCreateRoom)
+        {
+            _lengthInputField.text = "0";
+            _widthInputField.text = "0";
+        }
         
+        panelToggleController.Show(false);
         SaveLoadManager.MakeDirty();
     }
 

@@ -28,7 +28,6 @@ public class MappingModelFurniture : MonoBehaviour
         var spriteRenderer2D = model2D.GetComponent<SpriteRenderer>();
       
         spriteRenderer2D.sprite = furnitureKey.sprite2D;
-        SetSpriteSize(spriteRenderer2D, Data.size.width, Data.size.length);
         
         model3D = Instantiate(furnitureKey.model3D, transform);
         model3D.transform.localPosition = Vector3.zero;
@@ -52,26 +51,6 @@ public class MappingModelFurniture : MonoBehaviour
         currentScale.z = targetSize.z / meshSize.z;
 
         model.transform.localScale = currentScale;
-    }
-
-
-    void SetSpriteSize(SpriteRenderer sr, float targetWidth, float targetHeight)
-    {
-        // Sprite sp = sr.sprite;
-        // if (sp == null) return;
-        //
-        // // Lấy kích thước gốc của sprite (pixel → unit)
-        // Vector2 spriteSizeUnits = new Vector2(
-        //     sp.rect.width / sp.pixelsPerUnit,
-        //     sp.rect.height / sp.pixelsPerUnit
-        // );
-        //
-        // // Tính scale để đạt target size
-        // Vector3 newScale = sr.transform.localScale;
-        // newScale.x = targetWidth / spriteSizeUnits.x;
-        // newScale.y = targetHeight / spriteSizeUnits.y;
-        //
-        // sr.transform.localScale = newScale;
     }
 
     public void SetData(DrawingInstanced data)
