@@ -72,8 +72,12 @@ public partial class FurnitureItem : MonoBehaviour
         get => data.size.length;
         set => data.size.length = value;
     }
-
-
+    
+    public float height
+    {
+        get => data.size.height;
+        set => data.size.height = value;
+    }
 
     private void Awake()
     {
@@ -102,9 +106,11 @@ public partial class FurnitureItem : MonoBehaviour
     {
         drawingTool = DrawingTool.Instance;
         
-        Debug.Log($"sprite renderer: {spriteRender.bounds}");
-        Debug.Log($"sprite renderer: {spriteRender.localBounds}");
-        Debug.Log($"sprite renderer: {spriteRender.sprite.bounds}");
+        float x = width / spriteRender.sprite.bounds.size.x;
+        float y = length / spriteRender.sprite.bounds.size.y;
+        Debug.Log($" {x} and {y}");
+        Debug.Log($" {spriteRender.sprite.bounds.size}");
+        spriteRender.transform.localScale = new Vector3(x, y, height);
     }
 
 
@@ -230,7 +236,8 @@ public partial class FurnitureItem : MonoBehaviour
         length = Mathf.Clamp(length, minSizeZ, 100);
 
         // scale sprite
-        spriteRender.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
+        // spriteRender.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
+        UpdateLocalScale();
 
         // using for update by zoom in or zoom out
         if (IUpdateWhenMoves == null) return;
@@ -406,9 +413,9 @@ public partial class FurnitureItem : MonoBehaviour
         // Cập nhật vị trí và kích thước của sprite
         
         spriteRender.transform.position = data.worldPosition;
-        spriteRender.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
+        // spriteRender.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
         spriteRender.transform.localRotation = Quaternion.Euler(90, currentRotation.y, 0);
-
+        UpdateLocalScale();
         // Cập nhật bounds
         bounds.center = spriteRender.transform.localPosition;
         bounds.size = new Vector3(width, 1, length);
@@ -416,9 +423,14 @@ public partial class FurnitureItem : MonoBehaviour
         RefreshCheckPoints();
     }
 
+    private void UpdateLocalScale()
+    {
+       
+        
+    }
+    
     private void MakeDirty()
     {
         SaveLoadManager.MakeDirty();
     }
 }
-
