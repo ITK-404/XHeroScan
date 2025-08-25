@@ -22,7 +22,7 @@ public class InputCreateRectangularRoom : MonoBehaviour
     private TMP_InputField _widthInputField;
 
     private const int LIMIT_CHARACTER_COUNT = 9;
-    private bool saveDataAfterCreateRoom = false;
+    private bool saveInputForNextTime = false;
 
     private void Awake()
     {
@@ -32,10 +32,10 @@ public class InputCreateRectangularRoom : MonoBehaviour
         _lengthInputField.characterLimit = LIMIT_CHARACTER_COUNT;
         _widthInputField.characterLimit = LIMIT_CHARACTER_COUNT;
         
-        deleteDataToggle.SetIsOnWithoutNotify(saveDataAfterCreateRoom);
+        deleteDataToggle.SetIsOnWithoutNotify(saveInputForNextTime);
         deleteDataToggle.onValueChanged.AddListener((state) =>
         {
-            saveDataAfterCreateRoom = state;
+            saveInputForNextTime = state;
         });
     }
 
@@ -61,27 +61,10 @@ public class InputCreateRectangularRoom : MonoBehaviour
         }
 
         // === Lấy chiều dài ===
-        float length = 0f;
-        TMP_InputField lengthField = lengthInputField.GetComponentInChildren<TMP_InputField>();
-        if (lengthField == null || !float.TryParse(lengthField.text, out length) || length <= 0)
-        {
-            Debug.LogWarning(WidthErrorLog);
-            // PopupController.Show("Chiều dài cạnh không hợp lệ! (>0)", null);
-            ShowInformationToast(WidthErrorLog);
-            return;
-        }
-
+        float length = TryGetInput(_lengthInputField, WidthErrorLog);
         // === Lấy chiều rộng ===
-        float width = 0f;
-        TMP_InputField widthField = widthInputField.GetComponentInChildren<TMP_InputField>();
-        if (widthField == null || !float.TryParse(widthField.text, out width) || width <= 0)
-        {
-            Debug.LogWarning(HeightErrorLog);
-            // PopupController.Show("Chiều rộng cạnh không hợp lệ! (>0)", null);
-            ShowInformationToast(HeightErrorLog);
-            return;
-        }
-
+        float width = TryGetInput(_widthInputField, HeightErrorLog);
+        
         // === Truyền camera (nếu chưa gán sẵn) ===
         if (checkpointManager.drawingCamera == null)
             checkpointManager.drawingCamera = Camera.main;
@@ -91,7 +74,7 @@ public class InputCreateRectangularRoom : MonoBehaviour
         
         CreateRectangleRoom(length, width);
 
-        if (!saveDataAfterCreateRoom)
+        if (!saveInputForNextTime)
         {
             _lengthInputField.text = "0";
             _widthInputField.text = "0";
@@ -99,6 +82,18 @@ public class InputCreateRectangularRoom : MonoBehaviour
         
         panelToggleController.Show(false);
         SaveLoadManager.MakeDirty();
+    }
+
+    private float TryGetInput(TMP_InputField inputField, string errorLog)
+    {
+        float value = 0;
+        if (!inputField || !float.TryParse(inputField.text, out value) || value <= 0)
+        {
+            Debug.LogWarning(HeightErrorLog);
+            ShowInformationToast(errorLog);
+        }
+
+        return value;
     }
 
     private void ShowInformationToast(string descriptionText)
