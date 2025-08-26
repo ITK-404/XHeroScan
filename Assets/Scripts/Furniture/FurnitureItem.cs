@@ -120,15 +120,15 @@ public partial class FurnitureItem : MonoBehaviour
     }
 
     // C#
-    private void Start()
-    {
-        // Ensure modelContainer is scaled correctly at start
-        if (modelContainer != null)
-        {
-            modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
-            modelContainer.transform.localRotation = Quaternion.Euler(90, currentRotation.y, 0);
-        }
-    }
+    // private void Start()
+    // {
+    //     // Ensure modelContainer is scaled correctly at start
+    //     if (modelContainer != null)
+    //     {
+    //         modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
+    //         modelContainer.transform.localRotation = Quaternion.Euler(90, currentRotation.y, 0);
+    //     }
+    // }
 
     private IUpdateWhenMove[] IUpdateWhenMoves;
 

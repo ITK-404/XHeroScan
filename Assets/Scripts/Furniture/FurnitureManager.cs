@@ -94,7 +94,6 @@ public class FurnitureManager : MonoBehaviour
 
     public void DropDragItem()
     {
-        tempDragItem?.RefreshCheckPointsByBounds();
         tempDragItem?.InitLineAndText();
         runtimeFurnitures.Add(tempDragItem);
         tempDragItem = null;
@@ -109,7 +108,7 @@ public class FurnitureManager : MonoBehaviour
         var centerPosition = new Vector3(worldPointFromViewPort.x, 0, worldPointFromViewPort.z);
         
         furniture.transform.position = centerPosition;
-        
+        furniture.InitLineAndText();
         runtimeFurnitures.Add(furniture);
         Debug.Log("Spawn Position: " + centerPosition);
 
