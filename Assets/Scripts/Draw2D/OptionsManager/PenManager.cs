@@ -30,7 +30,6 @@ public class PenManager : MonoBehaviour
     private Vector3 _lastWorld; // world pos frame trước khi drag
 
     // public bool IsPenActive => isPenActive;  // Getter để cung cấp trạng thái Pen
-    private Vector3 previewPosition; // Vị trí preview
     [SerializeField] private ToggleGroupUI toggleGroupUI;
 
     [SerializeField] DrawingTool drawingTool;
@@ -57,34 +56,38 @@ public class PenManager : MonoBehaviour
     {
         if (ConnectManager.isConnectActive) return;
 
+        // KHÔNG bật zoom/pan nếu đang kéo room HOẶC đang kéo point floor
+        bool blockZoomPan = InteractionFlags.IsRoomFloorDragging || InteractionFlags.IsFloorHandleDragging;
+
         if (!isPenActive)
         {
             checkpointManager.enabled = true;
-            HandleZoomAndPan(false);
+            HandleZoomAndPan(!blockZoomPan);
         }
         else
         {
             checkpointManager.enabled = false;
-            HandleZoomAndPan(!isRoomFloorBeingDragged);
+            HandleZoomAndPan(!blockZoomPan);
 
             if (Input.GetMouseButtonDown(0))
             {
-                // 1) Thử chọn checkpoint TRƯỚC
                 checkpointManager.SelectCheckpoint();
 
                 if (checkpointManager.selectedCheckpoint != null)
                 {
-                    // chuẩn bị kéo điểm
                     _dragRoom = false;
                     _dragRoomID = null;
-                    isRoomFloorBeingDragged = false;
+
+                    // đang kéo checkpoint → gán cờ handle dragging (nếu checkpoint là handle floor)
+                    InteractionFlags.IsFloorHandleDragging = true;
+
                     _lastWorld = GetWorldOnXZ(Input.mousePosition);
                 }
                 else if (TryHitRoomFloor(out _dragRoomID))
                 {
-                    // 2) Không trúng điểm -> mới thử kéo room
                     _dragRoom = true;
                     isRoomFloorBeingDragged = true;
+                    InteractionFlags.IsRoomFloorDragging = true;
 
                     checkpointManager.DeselectCheckpoint();
                     checkpointManager.selectedCheckpoint = null;
@@ -106,8 +109,11 @@ public class PenManager : MonoBehaviour
                 else if (checkpointManager.selectedCheckpoint != null)
                 {
                     checkpointManager.isMovingCheckpoint = true;
-                    movePointManager.MoveSelectedCheckpoint(); // hoặc checkpointManager.MoveSelectedCheckpoint()
+                    movePointManager.MoveSelectedCheckpoint();
                     checkpointManager.isDragging = true;
+
+                    // đang kéo checkpoint/handle → giữ cờ
+                    InteractionFlags.IsFloorHandleDragging = true;
                 }
             }
             else if (Input.GetMouseButtonUp(0))
@@ -118,10 +124,13 @@ public class PenManager : MonoBehaviour
                 _dragRoom = false;
                 _dragRoomID = null;
                 isRoomFloorBeingDragged = false;
+                InteractionFlags.IsRoomFloorDragging = false;
 
+                // thôi kéo checkpoint/handle
                 checkpointManager.DeselectCheckpoint();
                 checkpointManager.isDragging = false;
                 checkpointManager.isMovingCheckpoint = false;
+                InteractionFlags.IsFloorHandleDragging = false;
             }
         }
     }

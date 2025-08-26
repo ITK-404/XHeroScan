@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.Text;
 
+#region Data Room & WallLine
 /// <summary>
 /// Một đoạn đường thẳng đại diện cho tường, cửa hoặc cửa sổ
 /// </summary>
@@ -63,6 +64,7 @@ public class Room
     public string ID { get; private set; }  // ID chỉ đọc từ bên ngoài
     public string groupID;
     public string roomName;
+    public string floorID; // ID sàn liên kết (nếu có)
 
     public List<Vector2> checkpoints = new List<Vector2>(); // polygon chính
     public List<Vector2> extraCheckpoints = new List<Vector2>(); // điểm lẻ trong phòng
@@ -88,6 +90,13 @@ public class Room
         return Guid.NewGuid().ToString(); // ID ngẫu nhiên toàn cục (UUID)
     }
 
+    // Constructor tạo phòng TRÊN một sàn cụ thể
+    public Room(Floor floor) : this()
+    {
+        if (floor == null) throw new ArgumentNullException(nameof(floor));
+        floorID = floor.ID;
+    }
+
     public void SetID(string newID)
     {
         ID = newID;
@@ -102,6 +111,7 @@ public class Room
         headingCompass = other.headingCompass;
         Compass = other.Compass;
         floorMaterial = other.floorMaterial;
+        floorID = other.floorID;
 
         checkpoints = new List<Vector2>(other.checkpoints);
         wallLines = new List<WallLine>(other.wallLines.Select(w => new WallLine(w)));
@@ -119,4 +129,64 @@ public enum LineType
     Door,
     Window
 }
+#endregion
 
+#region Floor
+[System.Serializable]
+public class FloorLine
+{
+    public Vector2 start;
+    public Vector2 end;
+
+    public FloorLine() { }
+
+    public FloorLine(Vector2 start, Vector2 end)
+    {
+        this.start = start;
+        this.end = end;
+    }
+}
+[System.Serializable]
+public class Floor
+{
+    public string ID { get; private set; }  // ID chỉ đọc từ bên ngoài
+
+    public List<Vector2> checkpoints = new List<Vector2>(); // polygon chính
+    public List<FloorLine> floorLine = new List<FloorLine>();
+    public List<float> heights = new List<float>();
+
+    // Liên kết nhiều phòng với sàn này
+    public List<string> roomIDs = new();
+
+    public Floor()
+    {
+        ID = GenerateID(); // Tự tạo ID khi khởi tạo
+    }
+
+    // Tiện dùng: tạo Room mới trên chính sàn này
+    public Room CreateRoom()
+    {
+        var r = new Room(this);        // gắn floorID = this.ID
+        if (!roomIDs.Contains(r.ID)) 
+            roomIDs.Add(r.ID);
+        return r;
+    }
+    // Hoặc đăng ký Room có sẵn vừa tạo ở ngoài
+    public void RegisterRoom(Room r)
+    {
+        if (r == null) return;
+        if (r.floorID != ID) r.floorID = ID;
+        if (!roomIDs.Contains(r.ID)) roomIDs.Add(r.ID);
+    }
+
+    private string GenerateID()
+    {
+        return Guid.NewGuid().ToString(); // ID ngẫu nhiên toàn cục (UUID)
+    }
+
+    public void SetID(string newID)
+    {
+        ID = newID;
+    }
+}
+#endregion
