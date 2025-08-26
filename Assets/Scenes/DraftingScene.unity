@@ -5790,12 +5790,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 598747853}
   m_CullTransparentMesh: 1
---- !u!224 &627529785 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 3490759374891419467, guid: 71eeec9a317831d44929ec5c9114ab45,
-    type: 3}
-  m_PrefabInstance: {fileID: 1686214470}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &637506302
 GameObject:
   m_ObjectHideFlags: 0
@@ -9514,6 +9508,18 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 102200490}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1054340519 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 853648056698860773, guid: 71eeec9a317831d44929ec5c9114ab45,
+    type: 3}
+  m_PrefabInstance: {fileID: 102200490}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1072557892
 GameObject:
   m_ObjectHideFlags: 0
@@ -13724,18 +13730,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1336687766}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!114 &1609034005 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4238384745133446233, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
-    type: 3}
-  m_PrefabInstance: {fileID: 4492018900371189173}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9085046f02f69544eb97fd06b6048fe2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1609680253
 GameObject:
   m_ObjectHideFlags: 0
@@ -16075,6 +16069,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59bffd317145bb24b939e65ebeaf1389, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  floorID: 
+  autoBindLastIfEmpty: 1
+  changeEpsilon: 0.0001
+  floorMaterial: {fileID: 0}
+  doubleSided: 1
 --- !u!4 &1908743458
 Transform:
   m_ObjectHideFlags: 0
@@ -16102,6 +16101,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73f6c26cd341eba40b7b2a3ab4d498ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  CreateRoomButton: {fileID: 1054340519}
+  floorMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &1913381022
 GameObject:
   m_ObjectHideFlags: 0
@@ -19235,10 +19238,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1054340518}
-    - targetCorrespondingSourceObject: {fileID: 6943439551855547025, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 627529785}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3714c6f9abf74fc469066e9fe76ecfbf, type: 3}
 --- !u!114 &4492018900371189174 stripped
@@ -19407,7 +19406,7 @@ PrefabInstance:
         type: 3}
       propertyPath: deleteDataToggle
       value: 
-      objectReference: {fileID: 1609034005}
+      objectReference: {fileID: 0}
     - target: {fileID: 5776610700298337379, guid: 3b13d746543f71542a8a4316e95d6032,
         type: 3}
       propertyPath: lengthInputField
@@ -19448,3 +19447,4 @@ SceneRoots:
   - {fileID: 1799471371}
   - {fileID: 1339119839}
   - {fileID: 762647739}
+  - {fileID: 1686214470}

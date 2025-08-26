@@ -28,7 +28,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     private MeshRenderer previewMR;
     private Mesh previewMesh;
 
-    // floor vừa place (để xóa được)
+    // floor vừa place (parent container)
     private GameObject lastFloorGO;
 
     // Labels cạnh
@@ -56,6 +56,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         public bool isCorner;
     }
 
+    [Header("Flow")]
+    public bool editAfterPlace = true;   // false: vẽ xong là dọn sạch
+
     private void Awake()
     {
         // Camera tối thiểu
@@ -76,19 +79,19 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             Camera.main.backgroundColor = Color.white;
         }
 
-        // Ground plane pick
-        var ground = GameObject.Find("GroundPlane");
-        if (ground == null)
-        {
-            ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ground.name = "GroundPlane";
-            ground.transform.localScale = new Vector3(50, 1, 50);
-            int floorPickLayer = LayerMask.NameToLayer("FloorPick");
-            if (floorPickLayer != -1) ground.layer = floorPickLayer;
-        }
-        var mr = ground.GetComponent<MeshRenderer>();
-        if (mr) mr.enabled = false;
-        if (ground.GetComponent<Collider>() == null) ground.AddComponent<BoxCollider>();
+        // // Ground plane pick
+        // var ground = GameObject.Find("GroundPlane");
+        // if (ground == null)
+        // {
+        //     ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        //     ground.name = "GroundPlane";
+        //     ground.transform.localScale = new Vector3(50, 1, 50);
+        //     int floorPickLayer = LayerMask.NameToLayer("FloorPick");
+        //     if (floorPickLayer != -1) ground.layer = floorPickLayer;
+        // }
+        // var mr = ground.GetComponent<MeshRenderer>();
+        // if (mr) mr.enabled = false;
+        // if (ground.GetComponent<Collider>() == null) ground.AddComponent<BoxCollider>();
 
         // Pick layer
         if (pickLayer.value == 0)
@@ -140,7 +143,6 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         CleanupAllVisuals();
         PlacementManager.Instance?.DestroyAllFloors();
         FloorStorage.floors.Clear();
-        
         InteractionFlags.IsFloorHandleDragging = false;
     }
 
@@ -159,8 +161,6 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         {
             isMovingHandle = false;
             activeIndex = -1;
-
-            // đã dừng kéo ->  tắt cờ
             InteractionFlags.IsFloorHandleDragging = false;
             return;
         }
@@ -294,7 +294,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             previewMesh.RecalculateBounds();
             previewMF.sharedMesh = previewMesh;
 
-            ShowEdgeLengths(a, b, d, e, "m", 0.4f);
+            ShowEdgeLengths(a, b, d, e);
         }
     }
 
@@ -314,14 +314,14 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             Vector3 d = c + rot * new Vector3( hw, 0,  hd);
             Vector3 e = c + rot * new Vector3(-hw, 0,  hd);
 
-            // lưu state để edit
+            // Lưu state để edit
             rectCenter = c;
             rectYaw    = yaw;
             rectHalfW  = hw;
             rectHalfD  = hd;
             hasRect    = true;
 
-            // dữ liệu
+            // Dữ liệu
             var floor = new Floor();
             floor.checkpoints.Add(new Vector2(a.x, a.z));
             floor.checkpoints.Add(new Vector2(b.x, b.z));
@@ -334,15 +334,20 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             for (int i = 0; i < 4; i++) floor.heights.Add(0.1f);
             FloorStorage.floors.Add(floor);
 
-            // Vẽ lên scene – GIỮ reference để xóa được
-            // lastFloorGO = PlacementManager.Instance.PlaceRectFloor(
-            //     lastHitPos, width, depth, yaw,
-            //     checkpointPrefab, lineMaterial, lineWidth
-            // );
+            if (lastFloorGO) { PlacementManager.Instance.DestroyFloor(lastFloorGO); lastFloorGO = null; }
+            lastFloorGO = new GameObject($"Floor_{floor.ID}");
 
-            if (previewGO != null) previewGO.SetActive(true);
+            // Đưa preview vào parent
+            if (previewGO != null)
+            {
+                previewGO.transform.SetParent(lastFloorGO.transform, true);
+                previewGO.SetActive(true);
+            }
 
-            SpawnHandles(a, b, d, e);
+            // Spawn handle vào parent
+            SpawnHandles(a, b, d, e, lastFloorGO.transform);
+
+            // Vẽ lại từ state (sẽ cập nhật mesh/line/label vị trí)
             RedrawRectangleFromState();
         }
 
@@ -361,8 +366,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     }
 
     // ==== Hiển thị độ dài cạnh ====
-    private void ShowEdgeLengths(Vector3 a, Vector3 b, Vector3 d, Vector3 e,
-                                 string unit = " ", float outwardOffset = 0.3f)
+    private void ShowEdgeLengths(Vector3 a, Vector3 b, Vector3 d, Vector3 e)
     {
         for (int i = 0; i < edgeLabels.Count; i++)
             if (edgeLabels[i]) Destroy(edgeLabels[i]);
@@ -370,7 +374,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         if (distanceTextPrefab == null) return;
 
-        var cam = Camera.main;
+        // Tâm hình chữ nhật
         Vector3 center = (a + b + d + e) * 0.25f;
 
         (Vector3 p0, Vector3 p1)[] edges = new (Vector3, Vector3)[]
@@ -381,30 +385,50 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         for (int i = 0; i < edges.Length; i++)
         {
             var (p0, p1) = edges[i];
+
+            // Midpoint trên cạnh
             Vector3 mid = (p0 + p1) * 0.5f;
 
-            Vector3 outward = (mid - center); outward.y = 0f;
-            Vector3 dir = outward.sqrMagnitude > 1e-6f ? outward.normalized : Vector3.forward;
+            // Vector "vào tâm"
+            Vector3 inward = center - mid;
+            inward.y = 0f;
+            if (inward.sqrMagnitude < 1e-6f) inward = Vector3.forward; // fallback
 
-            Vector3 pos = mid + dir * outwardOffset;
+            // Vị trí nhãn
+            Vector3 pos = mid + inward.normalized * -0.5f;
+            pos.y += 0.01f;
 
-            GameObject label = Instantiate(distanceTextPrefab, pos, Quaternion.identity);
+            // Parent ưu tiên Floor_<ID>, fallback previewGO
+            Transform parentTf = lastFloorGO != null ? lastFloorGO.transform : (previewGO != null ? previewGO.transform : null);
+
+            // Tạo nhãn
+            GameObject label = Instantiate(distanceTextPrefab, pos, Quaternion.identity, parentTf);
             label.name = $"EdgeLength_{i}";
             edgeLabels.Add(label);
 
             float len = Vector3.Distance(p0, p1);
-            string text = $"{len:0.##} {unit}";
+            string text = $"{len:0.##}";
 
             var tmp = label.GetComponent<TMPro.TMP_Text>();
-            if (tmp != null) tmp.text = text;
+            if (tmp != null)
+            {
+                tmp.text = text;
+                tmp.color = Color.black;
+                tmp.fontSize = 5f;
+                tmp.alignment = TMPro.TextAlignmentOptions.Center;
+            }
             else
             {
-                var uiText = label.GetComponent<Text>();
-                if (uiText != null) uiText.text = text;
+                var uiText = label.GetComponent<UnityEngine.UI.Text>();
+                if (uiText != null)
+                {
+                    uiText.text = text;
+                    uiText.color = Color.black;
+                }
             }
 
-            if (cam != null)
-                label.transform.rotation = Quaternion.LookRotation(cam.transform.forward, Vector3.up);
+            float angleDeg = Mathf.Atan2(inward.z, inward.x) * Mathf.Rad2Deg - 90f;
+            label.transform.rotation = Quaternion.Euler(90f, 0f, -angleDeg);
         }
     }
 
@@ -430,7 +454,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
                 activeIsCorner = tag.isCorner;
                 isMovingHandle = true;
 
-                // báo cho hệ input khác biết: đang kéo point floor
+                // báo: đang kéo point floor
                 InteractionFlags.IsFloorHandleDragging = true;
                 return;
             }
@@ -483,16 +507,16 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         }
     }
 
-    private void SpawnHandles(Vector3 a, Vector3 b, Vector3 d, Vector3 e)
+    private void SpawnHandles(Vector3 a, Vector3 b, Vector3 d, Vector3 e, Transform parent)
     {
         ClearHandles();
 
-        GameObject MakeHandle(Vector3 p, string name, bool isCorner, int idx)
+        GameObject MakeHandle(Vector3 p, string name, bool isCorner, int idx, Transform pt)
         {
             GameObject h;
             if (checkpointPrefab != null)
             {
-                h = Instantiate(checkpointPrefab, p, Quaternion.identity);
+                h = Instantiate(checkpointPrefab, p, Quaternion.identity, pt);
                 h.SetActive(true);
                 if (h.GetComponent<Collider>() == null)
                 {
@@ -504,6 +528,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             else
             {
                 h = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                h.transform.SetParent(pt, true);
                 h.transform.position = p;
                 h.transform.localScale = Vector3.one * 0.3f;
                 var sc = h.GetComponent<SphereCollider>();
@@ -517,15 +542,15 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             return h;
         }
 
-        cornerHandles[0] = MakeHandle(a, "Corner_A", true, 0);
-        cornerHandles[1] = MakeHandle(b, "Corner_B", true, 1);
-        cornerHandles[2] = MakeHandle(d, "Corner_D", true, 2);
-        cornerHandles[3] = MakeHandle(e, "Corner_E", true, 3);
+        cornerHandles[0] = MakeHandle(a, "Corner_A", true, 0, parent);
+        cornerHandles[1] = MakeHandle(b, "Corner_B", true, 1, parent);
+        cornerHandles[2] = MakeHandle(d, "Corner_D", true, 2, parent);
+        cornerHandles[3] = MakeHandle(e, "Corner_E", true, 3, parent);
 
-        edgeHandles[0] = MakeHandle((a + b) * 0.5f, "Edge_AB", false, 0);
-        edgeHandles[1] = MakeHandle((b + d) * 0.5f, "Edge_BD", false, 1);
-        edgeHandles[2] = MakeHandle((d + e) * 0.5f, "Edge_DE", false, 2);
-        edgeHandles[3] = MakeHandle((e + a) * 0.5f, "Edge_EA", false, 3);
+        edgeHandles[0] = MakeHandle((a + b) * 0.5f, "Edge_AB", false, 0, parent);
+        edgeHandles[1] = MakeHandle((b + d) * 0.5f, "Edge_BD", false, 1, parent);
+        edgeHandles[2] = MakeHandle((d + e) * 0.5f, "Edge_DE", false, 2, parent);
+        edgeHandles[3] = MakeHandle((e + a) * 0.5f, "Edge_EA", false, 3, parent);
     }
 
     private void ClearHandles()
@@ -577,11 +602,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         if (edgeHandles[2]) edgeHandles[2].transform.position = (d + e) * 0.5f;
         if (edgeHandles[3]) edgeHandles[3].transform.position = (e + a) * 0.5f;
 
-        ShowEdgeLengths(a, b, d, e, "m", 0.4f);
+        ShowEdgeLengths(a, b, d, e);
     }
-
-    [Header("Flow")]
-    public bool editAfterPlace = true;   // false: vẽ xong là dọn sạch
 
     private void CleanupAllVisuals()
     {
@@ -599,7 +621,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         if (previewGO) { Destroy(previewGO); previewGO = null; }
         previewLR = null; previewMF = null; previewMR = null; previewMesh = null;
 
-        // xoá floor cuối nếu còn giữ
+        // xoá floor parent nếu còn giữ
         if (lastFloorGO) { PlacementManager.Instance.DestroyFloor(lastFloorGO); lastFloorGO = null; }
 
         hasRect = false;
