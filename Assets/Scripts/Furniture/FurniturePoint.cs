@@ -6,6 +6,7 @@ public class FurniturePoint : MonoBehaviour
     public Transform center;
     public CheckpointType checkpointType;
     public FurnitureItem furniture;
+
     private void Awake()
     {
         if (mainCam == null)
@@ -16,11 +17,12 @@ public class FurniturePoint : MonoBehaviour
 
     private void OnMouseDrag()
     {
-        if(furniture == null)
+        if (furniture == null)
         {
             Destroy(gameObject);
             return;
         }
+
         FurnitureItem.OnDragPoint = true;
         furniture.DragPoint(this);
     }

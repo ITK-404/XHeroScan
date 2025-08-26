@@ -94,7 +94,7 @@ public class FurnitureManager : MonoBehaviour
 
     public void DropDragItem()
     {
-        tempDragItem?.RefreshCheckPoints();
+        tempDragItem?.RefreshCheckPointsByBounds();
         tempDragItem?.InitLineAndText();
         runtimeFurnitures.Add(tempDragItem);
         tempDragItem = null;
@@ -154,6 +154,11 @@ public class FurnitureManager : MonoBehaviour
 
             Debug.Log("Is in room: " + roomID);
             currentFurniture.data.roomID = roomID;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            SpawnFurnitureCenterScreen("bed_1");
         }
     }
 
