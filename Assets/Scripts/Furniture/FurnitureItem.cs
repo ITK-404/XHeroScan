@@ -65,6 +65,7 @@ public partial class FurnitureItem : MonoBehaviour
     [SerializeField] private LineRenderer lineRendererPrefab;
     [SerializeField] private TextMeshPro textMeshProPrefab;
 
+    private FurnitureMergeToWall furnitureMergeToWall;
     private Quaternion currentRotation
     {
         get => data.size.rotation;
@@ -72,10 +73,10 @@ public partial class FurnitureItem : MonoBehaviour
     }
 
     private FurnitureVisuals furnitureVisuals;
+    private IUpdateWhenMove[] IUpdateWhenMoves;
     private FurniturePoint[] pointsArray;
     private Vector3 startPos;
 
-    private FurnitureMergeToWall furnitureMergeToWall;
     public float width
     {
         get => data.size.width;
@@ -129,22 +130,13 @@ public partial class FurnitureItem : MonoBehaviour
             topRightPoint.gameObject.SetActive(false);
             bottomLeftPoint.gameObject.SetActive(false);
             bottomRightPoint.gameObject.SetActive(false);
+            
+            bottomLeftPoint.gameObject.SetActive(true);
+            bottomRightPoint.gameObject.SetActive(true);
         }
 
     }
 
-    // C#
-    // private void Start()
-    // {
-    //     // Ensure modelContainer is scaled correctly at start
-    //     if (modelContainer != null)
-    //     {
-    //         modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
-    //         modelContainer.transform.localRotation = Quaternion.Euler(90, currentRotation.y, 0);
-    //     }
-    // }
-
-    private IUpdateWhenMove[] IUpdateWhenMoves;
 
     public void InitLineAndText()
     {
@@ -273,9 +265,11 @@ public partial class FurnitureItem : MonoBehaviour
         {
             if (allowSnapCenterToWall)
             {
-                furnitureMergeToWall.TryToMerge();
+                furnitureMergeToWall.TryToMergeAndSnapInWall();
             }
         }
+
+        furnitureMergeToWall.Update();
     }
 
 
@@ -344,13 +338,15 @@ public partial class FurnitureItem : MonoBehaviour
         var delta = currentPos - startPos;
 
         dragTransform.localPosition += delta;
-        startPos = currentPos;
-        bounds.center = dragTransform.localPosition;
 
         if (allowSnapCenterToWall)
         {
-            furnitureMergeToWall.TryToMerge();
+            furnitureMergeToWall.TryToMergeAndSnapInWall();
         }
+      
+        startPos = currentPos;
+        bounds.center = dragTransform.localPosition;
+        
         RefreshCheckPointsByBounds();
         UpdateWorldSizeFromLocal();
         MakeDirty();
@@ -478,25 +474,26 @@ public partial class FurnitureItem : MonoBehaviour
     {
         var targetAnchor = GetFurniturePoint(type);
         //Debug.Log("anchor position: " + targetAnchor.transform.position);
+        //// Get the current world position of the anchor
+        Vector3 anchorWorldPos = targetAnchor.transform.position;
 
-        var localPosition = transform.InverseTransformPoint(worldPosition);
+        // Calculate the offset from the object's center to the anchor in world space
+        Vector3 centerToAnchorOffset = anchorWorldPos - modelContainer.transform.position;
 
-        //Debug.DrawLine(localPosition, transform.TransformPoint(targetAnchor.transform.localPosition), Color.red, 5f);
-        ////Debug.Log($"Debug World {targetAnchor.transform.position} Local {targetAnchor.transform.localPosition}");
-        //Debug.Log($"Debug World {worldPosition} Local {localPosition}");
+        // The new center should be the target world position minus the offset
+        Vector3 newCenterWorld = worldPosition - centerToAnchorOffset;
 
-        var actualPosition = localPosition;
+        // Convert the new center to local space relative to the parent
+        Vector3 newCenterLocal = transform.InverseTransformPoint(newCenterWorld);
+
+        newCenterLocal.y = modelContainer.transform.position.y;
+
+        var actualPosition = newCenterLocal;
         var debugPoint = FurnitureManager.Instance.debugPoint;
         actualPosition.y = modelContainer.transform.localPosition.y;
 
         debugPoint.transform.SetParent(modelContainer.transform.parent);
         debugPoint.transform.localPosition = actualPosition;
-
-        if (localPosition == targetAnchor.transform.localPosition)
-        {
-            Debug.Log("Anchor đã nằm ở target position");
-            return;
-        }
 
         bounds.center = actualPosition;
         modelContainer.transform.localPosition = actualPosition;
