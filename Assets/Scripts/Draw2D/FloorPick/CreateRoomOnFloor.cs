@@ -19,6 +19,12 @@ public class CreateRoomOnFloor : MonoBehaviour
     public Color previewOKFill = new Color(0.2f, 1f, 0.2f, 0.15f);
     public Color previewBadFill = new Color(1f, 0.2f, 0.2f, 0.2f);
 
+    // >>> NEW: Layering để room luôn nổi trên floor
+    [Header("Render Layering")]
+    public int roomIndex = 2;           // phòng ở index = 2 (floor = 1, item = 99...)
+    public float layerStepY = 0.002f;   // mỗi index cách nhau 2mm
+    public float roomWallLift = 0.003f; // line/marker của room nhô thêm để tránh z-fighting
+
     private CheckpointManager checkPointManager;
 
     // Trạng thái
@@ -43,6 +49,8 @@ public class CreateRoomOnFloor : MonoBehaviour
     private Material previewLineMat;
     private Material previewFillMat;
 
+    public static bool IsCreateRooom = false;
+
     void Start()
     {
         checkPointManager = FindFirstObjectByType<CheckpointManager>();
@@ -61,6 +69,8 @@ public class CreateRoomOnFloor : MonoBehaviour
             CreateRoomButton.onClick.RemoveListener(TogglePlacingMode);
         DestroyPreviewImmediate();
         if (firstMarker) Destroy(firstMarker);
+
+        IsCreateRooom = false;
     }
 
     void Update()
@@ -77,9 +87,11 @@ public class CreateRoomOnFloor : MonoBehaviour
             if (TryGetMouseWorldOnFloor(out var pos, out var col, out var root))
             {
                 isDragging = true;
+                IsCreateRooom = true;
+
                 dragStartWorld = pos;
-                dragFloorRoot  = root;
-                dragFloorCol   = col;
+                dragFloorRoot = root;
+                dragFloorCol = col;
 
                 // Marker P1
                 if (checkPointManager != null && checkPointManager.checkpointPrefab != null)
@@ -95,6 +107,7 @@ public class CreateRoomOnFloor : MonoBehaviour
             {
                 // Không trúng RoomFloor → không cho kéo
                 isDragging = false;
+                IsCreateRooom = false;
             }
         }
 
@@ -124,6 +137,7 @@ public class CreateRoomOnFloor : MonoBehaviour
                 Debug.LogError("[CreateRoom] Thả chuột nhưng KHÔNG còn ở cùng RoomFloor → huỷ.");
                 ResetDragState(keepPlacing: true);
             }
+            IsCreateRooom = false;
         }
     }
 
@@ -131,14 +145,18 @@ public class CreateRoomOnFloor : MonoBehaviour
     private void TogglePlacingMode()
     {
         placingActive = !placingActive;
-        if (!placingActive) ResetDragState(keepPlacing: false);
+        if (!placingActive)
+        {
+            ResetDragState(keepPlacing: false);
+            IsCreateRooom = false;
+        }
 
         if (CreateRoomButton != null)
-        {
-            var colors = CreateRoomButton.colors;
-            colors.normalColor = placingActive ? new Color(0.8f, 1f, 0.8f) : Color.white;
-            CreateRoomButton.colors = colors;
-        }
+            {
+                var colors = CreateRoomButton.colors;
+                colors.normalColor = placingActive ? new Color(0.8f, 1f, 0.8f) : Color.white;
+                CreateRoomButton.colors = colors;
+            }
     }
 
     // ===== Raycast chuột -> world pos + collider + RoomFloor root =====
@@ -283,11 +301,13 @@ public class CreateRoomOnFloor : MonoBehaviour
         float minZ = Mathf.Min(p1.z, p2.z);
         float maxZ = Mathf.Max(p1.z, p2.z);
 
-        float yPlane = p1.y;
-        Vector3 v0 = new(minX, yPlane, minZ);
-        Vector3 v1 = new(minX, yPlane, maxZ);
-        Vector3 v2 = new(maxX, yPlane, maxZ);
-        Vector3 v3 = new(maxX, yPlane, minZ);
+        // đặt “tầng” cho room bằng roomIndex
+        float baseRoomY = roomIndex * layerStepY;
+
+        Vector3 v0 = new(minX, baseRoomY, minZ);
+        Vector3 v1 = new(minX, baseRoomY, maxZ);
+        Vector3 v2 = new(maxX, baseRoomY, maxZ);
+        Vector3 v3 = new(maxX, baseRoomY, minZ);
 
         bool allOK =
             IsPointOnThisFloorRoot(v0, floorRoot) &&
@@ -307,10 +327,11 @@ public class CreateRoomOnFloor : MonoBehaviour
         Vector2 l2 = new(v2.x, v2.z);
         Vector2 l3 = new(v3.x, v3.z);
 
-        Vector3 v0_show = v0 + Vector3.up * 0.01f;
-        Vector3 v1_show = v1 + Vector3.up * 0.01f;
-        Vector3 v2_show = v2 + Vector3.up * 0.01f;
-        Vector3 v3_show = v3 + Vector3.up * 0.01f;
+        // Line của room nhô nhẹ so với mặt sàn của room
+        Vector3 v0_show = new Vector3(v0.x, baseRoomY + roomWallLift, v0.z);
+        Vector3 v1_show = new Vector3(v1.x, baseRoomY + roomWallLift, v1.z);
+        Vector3 v2_show = new Vector3(v2.x, baseRoomY + roomWallLift, v2.z);
+        Vector3 v3_show = new Vector3(v3.x, baseRoomY + roomWallLift, v3.z);
 
         var room = new Room
         {
@@ -327,9 +348,9 @@ public class CreateRoomOnFloor : MonoBehaviour
 
         RoomStorage.UpdateOrAddRoom(room);
 
-        // Floor GO (mesh holder) – như cũ
+        // Floor GO (mesh holder) – đặt cả GameObject lên baseRoomY để mesh phòng > mesh floor
         GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
-        floorGO.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+        floorGO.transform.SetPositionAndRotation(new Vector3(0f, baseRoomY, 0f), Quaternion.identity);
         var meshCtrl = floorGO.AddComponent<RoomMeshController>();
         meshCtrl.Initialize(room.ID);
         meshCtrl.GenerateMesh(room.checkpoints);
@@ -351,13 +372,12 @@ public class CreateRoomOnFloor : MonoBehaviour
 
             checkPointManager.loopMappings ??= new List<LoopMap>();
             checkPointManager.loopMappings.Add(new LoopMap(room.ID, loopGO));
-            // checkPointManager.AllCheckpoints ??= new List<List<GameObject>>();
             checkPointManager.AllCheckpoints.Add(loopGO);
 
             checkPointManager.RedrawAllRooms();
         }
 
-        Debug.Log($"[CreateRoom] Tạo room {room.ID} trong RoomFloor '{floorRoot.name}' | 4 đỉnh: {l0}, {l1}, {l2}, {l3}");
+        Debug.Log($"[CreateRoom] Tạo room {room.ID} (index={roomIndex}) trong RoomFloor '{floorRoot.name}' | 4 đỉnh: {l0}, {l1}, {l2}, {l3}");
 
         // Tắt chế độ sau khi tạo xong (tuỳ ý)
         ResetDragState(keepPlacing: false);
@@ -373,6 +393,8 @@ public class CreateRoomOnFloor : MonoBehaviour
     private void ResetDragState(bool keepPlacing)
     {
         isDragging = false;
+        IsCreateRooom = false;
+
         dragFloorRoot = null;
         dragFloorCol = null;
 
@@ -430,7 +452,7 @@ public class CreateRoomOnFloor : MonoBehaviour
         for (int i = 0, n = poly.Count; i < n; i++)
         {
             var a = poly[i];
-            var b = poly[(i + 1) % n];
+            var b = (i + 1 < n) ? poly[i + 1] : poly[0];
             if (((a.y > p.y) != (b.y > p.y)) &&
                 (p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y + 1e-12f) + a.x))
                 c++;
@@ -455,7 +477,7 @@ public class CreateRoomOnFloor : MonoBehaviour
         for (int i = 0, n = poly.Count; i < n; i++)
         {
             var a = poly[i];
-            var b = poly[(i + 1) % n];
+            var b = (i + 1 < n) ? poly[i + 1] : poly[0];
             if (DistPointToSegment2D(p, a, b) <= eps2) return true;
         }
         return false;
