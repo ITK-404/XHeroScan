@@ -34,7 +34,9 @@ public partial class FurnitureItem : MonoBehaviour
     {
         get => data.size.heightMinMax.x / 2;
     }
-
+    [Header("Settings")]
+    [SerializeField] private bool allowSnapCenterToWall = false;
+    [SerializeField] private bool allowAllCheckPoint = false;
     [Header("References")]
     public DrawingInstanced data;
 
@@ -59,7 +61,7 @@ public partial class FurnitureItem : MonoBehaviour
     [Header("Bounds")]
     [SerializeField] private Bounds bounds;
 
-
+    [Header("Prefabs")]
     [SerializeField] private LineRenderer lineRendererPrefab;
     [SerializeField] private TextMeshPro textMeshProPrefab;
 
@@ -120,6 +122,15 @@ public partial class FurnitureItem : MonoBehaviour
         furnitureMergeToWall.SetupAnchor();
         DisableCheckPoint();
         RefreshCheckPointsByBounds();
+
+        if (!allowAllCheckPoint)
+        {
+            topLeftPoint.gameObject.SetActive(false);
+            topRightPoint.gameObject.SetActive(false);
+            bottomLeftPoint.gameObject.SetActive(false);
+            bottomRightPoint.gameObject.SetActive(false);
+        }
+
     }
 
     // C#
@@ -260,7 +271,10 @@ public partial class FurnitureItem : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.B))
         {
-            furnitureMergeToWall.TryToMerge();
+            if (allowSnapCenterToWall)
+            {
+                furnitureMergeToWall.TryToMerge();
+            }
         }
     }
 
@@ -333,8 +347,10 @@ public partial class FurnitureItem : MonoBehaviour
         startPos = currentPos;
         bounds.center = dragTransform.localPosition;
 
-        furnitureMergeToWall.TryToMerge();
-
+        if (allowSnapCenterToWall)
+        {
+            furnitureMergeToWall.TryToMerge();
+        }
         RefreshCheckPointsByBounds();
         UpdateWorldSizeFromLocal();
         MakeDirty();

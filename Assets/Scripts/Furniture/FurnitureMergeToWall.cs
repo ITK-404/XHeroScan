@@ -36,13 +36,17 @@ public class FurnitureMergeToWall
 
                 Vector3 projected = CheckpointManager.Instance.ProjectPointOnLineSegment(wl.start, wl.end, centerPosition);
                 float dist = Vector3.Distance(centerPosition, projected);
-                Debug.Log("Distance: " + dist);
-                if (dist < minDist && IsWithinDistance(centerPosition, projected, 0.2f) && IsWithinDistance(furnitureItem.GetWorldPosition(), projected, 0.2f))
+                
+                bool isObjectNearLine = IsWithinDistance(centerPosition, projected, 0.2f);
+                bool isMouseNearLine = IsWithinDistance(furnitureItem.GetWorldPosition(), projected, 0.2f);
+              
+                if (dist < minDist && isMouseNearLine && isObjectNearLine)
                 {
                     minDist = dist;
                     wallLine = wl;
                     firstDoorPoint = projected;
                 }
+                Debug.Log("Distance: " + dist);
             }
         }
 
