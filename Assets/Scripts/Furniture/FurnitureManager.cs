@@ -23,6 +23,8 @@ public class FurnitureManager : MonoBehaviour
     
     private Camera mainCam;
     
+    public GameObject debugPoint;
+    
     private void Awake()
     {
         Instance = this;
@@ -105,7 +107,7 @@ public class FurnitureManager : MonoBehaviour
     {
         var furniture = InitItemByID(itemID);
         var worldPointFromViewPort = mainCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f));
-        var centerPosition = new Vector3(worldPointFromViewPort.x, 0, worldPointFromViewPort.z);
+        var centerPosition = new Vector3(worldPointFromViewPort.x, 3, worldPointFromViewPort.z);
         
         furniture.transform.position = centerPosition;
         furniture.InitLineAndText();

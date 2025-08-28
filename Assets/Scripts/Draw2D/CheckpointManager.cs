@@ -137,12 +137,17 @@ public class CheckpointManager : MonoBehaviour
 
     public string FindRoomIDByPoint(Vector3 worldPos)
     {
+        return FindRoomByPoint(worldPos)?.ID;
+    }
+
+    public Room FindRoomByPoint(Vector3 worldPos)
+    {
         Vector2 point2D = new Vector2(worldPos.x, worldPos.z);
         foreach (Room room in RoomStorage.rooms)
         {
             if (IsPointInPolygon(point2D, room.checkpoints))
             {
-                return room.ID;
+                return room;
             }
         }
 

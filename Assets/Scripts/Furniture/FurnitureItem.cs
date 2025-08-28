@@ -1,8 +1,8 @@
+using iTextSharp.text.pdf;
 using System.Collections.Generic;
 using TMPro;
-using Unity.VisualScripting.Antlr3.Runtime.Tree;
+using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Assertions.Must;
 
 public enum ResizeAxis
 {
@@ -27,12 +27,12 @@ public partial class FurnitureItem : MonoBehaviour
     // public const float LIMIT_SIZE = 0.5f;
     public float minSizeX
     {
-        get => data.size.widthMinMax.x/2;
+        get => data.size.widthMinMax.x / 2;
     }
 
     public float minSizeZ
     {
-        get => data.size.heightMinMax.x/2;
+        get => data.size.heightMinMax.x / 2;
     }
 
     [Header("References")]
@@ -73,6 +73,7 @@ public partial class FurnitureItem : MonoBehaviour
     private FurniturePoint[] pointsArray;
     private Vector3 startPos;
 
+    private FurnitureMergeToWall furnitureMergeToWall;
     public float width
     {
         get => data.size.width;
@@ -95,12 +96,14 @@ public partial class FurnitureItem : MonoBehaviour
 
     private void Awake()
     {
-        data.size.Normalize();
 
+        data.size.Normalize();
         resizer = GetComponentInChildren<ObjectResizer>();
         resizer.Resize();
 
         furnitureVisuals = new FurnitureVisuals(this);
+        furnitureMergeToWall = new FurnitureMergeToWall(this);
+
         bounds = new Bounds();
         bounds.center = modelContainer.transform.localPosition;
         bounds.size = new Vector3(width, 1, length);
@@ -114,7 +117,7 @@ public partial class FurnitureItem : MonoBehaviour
         {
             SetupPoint(item);
         }
-
+        furnitureMergeToWall.SetupAnchor();
         DisableCheckPoint();
         RefreshCheckPointsByBounds();
     }
@@ -179,6 +182,8 @@ public partial class FurnitureItem : MonoBehaviour
     {
         Vector3 newPos = GetWorldMousePosition();
         newPos = currentDragPoint.transform.parent.InverseTransformPoint(newPos);
+        
+        RefreshCheckPointsByBounds();
 
         switch (currentDragPoint.checkpointType)
         {
@@ -209,8 +214,6 @@ public partial class FurnitureItem : MonoBehaviour
             default:
                 break;
         }
-
-        RefreshCheckPointsByBounds();
 
         MakeDirty();
     }
@@ -254,7 +257,13 @@ public partial class FurnitureItem : MonoBehaviour
         }
 
         data.worldPosition = modelContainer.transform.position;
+
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            furnitureMergeToWall.TryToMerge();
+        }
     }
+
 
     public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint,
         ResizeAxis resizeAxis)
@@ -323,6 +332,8 @@ public partial class FurnitureItem : MonoBehaviour
         dragTransform.localPosition += delta;
         startPos = currentPos;
         bounds.center = dragTransform.localPosition;
+
+        furnitureMergeToWall.TryToMerge();
 
         RefreshCheckPointsByBounds();
         UpdateWorldSizeFromLocal();
@@ -429,8 +440,53 @@ public partial class FurnitureItem : MonoBehaviour
         RefreshCheckPointsByBounds();
     }
 
+    public FurniturePoint GetFurniturePoint(CheckpointType type)
+    {
+        if (pointsArray == null) return null;
+        foreach (var item in pointsArray)
+        {
+            if (item.checkpointType == type)
+            {
+                return item;
+            }
+        }
+        return null;
+    }
+
     private void MakeDirty()
     {
         SaveLoadManager.MakeDirty();
     }
+
+    public void MoveAnchorToPositionWithoutChangeShape(CheckpointType type, Vector3 worldPosition)
+    {
+        var targetAnchor = GetFurniturePoint(type);
+        //Debug.Log("anchor position: " + targetAnchor.transform.position);
+
+        var localPosition = transform.InverseTransformPoint(worldPosition);
+
+        //Debug.DrawLine(localPosition, transform.TransformPoint(targetAnchor.transform.localPosition), Color.red, 5f);
+        ////Debug.Log($"Debug World {targetAnchor.transform.position} Local {targetAnchor.transform.localPosition}");
+        //Debug.Log($"Debug World {worldPosition} Local {localPosition}");
+
+        var actualPosition = localPosition;
+        var debugPoint = FurnitureManager.Instance.debugPoint;
+        actualPosition.y = modelContainer.transform.localPosition.y;
+
+        debugPoint.transform.SetParent(modelContainer.transform.parent);
+        debugPoint.transform.localPosition = actualPosition;
+
+        if (localPosition == targetAnchor.transform.localPosition)
+        {
+            Debug.Log("Anchor đã nằm ở target position");
+            return;
+        }
+
+        bounds.center = actualPosition;
+        modelContainer.transform.localPosition = actualPosition;
+
+        RefreshCheckPointsByBounds();
+        UpdateWorldSizeFromLocal();
+    }
+
 }
