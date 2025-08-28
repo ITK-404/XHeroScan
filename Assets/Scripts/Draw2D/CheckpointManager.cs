@@ -175,6 +175,10 @@ public class CheckpointManager : MonoBehaviour
 
     public Vector3 ProjectPointOnLineSegment(Vector3 a, Vector3 b, Vector3 point)
     {
+        a.y = 0;
+        b.y = 0;
+        point.y = 0;
+
         Vector3 ab = b - a;
         float t = Vector3.Dot(point - a, ab) / ab.sqrMagnitude;
         t = Mathf.Clamp01(t);
