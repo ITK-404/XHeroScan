@@ -1071,50 +1071,85 @@ public class MovePointManager : MonoBehaviour
         checkPointManager.RedrawAllRooms();
     }
 
-    // REBUILD PERIMETER
-    private void FastRebuildPerimeter(string roomID, List<GameObject> loop)
+
+private void FastRebuildPerimeter(string roomID, List<GameObject> loop)
+{
+    // ==== Layering để room luôn cao hơn floor ====
+    const int ROOM_INDEX    = 2;       // phòng ở index 2
+    const float LAYER_STEPY = 0.002f;  // mỗi index cách nhau ~2mm
+    const float WALL_LIFT   = 0.003f;  // line nhô lên khỏi mặt sàn phòng để tránh z-fighting
+
+    float baseY = ROOM_INDEX * LAYER_STEPY; // Y cho mesh phòng
+    float lineY = baseY + WALL_LIFT;        // Y cho line & checkpoint hiển thị
+
+    var room = RoomStorage.GetRoomByID(roomID);
+    if (room == null || loop == null || loop.Count == 0) return;
+
+    // 1) Cập nhật checkpoints (x,z) từ vị trí point (bỏ qua y)
+    room.checkpoints = loop.Select(go =>
     {
-        var room = RoomStorage.GetRoomByID(roomID);
-        if (room == null || loop == null || loop.Count == 0) return;
+        var p = go.transform.position;
+        return new Vector2(p.x, p.z);
+    }).ToList();
 
-        // 1. Cập nhật checkpoint mới từ vị trí point
-        room.checkpoints = loop.Select(go =>
+    // 2) Tạo lại line tường chính từ checkpoints (đặt ở lineY)
+    int n = room.checkpoints.Count;
+    List<WallLine> newWalls = new List<WallLine>(n);
+    for (int i = 0; i < n; i++)
+    {
+        Vector2 a = room.checkpoints[i];
+        Vector2 b = room.checkpoints[(i + 1) % n];
+
+        newWalls.Add(new WallLine
         {
-            var p = go.transform.position;
-            return new Vector2(p.x, p.z);
-        }).ToList();
-
-        // 2. Tạo lại line chính từ checkpoints
-        int n = room.checkpoints.Count;
-        List<WallLine> newWalls = new List<WallLine>(n);
-        for (int i = 0; i < n; i++)
-        {
-            Vector2 a = room.checkpoints[i];
-            Vector2 b = room.checkpoints[(i + 1) % n];
-
-            newWalls.Add(new WallLine
-            {
-                start = new Vector3(a.x, 0, a.y),
-                end = new Vector3(b.x, 0, b.y),
-                type = LineType.Wall,
-                isManualConnection = false,
-                distanceHeight = 0f,
-                Height = 3f, // hoặc lấy từ room.heights nếu bạn có chiều cao riêng từng đoạn
-                materialFront = "Default",
-                materialBack = "Default"
-            });
-        }
-
-        // 3. Giữ lại line phụ và cửa sổ / cửa
-        var preserved = room.wallLines.Where(w => w.isManualConnection || w.type != LineType.Wall).ToList();
-
-        // 4. Gộp lại và lưu
-        room.wallLines = newWalls.Concat(preserved).ToList();
-
-        RoomStorage.UpdateOrAddRoom(room);
-
-        // 5. Cập nhật mesh sàn (nếu có)
-        GameObject.Find($"RoomFloor_{roomID}")
-            ?.GetComponent<RoomMeshController>()?.GenerateMesh(room.checkpoints);
+            start = new Vector3(a.x, lineY, a.y),
+            end   = new Vector3(b.x, lineY, b.y),
+            type = LineType.Wall,
+            isManualConnection = false,
+            distanceHeight = 0f,
+            Height = 3f,
+            materialFront = "Default",
+            materialBack  = "Default"
+        });
     }
+
+    // 3) Giữ lại line phụ & cửa/cửa sổ, nhưng chuẩn hoá Y = lineY để không bị chìm
+    var preserved = room.wallLines
+        .Where(w => w.isManualConnection || w.type != LineType.Wall)
+        .Select(w =>
+        {
+            var s = w.start; s.y = lineY;
+            var e = w.end;   e.y = lineY;
+            w.start = s; w.end = e;
+            return w;
+        })
+        .ToList();
+
+    // 4) Gộp & lưu
+    room.wallLines = newWalls.Concat(preserved).ToList();
+    RoomStorage.UpdateOrAddRoom(room);
+
+    // 5) Cập nhật mesh sàn phòng: đặt holder lên baseY rồi build lại
+    var floorGO = GameObject.Find($"RoomFloor_{roomID}");
+    if (floorGO != null)
+    {
+        var pos = floorGO.transform.position;
+        pos.y = baseY;
+        floorGO.transform.position = pos;
+
+        var meshCtrl = floorGO.GetComponent<RoomMeshController>();
+        if (meshCtrl != null)
+            meshCtrl.GenerateMesh(room.checkpoints);
+    }
+
+    // 6) Nâng vị trí hiển thị của các checkpoint GO trong vòng lên lineY cho khớp trực quan
+    foreach (var go in loop)
+    {
+        if (!go) continue;
+        var p = go.transform.position;
+        p.y = lineY;
+        go.transform.position = p;
+    }
+}
+
 }

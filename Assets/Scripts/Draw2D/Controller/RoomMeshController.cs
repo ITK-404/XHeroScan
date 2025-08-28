@@ -6,7 +6,7 @@ using System.Collections;
 
 public class RoomMeshController : MonoBehaviour
 {
-    private static readonly Plane floorPlane = new Plane(Vector3.up, Vector3.zero);
+    private static readonly Plane floorPlane = new Plane(Vector3.up, Vector3.zero); // vẫn giữ, nhưng không dùng cho drag nữa
     private static Camera mainCam;
     public string RoomID;
     private Vector3 dragStartWorldPos;
@@ -18,15 +18,20 @@ public class RoomMeshController : MonoBehaviour
     [Header("Floor Material (optional)")]
     [SerializeField] private Material floorMaterial;
 
+    // ==== NEW: Layer index (tối giản) ====
+    [Header("Layering")]
+    [SerializeField] public int index = 2;          // yêu cầu: index = 2
+    [SerializeField] public float layerStepY = 0.002f; // bước cao độ mỗi layer (2mm)
+
     private void Awake()
     {
         if (mainCam == null)
         {
             mainCam = Camera.main;
         }
-
         checkPointManager = CheckpointManager.Instance;
     }
+
 #if UNITY_STANDALONE
     // PC: vẫn dùng OnMouseDown/Drag/Up
 #else
@@ -44,12 +49,11 @@ public class RoomMeshController : MonoBehaviour
                     {
                         OnStartDrag(touch.position);
                     }
-
                     break;
 
                 case TouchPhase.Moved:
                     if (!isDragging) return;
-                    // DragRoom(touch.position);
+                    // DragRoom(touch.position); // nếu muốn bật drag trên mobile, bỏ comment
                     break;
 
                 case TouchPhase.Ended:
@@ -76,91 +80,94 @@ public class RoomMeshController : MonoBehaviour
 
     // Hàm di chuyển Room theo vị trí chạm for Android
     void DragRoom(Vector2 screenPos)
-{
-    if (this == null || !this) return;                // Đã bị destroy
-    if (gameObject == null || !gameObject.activeInHierarchy) return;
-    if (transform == null) return;
-
-    if (IsClickingOnBackgroundBlackUI(Input.mousePosition))
     {
-        Debug.Log("Đang nhấn Background Black ➜ Không move Mesh");
-        return;
-    }
+        if (this == null || !this) return;                // Đã bị destroy
+        if (gameObject == null || !gameObject.activeInHierarchy) return;
+        if (transform == null) return;
 
-    Ray ray = mainCam.ScreenPointToRay(screenPos);
-    if (floorPlane.Raycast(ray, out float distance))
-    {
-        Vector3 currentPos = ray.GetPoint(distance);
-        Vector3 delta = currentPos - dragStartWorldPos;
-        dragStartWorldPos = currentPos;
-
-        // 1) Move sàn (mesh)
-        transform.position += delta;
-
-        // 2) Update DATA của room (world-space)
-        Room room = RoomStorage.GetRoomByID(RoomID);
-        if (room != null)
+        if (IsClickingOnBackgroundBlackUI(Input.mousePosition))
         {
-            // Main checkpoints
-            for (int i = 0; i < room.checkpoints.Count; i++)
-            {
-                Vector2 old = room.checkpoints[i];
-                room.checkpoints[i] = new Vector2(old.x + delta.x, old.y + delta.z);
-            }
+            Debug.Log("Đang nhấn Background Black ➜ Không move Mesh");
+            return;
+        }
 
-            // Extra checkpoints (đồng cấp, world-space)
-            for (int i = 0; i < room.extraCheckpoints.Count; i++)
-            {
-                Vector2 old = room.extraCheckpoints[i];
-                room.extraCheckpoints[i] = new Vector2(old.x + delta.x, old.y + delta.z);
-            }
+        Ray ray = mainCam.ScreenPointToRay(screenPos);
 
-            // Wall lines
-            for (int i = 0; i < room.wallLines.Count; i++)
-            {
-                room.wallLines[i].start += delta;
-                room.wallLines[i].end   += delta;
-            }
+        // ==== dùng plane ở cao độ theo index ====
+        Plane planeAtIndex = new Plane(Vector3.up, new Vector3(0f, index * layerStepY, 0f));
 
-            // 3) Update các GameObject hiển thị (KHÔNG vẽ lại)
-            if (checkPointManager != null)
+        if (planeAtIndex.Raycast(ray, out float distance))
+        {
+            Vector3 currentPos = ray.GetPoint(distance);
+            Vector3 delta = currentPos - dragStartWorldPos;
+            dragStartWorldPos = currentPos;
+
+            // 1) Move sàn (mesh)
+            transform.position += delta;
+
+            // 2) Update DATA của room (world-space)
+            Room room = RoomStorage.GetRoomByID(RoomID);
+            if (room != null)
             {
-                // 3a) Main checkpoint GOs
-                var mapping = checkPointManager.AllCheckpoints.Find(loop =>
-                    checkPointManager.FindRoomIDForLoop(loop) == RoomID);
-                if (mapping != null)
+                // Main checkpoints
+                for (int i = 0; i < room.checkpoints.Count; i++)
                 {
-                    foreach (var cp in mapping)
-                        if (cp) cp.transform.position += delta;
+                    Vector2 old = room.checkpoints[i];
+                    room.checkpoints[i] = new Vector2(old.x + delta.x, old.y + delta.z);
                 }
 
-                // 3b) Door/Window GOs
-                if (checkPointManager.tempDoorWindowPoints.TryGetValue(RoomID, out var doorsInRoom))
+                // Extra checkpoints (đồng cấp, world-space)
+                for (int i = 0; i < room.extraCheckpoints.Count; i++)
                 {
-                    foreach (var (line, p1GO, p2GO) in doorsInRoom)
+                    Vector2 old = room.extraCheckpoints[i];
+                    room.extraCheckpoints[i] = new Vector2(old.x + delta.x, old.y + delta.z);
+                }
+
+                // Wall lines
+                for (int i = 0; i < room.wallLines.Count; i++)
+                {
+                    room.wallLines[i].start += delta;
+                    room.wallLines[i].end   += delta;
+                }
+
+                // 3) Update các GameObject hiển thị (KHÔNG vẽ lại)
+                if (checkPointManager != null)
+                {
+                    // 3a) Main checkpoint GOs
+                    var mapping = checkPointManager.AllCheckpoints.Find(loop =>
+                        checkPointManager.FindRoomIDForLoop(loop) == RoomID);
+                    if (mapping != null)
                     {
-                        if (p1GO) p1GO.transform.position += delta;
-                        if (p2GO) p2GO.transform.position += delta;
+                        foreach (var cp in mapping)
+                            if (cp) cp.transform.position += delta;
                     }
-                }
 
-                // 3c) Extra GOs (đồng cấp, không còn là child của floor)
-                var extras = GameObject.FindGameObjectsWithTag("CheckpointExtra");
-                for (int i = 0; i < extras.Length; i++)
-                {
-                    var go = extras[i];
-                    if (!go) continue;
+                    // 3b) Door/Window GOs
+                    if (checkPointManager.tempDoorWindowPoints.TryGetValue(RoomID, out var doorsInRoom))
+                    {
+                        foreach (var (line, p1GO, p2GO) in doorsInRoom)
+                        {
+                            if (p1GO) p1GO.transform.position += delta;
+                            if (p2GO) p2GO.transform.position += delta;
+                        }
+                    }
 
-                    Vector3 projected = go.transform.position + delta; // vị trí nếu đi theo room
-                    string rid = checkPointManager.FindRoomIDByPoint(projected);
-                    if (!string.IsNullOrEmpty(rid) && rid == RoomID)
-                        go.transform.position += delta;
+                    // 3c) Extra GOs (đồng cấp, không còn là child của floor)
+                    var extras = GameObject.FindGameObjectsWithTag("CheckpointExtra");
+                    for (int i = 0; i < extras.Length; i++)
+                    {
+                        var go = extras[i];
+                        if (!go) continue;
+
+                        Vector3 projected = go.transform.position + delta; // vị trí nếu đi theo room
+                        string rid = checkPointManager.FindRoomIDByPoint(projected);
+                        if (!string.IsNullOrEmpty(rid) && rid == RoomID)
+                            go.transform.position += delta;
+                    }
                 }
             }
         }
     }
-}
-
 
     public void Initialize(string roomID, Color color = default)
     {
@@ -180,20 +187,15 @@ public class RoomMeshController : MonoBehaviour
         if (meshRenderer == null)
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
 
-        // Nếu chưa có material, tạo material đỏ để dễ nhìn
+        // Nếu chưa có material, tạo material mặc định
         if (floorMaterial == null)
         {
             floorMaterial = new Material(Shader.Find("Unlit/Color"));
-            // Color usedColor = (color == default) ? Color.red : color;
             Color usedColor = (color == default) ? Color.white : color;
             floorMaterial.color = usedColor;
         }
 
         meshRenderer.material = floorMaterial;
-
-        // add collider trực tiếp ở đây nữa
-        // if (GetComponent<MeshCollider>() == null)
-        //     gameObject.AddComponent<MeshCollider>();
 
         StartCoroutine(DelayedAddCollider());
 
@@ -201,6 +203,7 @@ public class RoomMeshController : MonoBehaviour
         checkPointManager.RoomFloorMap[RoomID] = this.gameObject;
         Debug.Log($"Đã tự động đăng ký RoomFloorMap[{RoomID}] = {gameObject.name}");
     }
+
     IEnumerator DelayedAddCollider()
     {
         yield return null; // chờ 1 frame
@@ -215,9 +218,7 @@ public class RoomMeshController : MonoBehaviour
 
     public void GenerateMesh(List<Vector2> checkpoints)
     {
-        // Debug.Log($"[RoomMeshController] GenerateMesh: RoomID={RoomID}, checkpoints={checkpoints.Count}");
-
-        Vector2 pivot = GetCentroid(checkpoints); // <== dùng pivot thật
+        Vector2 pivot = GetCentroid(checkpoints); // pivot thật
 
         // Dịch điểm về local-space để tạo mesh
         List<Vector2> offsetPoints = checkpoints
@@ -237,8 +238,8 @@ public class RoomMeshController : MonoBehaviour
         if (meshCollider != null)
             meshCollider.sharedMesh = mesh;
 
-        // Đặt lại transform để khớp world-space
-        transform.position = new Vector3(pivot.x, 0, pivot.y);
+        // === Đặt lại transform để khớp world-space ở cao độ theo index ===
+        transform.position = new Vector3(pivot.x, index * layerStepY, pivot.y);
     }
 
     private Vector2 GetCentroid(List<Vector2> points)
@@ -270,7 +271,11 @@ public class RoomMeshController : MonoBehaviour
         }
 
         Ray ray = mainCam.ScreenPointToRay(startDragPosition);
-        if (floorPlane.Raycast(ray, out float distance))
+
+        // ==== dùng plane ở cao độ theo index ====
+        Plane planeAtIndex = new Plane(Vector3.up, new Vector3(0f, index * layerStepY, 0f));
+
+        if (planeAtIndex.Raycast(ray, out float distance))
         {
             dragStartWorldPos = ray.GetPoint(distance);
             isDragging = true;
@@ -288,15 +293,14 @@ public class RoomMeshController : MonoBehaviour
         {
             foreach (var (line, p1GO, p2GO) in doorsInRoom)
             {
-                checkPointList.Add((p1GO.transform.position, p2GO.transform.position));
+                if (p1GO && p2GO)
+                    checkPointList.Add((p1GO.transform.position, p2GO.transform.position));
             }
         }
 
         return checkPointList;
     }
 
-
-    
     private void OnEndDrag(Vector2 screenPosition)
     {
         isDragging = false;
@@ -313,6 +317,7 @@ public class RoomMeshController : MonoBehaviour
         }
         CreateUndoCommand();
     }
+
 #if UNITY_EDITOR
     private void OnMouseDown()
     {
@@ -335,7 +340,9 @@ public class RoomMeshController : MonoBehaviour
         // DragRoom(Input.mousePosition);
     }
 #endif
-    private Vector2 oldPosition;
+
+    // ==== đổi sang Vector3 để khớp transform.position (tránh lỗi ép kiểu) ====
+    private Vector3 oldPosition;
     private List<(Vector3, Vector3)> oldCheckPointList = new List<(Vector3, Vector3)>();
 
     private void CreateUndoCommand()
@@ -355,7 +362,6 @@ public class RoomMeshController : MonoBehaviour
         moveObject.CurrentCheckPointPos = SaveCheckPointPosition(RoomID);
         
         var command = new MoveRectangularUndoRedoCommand(moveObject);
-
         UndoRedoController.Instance.AddToUndo(command);
     }
 

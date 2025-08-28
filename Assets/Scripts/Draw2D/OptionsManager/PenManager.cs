@@ -54,6 +54,7 @@ public class PenManager : MonoBehaviour
 
     void LateUpdate()
     {
+        if (CreateRoomOnFloor.IsCreateRooom) return;
         if (ConnectManager.isConnectActive) return;
 
         // KHÔNG bật zoom/pan nếu đang kéo room HOẶC đang kéo point floor
@@ -78,7 +79,7 @@ public class PenManager : MonoBehaviour
                     _dragRoom = false;
                     _dragRoomID = null;
 
-                    // đang kéo checkpoint → gán cờ handle dragging (nếu checkpoint là handle floor)
+                    // đang kéo checkpoint -> gán cờ handle dragging (nếu checkpoint là handle floor)
                     InteractionFlags.IsFloorHandleDragging = true;
 
                     _lastWorld = GetWorldOnXZ(Input.mousePosition);

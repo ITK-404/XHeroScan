@@ -188,6 +188,12 @@ public class CheckpointManager : MonoBehaviour
 
     public void RedrawAllRooms()
     {
+        // ===== Layering: room redraw ở index = 2 =====
+        const int REDRAW_INDEX = 2;        // phòng luôn trên floor
+        const float LAYER_STEP_Y = 0.002f;   // mỗi index cách nhau ~2mm
+        const float LINE_LIFT = 0.0015f;  // nhô thêm chút để tránh z-fighting
+        float yLine = REDRAW_INDEX * LAYER_STEP_Y + LINE_LIFT;
+
         // Vẽ lại từ đầu
         DrawingTool.ClearAllLines();
 
@@ -204,17 +210,21 @@ public class CheckpointManager : MonoBehaviour
                 tempDoorWindowPoints[room.ID] = dwList;
             }
 
-            // Tạo set các line Door/Window đang tồn tại trong room để dọn entry mồ côi
+            // Set các line Door/Window đang tồn tại để dọn entry mồ côi
             var aliveDW = new HashSet<WallLine>(
-                room.wallLines.Where(w => (w.type == LineType.Door || w.type == LineType.Window) && w.isVisible));
+                room.wallLines.Where(w => (w.type == LineType.Door || w.type == LineType.Window) && w.isVisible)
+            );
 
             foreach (var wl in room.wallLines)
             {
                 if (!wl.isVisible) continue;
 
-                // vẽ line như cũ
+                // --- dùng Y theo index 2 khi vẽ ---
+                Vector3 s = wl.start; s.y = yLine;
+                Vector3 e = wl.end; e.y = yLine;
+
                 DrawingTool.currentLineType = wl.type;
-                DrawingTool.DrawLineAndDistance(wl.start, wl.end);
+                DrawingTool.DrawLineAndDistance(s, e);
 
                 // chỉ sync handle cho cửa/cửa sổ
                 if (wl.type != LineType.Door && wl.type != LineType.Window) continue;
@@ -226,27 +236,11 @@ public class CheckpointManager : MonoBehaviour
                     // đã có entry -> cập nhật vị trí & bù handle nếu thiếu
                     var (lineRef, p1, p2) = dwList[idx];
 
-                    // nâng Y nhẹ để dễ pick (không bắt buộc)
-                    Vector3 s = wl.start; if (s.y < 0.02f) s.y = 0.02f;
-                    Vector3 e = wl.end; if (e.y < 0.02f) e.y = 0.02f;
+                    if (p1 == null) p1 = Instantiate(checkpointPrefab, s, Quaternion.identity);
+                    else p1.transform.position = s;
 
-                    if (p1 == null)
-                    {
-                        p1 = Instantiate(checkpointPrefab, s, Quaternion.identity);
-                    }
-                    else
-                    {
-                        p1.transform.position = s;
-                    }
-
-                    if (p2 == null)
-                    {
-                        p2 = Instantiate(checkpointPrefab, e, Quaternion.identity);
-                    }
-                    else
-                    {
-                        p2.transform.position = e;
-                    }
+                    if (p2 == null) p2 = Instantiate(checkpointPrefab, e, Quaternion.identity);
+                    else p2.transform.position = e;
 
                     // ghi lại entry đã được cập nhật
                     dwList[idx] = (lineRef, p1, p2);
@@ -254,17 +248,13 @@ public class CheckpointManager : MonoBehaviour
                 else
                 {
                     // chưa có entry -> tạo mới 2 handle đúng dữ liệu đang lưu
-                    Vector3 s = wl.start; if (s.y < 0.02f) s.y = 0.02f;
-                    Vector3 e = wl.end; if (e.y < 0.02f) e.y = 0.02f;
-
                     var p1GO = Instantiate(checkpointPrefab, s, Quaternion.identity);
                     var p2GO = Instantiate(checkpointPrefab, e, Quaternion.identity);
-
                     dwList.Add((wl, p1GO, p2GO));
                 }
             }
 
-            // Dọn các entry mồ côi (line đã bị xóa hoặc ẩn)
+            // Dọn các entry mồ côi (line đã bị xóa hoặc ẩn) + đảm bảo handle đúng Y lớp 2
             for (int i = dwList.Count - 1; i >= 0; i--)
             {
                 var (lineRef, p1, p2) = dwList[i];
@@ -276,17 +266,16 @@ public class CheckpointManager : MonoBehaviour
                 }
                 else
                 {
-                    // nếu handle bị Destroy ở nơi khác -> bù handle mới
-                    if (p1 == null)
-                    {
-                        Vector3 s = lineRef.start; if (s.y < 0.02f) s.y = 0.02f;
-                        p1 = Instantiate(checkpointPrefab, s, Quaternion.identity);
-                    }
-                    if (p2 == null)
-                    {
-                        Vector3 e = lineRef.end; if (e.y < 0.02f) e.y = 0.02f;
-                        p2 = Instantiate(checkpointPrefab, e, Quaternion.identity);
-                    }
+                    // re-raise đến yLine nếu handle bị tụt Y
+                    Vector3 s = lineRef.start; s.y = yLine;
+                    Vector3 e = lineRef.end; e.y = yLine;
+
+                    if (p1 == null) p1 = Instantiate(checkpointPrefab, s, Quaternion.identity);
+                    else p1.transform.position = s;
+
+                    if (p2 == null) p2 = Instantiate(checkpointPrefab, e, Quaternion.identity);
+                    else p2.transform.position = e;
+
                     dwList[i] = (lineRef, p1, p2);
                 }
             }
