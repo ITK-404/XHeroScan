@@ -79,6 +79,7 @@ public class FurnitureMergeToWall
         furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, firstDoorPoint);
 
         ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
+        
     }
 
     public float ratio;
@@ -105,11 +106,19 @@ public class FurnitureMergeToWall
                 Debug.Log("Wall line is not null, try to align with them");
                 Vector3 centerPosition = Vector3.Lerp(currentWallLine.start, currentWallLine.end, ratio);
                 FurnitureManager.Instance.debugPoint.transform.position = centerPosition;
-                
+
                 centerPosition.y = furnitureItem.GetWorldPosition().y;
-                
+
                 furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, centerPosition);
                 furnitureItem.RefreshCheckPointsByBounds();
+                
+                
+                Vector3 dir = currentWallLine.end - currentWallLine.start;
+                dir.y = 0;
+                float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
+                Debug.Log("Angle: " + angle);
+                furnitureItem.SetRotation(angle);
+                
             }
         }
     }

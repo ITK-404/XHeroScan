@@ -34,9 +34,13 @@ public partial class FurnitureItem : MonoBehaviour
     {
         get => data.size.heightMinMax.x / 2;
     }
+
     [Header("Settings")]
     [SerializeField] private bool allowSnapCenterToWall = false;
+
     [SerializeField] private bool allowAllCheckPoint = false;
+    [SerializeField] private bool allowRotation = false;
+
     [Header("References")]
     public DrawingInstanced data;
 
@@ -63,9 +67,11 @@ public partial class FurnitureItem : MonoBehaviour
 
     [Header("Prefabs")]
     [SerializeField] private LineRenderer lineRendererPrefab;
+
     [SerializeField] private TextMeshPro textMeshProPrefab;
 
     private FurnitureMergeToWall furnitureMergeToWall;
+
     private Quaternion currentRotation
     {
         get => data.size.rotation;
@@ -99,7 +105,6 @@ public partial class FurnitureItem : MonoBehaviour
 
     private void Awake()
     {
-
         data.size.Normalize();
         resizer = GetComponentInChildren<ObjectResizer>();
         resizer.Resize();
@@ -120,6 +125,7 @@ public partial class FurnitureItem : MonoBehaviour
         {
             SetupPoint(item);
         }
+
         furnitureMergeToWall.SetupAnchor();
         DisableCheckPoint();
         RefreshCheckPointsByBounds();
@@ -128,13 +134,14 @@ public partial class FurnitureItem : MonoBehaviour
         {
             topLeftPoint.gameObject.SetActive(false);
             topRightPoint.gameObject.SetActive(false);
-            bottomLeftPoint.gameObject.SetActive(false);
-            bottomRightPoint.gameObject.SetActive(false);
-            
+            leftPoint.gameObject.SetActive(false);
+            rightPoint.gameObject.SetActive(false);
+
             bottomLeftPoint.gameObject.SetActive(true);
             bottomRightPoint.gameObject.SetActive(true);
         }
 
+        rotatePoint.gameObject.SetActive(allowRotation);
     }
 
 
@@ -185,7 +192,7 @@ public partial class FurnitureItem : MonoBehaviour
     {
         Vector3 newPos = GetWorldMousePosition();
         newPos = currentDragPoint.transform.parent.InverseTransformPoint(newPos);
-        
+
         RefreshCheckPointsByBounds();
 
         switch (currentDragPoint.checkpointType)
@@ -310,10 +317,10 @@ public partial class FurnitureItem : MonoBehaviour
 
         // Sau khi resize xong, cập nhật hiển thị / điểm:
         modelContainer.transform.localPosition = bounds.center;
-        modelContainer.transform.localRotation = Quaternion.Euler(90, currentRotation.y, 0);
+        SetRotation(currentRotation.y);
     }
-    
-    
+
+
     /// <summary>
     /// Gọi method này khi thực hiện công việc liên quan tới thay đổi kích thước
     /// </summary>
@@ -349,17 +356,17 @@ public partial class FurnitureItem : MonoBehaviour
         {
             furnitureMergeToWall.StartSnap();
         }
-      
+
         startPos = currentPos;
         bounds.center = dragTransform.localPosition;
-        
+
         RefreshCheckPointsByBounds();
         UpdateWorldSizeFromLocal();
         MakeDirty();
 
         OnDragPoint = true;
     }
-    
+
     /// <summary>
     /// Gọi khi drag kết thúc
     /// </summary>
@@ -419,11 +426,7 @@ public partial class FurnitureItem : MonoBehaviour
         angleDeg = FurnitureManager.Instance.CheckSnapRotation(angleDeg);
 
         float yRotation = (angleDeg + 180f) % 360f;
-        Quaternion temp = currentRotation;
-        temp.y = yRotation;
-        currentRotation = temp;
-        modelContainer.transform.localRotation = Quaternion.Euler(90f, currentRotation.y, 0f);
-
+        SetRotation(yRotation);
         // cập nhật point/size nếu cần
         RefreshCheckPointsByBounds();
 
@@ -431,7 +434,7 @@ public partial class FurnitureItem : MonoBehaviour
 
         MakeDirty();
     }
-    
+
     public void DisableCheckPoint()
     {
         checkPointParent.gameObject.SetActive(false);
@@ -469,11 +472,11 @@ public partial class FurnitureItem : MonoBehaviour
 
         // Cập nhật vị trí và kích thước của sprite
         data.size.Normalize();
-
-        modelContainer.transform.position = data.worldPosition;
+        // set from data
+        SetWorldPosition(data.worldPosition);
         modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
-        modelContainer.transform.localRotation = Quaternion.Euler(90, currentRotation.y, 0);
 
+        SetRotation(currentRotation.y);
         // Cập nhật bounds
         bounds.center = modelContainer.transform.localPosition;
         bounds.size = new Vector3(width, 1, length);
@@ -496,9 +499,16 @@ public partial class FurnitureItem : MonoBehaviour
                 return item;
             }
         }
+
         return null;
     }
 
+    public void SetRotation(float yRotation)
+    {
+        modelContainer.transform.localRotation = Quaternion.Euler(90, yRotation, 0);
+        data.size.rotation.y = yRotation;
+    }
+    
     private void MakeDirty()
     {
         SaveLoadManager.MakeDirty();
@@ -512,20 +522,17 @@ public partial class FurnitureItem : MonoBehaviour
     public void MoveAnchorToPositionWithoutChangeShape(CheckpointType type, Vector3 worldPosition)
     {
         var targetAnchor = GetFurniturePoint(type);
-        //Debug.Log("anchor position: " + targetAnchor.transform.position);
-        //// Get the current world position of the anchor
+        var furnitureWorldPosition = GetWorldPosition();
         Vector3 anchorWorldPos = targetAnchor.transform.position;
 
         // Calculate the offset from the object's center to the anchor in world space
-        Vector3 centerToAnchorOffset = anchorWorldPos - modelContainer.transform.position;
+        Vector3 centerToAnchorOffset = anchorWorldPos - furnitureWorldPosition;
 
         // The new center should be the target world position minus the offset
         Vector3 newCenterWorld = worldPosition - centerToAnchorOffset;
 
         // Convert the new center to local space relative to the parent
         Vector3 newCenterLocal = transform.InverseTransformPoint(newCenterWorld);
-
-        newCenterLocal.y = modelContainer.transform.position.y;
 
         var actualPosition = newCenterLocal;
         var debugPoint = FurnitureManager.Instance.debugPoint;
@@ -540,5 +547,4 @@ public partial class FurnitureItem : MonoBehaviour
         RefreshCheckPointsByBounds();
         UpdateWorldSizeFromLocal();
     }
-
 }

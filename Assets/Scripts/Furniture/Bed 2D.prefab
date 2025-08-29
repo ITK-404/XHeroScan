@@ -275,6 +275,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   allowSnapCenterToWall: 1
   allowAllCheckPoint: 0
+  allowRotation: 0
   data:
     roomID: 
     instanceID: 
@@ -286,7 +287,7 @@ MonoBehaviour:
       width: 1
       height: 1
       length: 1
-      rotation: {x: 0, y: 0, z: 0, w: 0}
+      rotation: {x: 0, y: 0.8870109, z: 0, w: 0.4617486}
       widthMinMax: {x: 1, y: 5000}
       heightMinMax: {x: 1, y: 5000}
       lengthMinMax: {x: 1, y: 5000}
