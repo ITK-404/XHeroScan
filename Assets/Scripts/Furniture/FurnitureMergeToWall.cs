@@ -9,7 +9,7 @@ public class FurnitureMergeToWall
 
     private FurniturePoint leftPoint;
     private FurniturePoint rightPoint;
-    private FurniturePoint centerPoint;
+    private FurniturePoint bottomPoint;
 
     private WallLine currentWallLine;
 
@@ -22,20 +22,25 @@ public class FurnitureMergeToWall
     {
         this.leftPoint = furnitureItem.GetFurniturePoint(CheckpointType.BottomLeft);
         this.rightPoint = furnitureItem.GetFurniturePoint(CheckpointType.BottomRight);
-        this.centerPoint = furnitureItem.GetFurniturePoint(CheckpointType.Bottom);
+        this.bottomPoint = furnitureItem.GetFurniturePoint(CheckpointType.Bottom);
     }
 
     private bool allowSnap = false;
     public void StartSnap() => allowSnap = true;
     public void EndSnap() => allowSnap = false;
 
+    private Vector3 GetCenterPosition()
+    {
+        return furnitureItem.isUsingCenterPosToSnap ? furnitureItem.GetWorldPosition() : bottomPoint.transform.position;
+    }
+    
     public void TryToMergeAndSnapInWall()
     {
         if (allowSnap == false) return;
         Debug.Log("bắt đầu check để snap wall line");
-        var anchorPoint = centerPoint;
-        Vector3 centerPosition = anchorPoint.transform.position;
-
+        // var anchorPoint = centerPoint;
+        // Vector3 centerPosition = anchorPoint.transform.position;
+        Vector3 centerPosition = GetCenterPosition();
         float minDist = float.MaxValue;
         WallLine wallLine = null;
 

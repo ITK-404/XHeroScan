@@ -36,11 +36,11 @@ public partial class FurnitureItem : MonoBehaviour
     }
 
     [Header("Settings")]
-    [SerializeField] private bool allowSnapCenterToWall = false;
-
-    [SerializeField] private bool allowAllCheckPoint = false;
-    [SerializeField] private bool allowRotation = false;
-
+    [SerializeField] private bool allowSnapToWall = false;
+    [SerializeField] private bool allowShowAllCheckPoint = false;
+    [SerializeField] private bool allowRotationByCheckPoint = false;
+    public bool isUsingCenterPosToSnap = false; 
+    
     [Header("References")]
     public DrawingInstanced data;
 
@@ -130,7 +130,7 @@ public partial class FurnitureItem : MonoBehaviour
         DisableCheckPoint();
         RefreshCheckPointsByBounds();
 
-        if (!allowAllCheckPoint)
+        if (!allowShowAllCheckPoint)
         {
             topLeftPoint.gameObject.SetActive(false);
             topRightPoint.gameObject.SetActive(false);
@@ -141,7 +141,7 @@ public partial class FurnitureItem : MonoBehaviour
             bottomRightPoint.gameObject.SetActive(true);
         }
 
-        rotatePoint.gameObject.SetActive(allowRotation);
+        rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
     }
 
 
@@ -270,7 +270,7 @@ public partial class FurnitureItem : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.B))
         {
-            if (allowSnapCenterToWall)
+            if (allowSnapToWall)
             {
                 furnitureMergeToWall.TryToMergeAndSnapInWall();
             }
@@ -352,7 +352,7 @@ public partial class FurnitureItem : MonoBehaviour
 
         dragTransform.localPosition += delta;
 
-        if (allowSnapCenterToWall)
+        if (allowSnapToWall)
         {
             furnitureMergeToWall.StartSnap();
         }
@@ -521,6 +521,8 @@ public partial class FurnitureItem : MonoBehaviour
     /// <param name="worldPosition"></param>
     public void MoveAnchorToPositionWithoutChangeShape(CheckpointType type, Vector3 worldPosition)
     {
+        
+        
         var targetAnchor = GetFurniturePoint(type);
         var furnitureWorldPosition = GetWorldPosition();
         Vector3 anchorWorldPos = targetAnchor.transform.position;
@@ -534,15 +536,20 @@ public partial class FurnitureItem : MonoBehaviour
         // Convert the new center to local space relative to the parent
         Vector3 newCenterLocal = transform.InverseTransformPoint(newCenterWorld);
 
-        var actualPosition = newCenterLocal;
+        var localPosition = newCenterLocal;
         var debugPoint = FurnitureManager.Instance.debugPoint;
-        actualPosition.y = modelContainer.transform.localPosition.y;
+        localPosition.y = modelContainer.transform.localPosition.y;
 
+        if (isUsingCenterPosToSnap)
+        {
+            localPosition = transform.InverseTransformPoint(worldPosition);
+        } 
+        
         // debugPoint.transform.SetParent(modelContainer.transform.parent);
         // debugPoint.transform.localPosition = actualPosition;
 
-        bounds.center = actualPosition;
-        modelContainer.transform.localPosition = actualPosition;
+        bounds.center = localPosition;
+        modelContainer.transform.localPosition = localPosition;
 
         RefreshCheckPointsByBounds();
         UpdateWorldSizeFromLocal();

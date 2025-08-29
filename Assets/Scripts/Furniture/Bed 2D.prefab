@@ -276,6 +276,7 @@ MonoBehaviour:
   allowSnapCenterToWall: 1
   allowAllCheckPoint: 0
   allowRotation: 0
+  isUsingCenterToSnap: 1
   data:
     roomID: 
     instanceID: 
@@ -311,6 +312,9 @@ MonoBehaviour:
     type: 3}
   textMeshProPrefab: {fileID: 4512470224821213514, guid: 3af0173042a2bfd468e70f9011b7fdb0,
     type: 3}
+  furnitureMergeToWall:
+    ratio: 0
+    offset: 0
 --- !u!114 &5451159717796942090
 MonoBehaviour:
   m_ObjectHideFlags: 0
