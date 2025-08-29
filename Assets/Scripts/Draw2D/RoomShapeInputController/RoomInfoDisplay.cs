@@ -829,19 +829,19 @@ public class RoomInfoDisplay : MonoBehaviour
         popupUI.SetActive(true);
         if (popupWS) popupWS.SetActive(false);
     }
-public enum SelType { None, Room, Floor }
+    public enum SelType { None, Room, Floor }
 
-public bool TryGetSelection(out SelType kind, out string id)
-{
-    if (selectionKind == SelectionKind.Room && !string.IsNullOrEmpty(selectedRoomID))
+    public bool TryGetSelection(out SelType kind, out string id)
     {
-        kind = SelType.Room; id = selectedRoomID; return true;
+        if (selectionKind == SelectionKind.Room && !string.IsNullOrEmpty(selectedRoomID))
+        {
+            kind = SelType.Room; id = selectedRoomID; return true;
+        }
+        if (selectionKind == SelectionKind.Floor && !string.IsNullOrEmpty(selectedFloorID))
+        {
+            kind = SelType.Floor; id = selectedFloorID; return true;
+        }
+        kind = SelType.None; id = ""; return false;
     }
-    if (selectionKind == SelectionKind.Floor && !string.IsNullOrEmpty(selectedFloorID))
-    {
-        kind = SelType.Floor; id = selectedFloorID; return true;
-    }
-    kind = SelType.None; id = ""; return false;
-}
 
 }

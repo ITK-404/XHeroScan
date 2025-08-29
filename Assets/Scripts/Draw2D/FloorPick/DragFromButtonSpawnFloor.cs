@@ -345,12 +345,12 @@ private static readonly Dictionary<string, GameObject> s_floorVisuals = new();
 
 string id = floor.ID; // read-only, đã được Floor tự gán từ constructor / storage
 
-// Destroy visual cũ (nếu có) của đúng ID
-if (!string.IsNullOrEmpty(id) && s_floorVisuals.TryGetValue(id, out var oldGo) && oldGo)
-{
-    PlacementManager.Instance.DestroyFloor(oldGo);
-    s_floorVisuals.Remove(id);
-}
+// // Destroy visual cũ (nếu có) của đúng ID
+// if (!string.IsNullOrEmpty(id) && s_floorVisuals.TryGetValue(id, out var oldGo) && oldGo)
+// {
+//     PlacementManager.Instance.DestroyFloor(oldGo);
+//     s_floorVisuals.Remove(id);
+// }
 
 // Tạo parent mới cho floor này
 lastFloorGO = new GameObject($"Floor_{(string.IsNullOrEmpty(id) ? "NoID" : id)}");
