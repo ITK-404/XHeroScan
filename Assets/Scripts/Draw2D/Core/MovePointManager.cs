@@ -383,7 +383,7 @@ public class MovePointManager : MonoBehaviour
             }
 
             // 5: Lưu & redraw (phòng của selected)
-            RoomStorage.UpdateOrAddRoom(room);
+            // RoomStorage.UpdateOrAddRoom(room);
             var floorGO = GameObject.Find($"RoomFloor_{roomID}");
             if (floorGO != null)
                 floorGO.GetComponent<RoomMeshController>()?.GenerateMesh(room.checkpoints);

@@ -492,8 +492,8 @@ public partial class FurnitureItem : MonoBehaviour
         var debugPoint = FurnitureManager.Instance.debugPoint;
         actualPosition.y = modelContainer.transform.localPosition.y;
 
-        debugPoint.transform.SetParent(modelContainer.transform.parent);
-        debugPoint.transform.localPosition = actualPosition;
+        // debugPoint.transform.SetParent(modelContainer.transform.parent);
+        // debugPoint.transform.localPosition = actualPosition;
 
         bounds.center = actualPosition;
         modelContainer.transform.localPosition = actualPosition;

@@ -72,24 +72,14 @@ public class FurnitureMergeToWall
 
     public void Update()
     {
-        Debug.Log("Is wall line is null: " + currentWallLine == null);
         if (currentWallLine != null)
         {
-            var rotation = RotationFromLine2D(currentWallLine.start, currentWallLine.end);
-            furnitureItem.data.size.rotation = Quaternion.Euler(90, rotation.y, 0);
+            Debug.Log("Wall line is not null, try to align with them");
+            Vector3 centerPosition = (currentWallLine.start + currentWallLine.end) / 2;
+            FurnitureManager.Instance.debugPoint.transform.position = centerPosition;
         }
     }
-
-    public static Quaternion RotationFromLine2D(Vector2 start, Vector2 end)
-    {
-        Vector2 d = end - start;
-        if (d.sqrMagnitude < 1e-8f) return Quaternion.identity;
-
-        float angleDeg = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
-        // Nếu sprite mặc định “hướng phải” (trục +X) thì dùng thẳng angleDeg
-        // Nếu sprite mặc định “hướng lên” (+Y) thì angleDeg -= 90f;
-        return Quaternion.AngleAxis(angleDeg, Vector3.forward);
-    }
+    
     private bool IsWithinDistance(Vector3 point1, Vector3 point2, float distance)
     {
         point1.y = 0;

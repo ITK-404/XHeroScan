@@ -14,7 +14,11 @@ public class WallLine
     public Vector3 start;
     public Vector3 end;
     public LineType type; // Wall, Door, Window
-    public WallLine() { }
+
+    public WallLine()
+    {
+        Debug.Log("[WallLine] Init no parameter");
+    }
     public bool isVisible = true;
 
     public bool isManualConnection = false;// line phụ 
@@ -30,6 +34,7 @@ public class WallLine
     public WallLine(Vector3 start, Vector3 end, LineType type, float baseHeight = 0f, float height = 0f,
                     string frontMat = "Default", string backMat = "Default")
     {
+        Debug.Log("[WallLine] Init with parameter 1");
         this.start = start;
         this.end = end;
         this.type = type;
@@ -41,6 +46,7 @@ public class WallLine
     // Constructor clone
     public WallLine(WallLine other)
     {
+        Debug.Log("[WallLine] Init by clone other wall line");
         this.start = other.start;
         this.end = other.end;
         this.type = other.type;
