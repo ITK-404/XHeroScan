@@ -286,11 +286,11 @@ MonoBehaviour:
     size:
       width: 1
       height: 1
-      length: 1
+      length: 0.5
       rotation: {x: 0, y: 0.8870109, z: 0, w: 0.4617486}
-      widthMinMax: {x: 1, y: 5000}
+      widthMinMax: {x: 0.1, y: 5000}
       heightMinMax: {x: 1, y: 5000}
-      lengthMinMax: {x: 1, y: 5000}
+      lengthMinMax: {x: 0.1, y: 5000}
       offsetY: 0
   modelContainer: {fileID: 5386840937885300725}
   model2D: {fileID: 3354348105385316814}

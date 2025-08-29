@@ -70,7 +70,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     [SerializeField] private TextMeshPro textMeshProPrefab;
 
-    private FurnitureMergeToWall furnitureMergeToWall;
+    [SerializeField] private FurnitureMergeToWall furnitureMergeToWall;
 
     private Quaternion currentRotation
     {

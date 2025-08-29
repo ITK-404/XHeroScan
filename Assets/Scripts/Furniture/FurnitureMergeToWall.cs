@@ -79,7 +79,8 @@ public class FurnitureMergeToWall
         furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, firstDoorPoint);
 
         ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
-        
+        // cách xoay này chưa được hoàn hảo
+        // RotationToWallLine();
     }
 
     public float ratio;
@@ -103,24 +104,28 @@ public class FurnitureMergeToWall
         {
             if (currentWallLine != null)
             {
-                Debug.Log("Wall line is not null, try to align with them");
+                // moving but using center of wall line
+                // Debug.Log("Wall line is not null, try to align with them");
                 Vector3 centerPosition = Vector3.Lerp(currentWallLine.start, currentWallLine.end, ratio);
                 FurnitureManager.Instance.debugPoint.transform.position = centerPosition;
-
+                // sync y position from model 2D
                 centerPosition.y = furnitureItem.GetWorldPosition().y;
 
                 furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, centerPosition);
                 furnitureItem.RefreshCheckPointsByBounds();
                 
-                
-                Vector3 dir = currentWallLine.end - currentWallLine.start;
-                dir.y = 0;
-                float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
-                Debug.Log("Angle: " + angle);
-                furnitureItem.SetRotation(angle);
-                
+                RotationToWallLine();
             }
         }
+    }
+
+    [SerializeField] private float offset;
+    private void RotationToWallLine()
+    {
+        Vector3 dir = currentWallLine.end - currentWallLine.start;
+        dir.y = 0;
+        float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
+        furnitureItem.SetRotation(-angle + offset);
     }
 
     private bool IsWithinDistance(Vector3 point1, Vector3 point2, float distance)
