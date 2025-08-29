@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Collections;               // for non-generic IEnumerable
+using System.Reflection;               // for reflection
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -9,105 +11,86 @@ public class DimensionOkHandler : MonoBehaviour
     [Header("Refs")]
     private RoomInfoDisplay roomInfoDisplay;
     private CheckpointManager checkpointManager;
-    private DragFromButtonSpawnFloor spawnFloor;
     [SerializeField] private TMP_InputField inputLength;
     [SerializeField] private TMP_InputField inputWidth;
     [SerializeField] private Button buttonOk;
 
+    [Header("Rebuild Settings")]
+    [Tooltip("Độ nhô của line/marker so với nền phòng khi rebuild (fallback nếu không tìm thấy CreateRoomOnFloor).")]
+    [SerializeField] private float fallbackRoomWallLift = 0.003f;
+
     private void Awake()
     {
-        if (!roomInfoDisplay)   roomInfoDisplay  = FindFirstObjectByType<RoomInfoDisplay>();
-        if (!checkpointManager) checkpointManager = FindFirstObjectByType<CheckpointManager>();
-        if (!spawnFloor)        spawnFloor       = FindFirstObjectByType<DragFromButtonSpawnFloor>();
-        if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensions);
+        if (!roomInfoDisplay)    roomInfoDisplay   = FindFirstObjectByType<RoomInfoDisplay>();
+        if (!checkpointManager)  checkpointManager = FindFirstObjectByType<CheckpointManager>();
+        if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedRoom);
+        if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedFloor);
     }
 
     private void OnDestroy()
     {
-        if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensions);
+        if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedRoom);
+        if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedFloor);
     }
 
-    // Gọi từ nút OK: tự lấy ID đang chọn. (Ưu tiên Room)
-    private void ApplyDimensions()
+    // Chỉ áp dụng cho ROOM đang chọn. Không đụng Floor.
+    private void ApplyDimensionsForSelectedRoom()
     {
-        if (checkpointManager == null) { Debug.LogWarning("[DimOK] checkpointManager NULL"); return; }
-
-        string id = checkpointManager.GetSelectedRoomID(); // ưu tiên Room đang chọn
-        if (string.IsNullOrEmpty(id))
+        if (checkpointManager == null)
         {
-            if (roomInfoDisplay != null &&
-                roomInfoDisplay.TryGetSelection(out RoomInfoDisplay.SelType kind, out string selId))
-            {
-                id = selId; // nếu không có Room đang chọn thì lấy từ selection (Floor/Room)
-            }
-        }
-
-        if (string.IsNullOrEmpty(id))
-        {
-            Debug.LogWarning("[DimOK] Không có ID để cập nhật.");
+            Debug.LogWarning("[DimOK] checkpointManager NULL");
             return;
         }
 
-        ApplyDimensionsForId(id);
-    }
+        // Ưu tiên ID Room từ CheckpointManager
+        string roomId = checkpointManager.GetSelectedRoomID();
 
-    // === Hàm chính: CHỈ CẦN TRUYỀN ID ===
-    public void ApplyDimensionsForId(string id)
+        // Fallback: lấy từ RoomInfoDisplay nếu loại chọn là Room
+        if (string.IsNullOrEmpty(roomId) &&
+            roomInfoDisplay != null &&
+            roomInfoDisplay.TryGetSelection(out RoomInfoDisplay.SelType kind, out string selId) &&
+            kind == RoomInfoDisplay.SelType.Room)
+        {
+            roomId = selId;
+        }
+
+        if (string.IsNullOrEmpty(roomId))
+        {
+            Debug.LogWarning("[DimOK] Không có ROOM được chọn -> không áp dụng.");
+            return;
+        }
+
+        Debug.Log($"[DimOK] Editing ROOM ID = {roomId}");
+        RecreateRoomWithInputDims(roomId);
+    }
+    
+    private void RecreateRoomWithInputDims(string roomId)
     {
-        // 1) Đọc L & W từ UI
+        // Đọc L & W
         if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
         {
             Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng.");
             return;
         }
 
-        // 2) Tìm đúng đối tượng theo ID (ưu tiên Room)
-        Room room = RoomStorage.GetRoomByID(id);
-        Floor floor = null;
-        if (room == null && FloorStorage.floors != null)
+        // Lấy room
+        Room room = RoomStorage.GetRoomByID(roomId);
+        if (room == null)
         {
-            for (int i = 0; i < FloorStorage.floors.Count; i++)
-            {
-                var f = FloorStorage.floors[i];
-                if (f != null && f.ID == id) { floor = f; break; }
-            }
-        }
-        if (room == null && floor == null)
-        {
-            Debug.LogWarning($"[DimOK] Không tìm thấy Room/Floor với ID={id}");
+            Debug.LogWarning($"[DimOK] Không tìm thấy ROOM với ID={roomId}");
             return;
         }
 
-        // 3) Lấy centroid từ hình hiện có (nếu không có thì (0,0))
-        List<Vector2> basis = null;
-        if (room  != null && room.checkpoints  != null && room.checkpoints.Count  >= 3) basis = room.checkpoints;
-        if (floor != null && floor.checkpoints != null && floor.checkpoints.Count >= 3) basis ??= floor.checkpoints;
+        // Tính centroid hiện có
+        Vector2 centroid = ComputeCentroid2D(room.checkpoints);
 
-        Vector2 centroid = Vector2.zero;
-        if (basis != null && basis.Count >= 3)
-        {
-            // centroid polygon (inline)
-            float A = 0f, cx = 0f, cy = 0f;
-            int n = basis.Count;
-            for (int i = 0; i < n; i++)
-            {
-                var p = basis[i];
-                var q = basis[(i + 1) % n];
-                float cr = p.x * q.y - q.x * p.y;
-                A  += cr;
-                cx += (p.x + q.x) * cr;
-                cy += (p.y + q.y) * cr;
-            }
-            A *= 0.5f;
-            if (Mathf.Abs(A) > 1e-8f) { cx /= (6f * A); cy /= (6f * A); centroid = new Vector2(cx, cy); }
-            else
-            {
-                for (int i = 0; i < basis.Count; i++) centroid += basis[i];
-                centroid /= Mathf.Max(1, basis.Count);
-            }
-        }
+        // Force index = 2
+        var cr = FindFirstObjectByType<CreateRoomOnFloor>();
+        float layerStep = (cr != null) ? cr.layerStepY : 0.002f; // fallback 2mm
+        float baseY = 2f * layerStep;                        // index = 2
+        float roomWallLift = (cr != null) ? cr.roomWallLift : fallbackRoomWallLift;
 
-        // 4) Tạo chữ nhật LxW (căn trục thế giới, KHÔNG xoay)
+        // Ghi lại polygon LxW quanh centroid (axis-aligned theo world)
         float hx = L * 0.5f, hy = W * 0.5f;
         var rect = new List<Vector2>(4)
         {
@@ -116,39 +99,297 @@ public class DimensionOkHandler : MonoBehaviour
             new Vector2(centroid.x + hx, centroid.y + hy),
             new Vector2(centroid.x - hx, centroid.y + hy)
         };
+        room.checkpoints = rect;
 
-        // 5) Gán đúng nơi trùng ID (chỉ một nơi)
-        if (room != null)
+        // Rebuild wallLines 4 cạnh ở cao độ baseY + roomWallLift
+        room.extraCheckpoints?.Clear();
+        if (room.wallLines == null) room.wallLines = new List<WallLine>(); else room.wallLines.Clear();
+
+        Vector3 v0 = new Vector3(rect[0].x, baseY + roomWallLift, rect[0].y);
+        Vector3 v1 = new Vector3(rect[1].x, baseY + roomWallLift, rect[1].y);
+        Vector3 v2 = new Vector3(rect[2].x, baseY + roomWallLift, rect[2].y);
+        Vector3 v3 = new Vector3(rect[3].x, baseY + roomWallLift, rect[3].y);
+
+        room.wallLines.Add(new WallLine(v0, v1, LineType.Wall));
+        room.wallLines.Add(new WallLine(v1, v2, LineType.Wall));
+        room.wallLines.Add(new WallLine(v2, v3, LineType.Wall));
+        room.wallLines.Add(new WallLine(v3, v0, LineType.Wall));
+
+        // Sync storage
+        RoomStorage.UpdateOrAddRoom(room);
+
+        // Cập nhật / tạo mesh GO (RoomFloor_<id>) theo baseY mới
+        GameObject floorGO = null;
+        if (checkpointManager.RoomFloorMap != null &&
+            checkpointManager.RoomFloorMap.TryGetValue(roomId, out var existGO) &&
+            existGO != null)
         {
-            room.checkpoints = rect;
-            // dọn dữ liệu phát sinh của ROOM
-            room.wallLines?.Clear();
-            room.extraCheckpoints?.Clear();
-            Debug.Log($"[DimOK] Overwrite ROOM {id} -> {L}x{W}, area={L*W}");
+            floorGO = existGO;
         }
         else
         {
-            floor.checkpoints = rect;
-            Debug.Log($"[DimOK] Overwrite FLOOR {id} -> {L}x{W}, area={L*W}");
+            floorGO = new GameObject($"RoomFloor_{room.ID}");
+            checkpointManager.RoomFloorMap ??= new Dictionary<string, GameObject>();
+            checkpointManager.RoomFloorMap[room.ID] = floorGO;
         }
 
-        // 6) Redraw: ưu tiên vẽ floor theo state của spawnFloor, sau đó (nếu cần) rebuild toàn bộ
-        if (spawnFloor != null)
+        floorGO.transform.position = new Vector3(0f, baseY, 0f);
+        var meshCtrl = floorGO.GetComponent<RoomMeshController>();
+        if (meshCtrl == null) meshCtrl = floorGO.AddComponent<RoomMeshController>();
+        meshCtrl.Initialize(room.ID);
+        meshCtrl.GenerateMesh(room.checkpoints);
+
+        // Di chuyển checkpoint GOs của room về 4 đỉnh mới (nếu tìm được mapping)
+        var mappedList = TryGetCheckpointListForRoom(roomId);
+        if (mappedList != null)
         {
-            spawnFloor.width = Mathf.Abs(L);
-            spawnFloor.depth = Mathf.Abs(W);
-            try
+            var newVerts = new Vector3[] { v0, v1, v2, v3 };
+            int n = Mathf.Min(mappedList.Count, 4);
+            for (int i = 0; i < n; i++)
+                if (mappedList[i]) mappedList[i].transform.position = newVerts[i];
+
+            for (int i = n; i < 4; i++)
             {
-                spawnFloor.LoadStateFromFloorId(id);
+                if (checkpointManager.checkpointPrefab != null)
+                {
+                    var go = Instantiate(checkpointManager.checkpointPrefab, newVerts[i], Quaternion.identity);
+                    mappedList.Add(go);
+                }
             }
-            catch (System.Exception e)
+            for (int i = mappedList.Count - 1; i >= 4; i--)
             {
-                Debug.LogWarning($"[DimOK] spawnFloor.RedrawRectangleFromState() error: {e.Message}");
+                if (mappedList[i]) Destroy(mappedList[i]);
+                mappedList.RemoveAt(i);
             }
         }
 
-        // Nếu hệ thống của bạn vẫn cần dựng lại line/label theo RoomStorage thì giữ dòng này.
-        checkpointManager?.RedrawAllRooms();
+        // Redraw để line được vẽ lại theo wallLines mới
+        checkpointManager.RedrawAllRooms();
+
+        Debug.Log($"[DimOK] UPDATED room {roomId}: points+lines+mesh (index=2) -> {L}x{W}, baseY={baseY}, lift={roomWallLift}");
+    }
+    
+    private List<GameObject> TryGetCheckpointListForRoom(string id)
+    {
+        if (checkpointManager == null || checkpointManager.loopMappings == null) return null;
+
+        foreach (var any in (IEnumerable)checkpointManager.loopMappings)
+        {
+            if (any == null) continue;
+
+            // lấy giá trị ID từ bất kỳ field/property string nào có vẻ là ID
+            string lmId = TryReadStringId(any);
+            if (lmId != id) continue;
+
+            // lấy field/property kiểu List<GameObject>
+            var pts = TryReadPointsList(any);
+            if (pts != null) return pts;
+        }
+        return null;
+    }
+
+// GỌI HÀM NÀY khi bạn đang select Floor và muốn update theo input hiện tại
+private void ApplyDimensionsForSelectedFloor()
+{
+    // Lấy ID floor từ RoomInfoDisplay (vì CheckpointManager chỉ trả RoomID)
+    if (roomInfoDisplay == null ||
+        !roomInfoDisplay.TryGetSelection(out RoomInfoDisplay.SelType kind, out string floorId) ||
+        kind != RoomInfoDisplay.SelType.Floor ||
+        string.IsNullOrEmpty(floorId))
+    {
+        Debug.LogWarning("[DimOK] Không có FLOOR đang được chọn.");
+        return;
+    }
+
+    Debug.Log($"[DimOK] Editing FLOOR ID = {floorId}");
+    RecreateFloorWithInputDims(floorId);
+}
+
+// Cập nhật polygon của FLOOR (L×W theo centroid cũ) + regenerate mesh
+private void RecreateFloorWithInputDims(string floorId)
+{
+    // 1) Đọc L & W
+    if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
+    {
+        Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng cho FLOOR.");
+        return;
+    }
+
+    // 2) Tìm đối tượng Floor trong FloorStorage
+    Floor target = null;
+    if (FloorStorage.floors != null)
+    {
+        for (int i = 0; i < FloorStorage.floors.Count; i++)
+        {
+            var f = FloorStorage.floors[i];
+            if (f != null && f.ID == floorId) { target = f; break; }
+        }
+    }
+    if (target == null)
+    {
+        Debug.LogWarning($"[DimOK] Không tìm thấy FLOOR với ID={floorId}");
+        return;
+    }
+
+    // 3) Lấy centroid hiện có (nếu thiếu → (0,0))
+    Vector2 centroid = ComputeCentroid2D(target.checkpoints);
+
+    // 4) Tạo chữ nhật L×W quanh centroid (axis-aligned theo world)
+    float hx = L * 0.5f, hy = W * 0.5f;
+    var rect = new List<Vector2>(4)
+    {
+        new Vector2(centroid.x - hx, centroid.y - hy),
+        new Vector2(centroid.x + hx, centroid.y - hy),
+        new Vector2(centroid.x + hx, centroid.y + hy),
+        new Vector2(centroid.x - hx, centroid.y + hy)
+    };
+    target.checkpoints = rect;
+
+    // 5) Regenerate mesh cho mọi FloorMeshController có floorID trùng
+    bool foundAny = false;
+#if UNITY_2023_1_OR_NEWER
+    var ctrls = FindObjectsByType<FloorMeshController>(FindObjectsSortMode.None);
+#else
+    var ctrls = FindObjectsOfType<FloorMeshController>();
+#endif
+    if (ctrls != null)
+    {
+        for (int i = 0; i < ctrls.Length; i++)
+        {
+            var ctrl = ctrls[i];
+            if (ctrl != null && ctrl.floorID == floorId)
+            {
+                foundAny = true;
+
+                // Giữ nguyên cao độ hiện có của floor GO
+                var go = ctrl.gameObject;
+                float keepY = go.transform.position.y;
+
+                // ctrl.Initialize(floorId);
+                // ctrl.GenerateMesh(target.checkpoints);
+
+                // Đảm bảo không đổi cao độ
+                var p = go.transform.position;
+                if (Mathf.Abs(p.y - keepY) > 1e-6f)
+                    go.transform.position = new Vector3(p.x, keepY, p.z);
+            }
+        }
+    }
+
+    // 6) Fallback: nếu chưa tìm thấy controller nào, thử tạo nhanh một GO mới (tuỳ nhu cầu bạn có thể bỏ)
+    if (!foundAny)
+    {
+        var go = new GameObject($"Floor_{floorId}");
+        // (Optional) nếu project của bạn đã có tag "RoomFloor", có thể set:
+        // try { go.tag = "RoomFloor"; } catch { /* bỏ qua nếu tag chưa tồn tại */ }
+
+        var ctrl = go.AddComponent<FloorMeshController>();
+        // ctrl.Initialize(floorId);
+        // ctrl.GenerateMesh(target.checkpoints);
+        Debug.LogWarning($"[DimOK] Không thấy FloorMeshController sẵn có cho {floorId} → đã tạo tạm GO mới.");
+    }
+
+    Debug.Log($"[DimOK] UPDATED FLOOR {floorId} -> {L}x{W}, area={L*W}");
+}
+
+
+    private static string TryReadStringId(object obj)
+    {
+        var t = obj.GetType();
+
+        // thử các tên phổ biến trước để nhanh
+        string[] candidates = { "roomId", "RoomId", "roomID", "RoomID", "id", "ID" };
+
+        foreach (var name in candidates)
+        {
+            var f = t.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (f != null && f.FieldType == typeof(string))
+            {
+                return f.GetValue(obj) as string;
+            }
+            var p = t.GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (p != null && p.PropertyType == typeof(string) && p.CanRead)
+            {
+                return p.GetValue(obj) as string;
+            }
+        }
+
+        // fallback: quét mọi string field/property
+        foreach (var f in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            if (f.FieldType == typeof(string))
+                return f.GetValue(obj) as string;
+
+        foreach (var p in t.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            if (p.PropertyType == typeof(string) && p.CanRead)
+                return p.GetValue(obj) as string;
+
+        return null;
+    }
+
+    private static List<GameObject> TryReadPointsList(object obj)
+    {
+        var t = obj.GetType();
+
+        // Ưu tiên field/property chính xác List<GameObject>
+        foreach (var f in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            if (f.FieldType == typeof(List<GameObject>))
+                return f.GetValue(obj) as List<GameObject>;
+        }
+        foreach (var p in t.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            if (p.CanRead && p.PropertyType == typeof(List<GameObject>))
+                return p.GetValue(obj) as List<GameObject>;
+        }
+
+        // fallback: tìm field generic List<T> mà T kế thừa UnityEngine.Object, thử cast phần tử sang GameObject
+        foreach (var f in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            if (f.FieldType.IsGenericType && f.FieldType.GetGenericTypeDefinition() == typeof(List<>))
+            {
+                var elem = f.FieldType.GetGenericArguments()[0];
+                if (typeof(UnityEngine.Object).IsAssignableFrom(elem))
+                {
+                    var listObj = f.GetValue(obj) as IEnumerable;
+                    if (listObj == null) continue;
+
+                    var result = new List<GameObject>();
+                    foreach (var item in listObj)
+                    {
+                        if (item is GameObject go) result.Add(go);
+                        else if (item is Component c) result.Add(c.gameObject);
+                    }
+                    // nếu gom được ít nhất 1 phần tử, coi như hợp lệ
+                    if (result.Count > 0) return result;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static Vector2 ComputeCentroid2D(List<Vector2> poly)
+    {
+        if (poly == null || poly.Count < 3) return Vector2.zero;
+
+        float A = 0f, cx = 0f, cy = 0f;
+        int n = poly.Count;
+        for (int i = 0; i < n; i++)
+        {
+            var p = poly[i];
+            var q = poly[(i + 1) % n];
+            float cr = p.x * q.y - q.x * p.y;
+            A  += cr;
+            cx += (p.x + q.x) * cr;
+            cy += (p.y + q.y) * cr;
+        }
+        A *= 0.5f;
+        if (Mathf.Abs(A) > 1e-8f) return new Vector2(cx / (6f * A), cy / (6f * A));
+
+        // Degenerate → trung bình hình học
+        Vector2 c = Vector2.zero;
+        for (int i = 0; i < poly.Count; i++) c += poly[i];
+        return c / Mathf.Max(1, poly.Count);
     }
 
     // parse số với ,/.
