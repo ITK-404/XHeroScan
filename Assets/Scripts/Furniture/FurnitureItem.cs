@@ -341,7 +341,7 @@ public partial class FurnitureItem : MonoBehaviour
 
         if (allowSnapCenterToWall)
         {
-            furnitureMergeToWall.TryToMergeAndSnapInWall();
+            furnitureMergeToWall.StartSnap();
         }
       
         startPos = currentPos;
@@ -356,6 +356,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void DeActiveDrag()
     {
+        furnitureMergeToWall.EndSnap();
         OnDragPoint = false;
     }
 

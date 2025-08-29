@@ -1,5 +1,7 @@
 ﻿using System;
+using iTextSharp.text.pdf.parser;
 using UnityEngine;
+
 [Serializable]
 public class FurnitureMergeToWall
 {
@@ -10,6 +12,7 @@ public class FurnitureMergeToWall
     private FurniturePoint centerPoint;
 
     private WallLine currentWallLine;
+
     public FurnitureMergeToWall(FurnitureItem furnitureItem)
     {
         this.furnitureItem = furnitureItem;
@@ -22,8 +25,13 @@ public class FurnitureMergeToWall
         this.centerPoint = furnitureItem.GetFurniturePoint(CheckpointType.Bottom);
     }
 
+    private bool allowSnap = false;
+    public void StartSnap() => allowSnap = true;
+    public void EndSnap() => allowSnap = false;
+
     public void TryToMergeAndSnapInWall()
     {
+        if (allowSnap == false) return;
         Debug.Log("bắt đầu check để snap wall line");
         var anchorPoint = centerPoint;
         Vector3 centerPosition = anchorPoint.transform.position;
@@ -40,7 +48,8 @@ public class FurnitureMergeToWall
             {
                 if (wl.type != LineType.Wall) continue; // chỉ chọn từ tường thường
 
-                Vector3 projected = CheckpointManager.Instance.ProjectPointOnLineSegment(wl.start, wl.end, centerPosition);
+                Vector3 projected =
+                    CheckpointManager.Instance.ProjectPointOnLineSegment(wl.start, wl.end, centerPosition);
                 centerPosition.y = projected.y;
                 float dist = Vector3.Distance(centerPosition, projected);
 
@@ -59,27 +68,48 @@ public class FurnitureMergeToWall
         if (wallLine == null)
         {
             Debug.Log("không kiếm được wallline để snap vào");
+            ratio = 0;
             return;
         }
+
         currentWallLine = wallLine;
 
         //Debug.Log("Kiếm được wall line để snap vào");
         //Debug.Log($"Thông số {wallLine.start} {wallLine.end}");
         furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, firstDoorPoint);
 
+        ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
+    }
 
+    public float ratio;
+
+    float GetPointRatio(Vector3 start, Vector3 end, Vector3 point)
+    {
+        Vector3 ab = end - start;
+        Vector3 ap = point - start;
+        float t = Vector3.Dot(ap, ab) / ab.sqrMagnitude;
+        return Mathf.Clamp01(t);
     }
 
     public void Update()
     {
-        if (currentWallLine != null)
+        if (allowSnap)
         {
-            Debug.Log("Wall line is not null, try to align with them");
-            Vector3 centerPosition = (currentWallLine.start + currentWallLine.end) / 2;
-            FurnitureManager.Instance.debugPoint.transform.position = centerPosition;
+            TryToMergeAndSnapInWall();
+        }
+
+        else
+        {
+            if (currentWallLine != null)
+            {
+                Debug.Log("Wall line is not null, try to align with them");
+                Vector3 centerPosition = Vector3.Lerp(currentWallLine.start, currentWallLine.end, ratio);
+                FurnitureManager.Instance.debugPoint.transform.position = centerPosition;
+                furnitureItem.SetWorldPosition(centerPosition);
+            }
         }
     }
-    
+
     private bool IsWithinDistance(Vector3 point1, Vector3 point2, float distance)
     {
         point1.y = 0;
