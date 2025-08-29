@@ -123,7 +123,7 @@ public partial class FurnitureItem : MonoBehaviour
         pointsArray = GetComponentsInChildren<FurniturePoint>();
         foreach (var item in pointsArray)
         {
-            SetupPoint(item);
+            item.furniture = this;
         }
 
         furnitureMergeToWall.SetupAnchor();
@@ -181,14 +181,6 @@ public partial class FurnitureItem : MonoBehaviour
         return text;
     }
 
-
-    private void SetupPoint(FurniturePoint point)
-    {
-        point.center = transform;
-        //point.scaleHandle = value;
-        point.furniture = this;
-    }
-
     public void DragPoint(FurniturePoint currentDragPoint)
     {
         Vector3 newPos = GetWorldMousePosition();
@@ -199,28 +191,28 @@ public partial class FurnitureItem : MonoBehaviour
         switch (currentDragPoint.checkpointType)
         {
             case CheckpointType.Left:
-                ResizeWithAnchor(newPos, currentDragPoint, rightPoint.transform, ResizeAxis.X);
+                ResizeWithAnchor(newPos, currentDragPoint, rightPoint.transform);
                 break;
             case CheckpointType.Right:
-                ResizeWithAnchor(newPos, currentDragPoint, leftPoint.transform, ResizeAxis.X);
+                ResizeWithAnchor(newPos, currentDragPoint, leftPoint.transform);
                 break;
             case CheckpointType.Top:
-                ResizeWithAnchor(newPos, currentDragPoint, bottomPoint.transform, ResizeAxis.Z);
+                ResizeWithAnchor(newPos, currentDragPoint, bottomPoint.transform);
                 break;
             case CheckpointType.Bottom:
-                ResizeWithAnchor(newPos, currentDragPoint, topPoint.transform, ResizeAxis.Z);
+                ResizeWithAnchor(newPos, currentDragPoint, topPoint.transform);
                 break;
             case CheckpointType.TopLeft:
-                ResizeWithAnchor(newPos, currentDragPoint, bottomRightPoint.transform, ResizeAxis.XZ);
+                ResizeWithAnchor(newPos, currentDragPoint, bottomRightPoint.transform);
                 break;
             case CheckpointType.TopRight:
-                ResizeWithAnchor(newPos, currentDragPoint, bottomLeftPoint.transform, ResizeAxis.XZ);
+                ResizeWithAnchor(newPos, currentDragPoint, bottomLeftPoint.transform);
                 break;
             case CheckpointType.BottomLeft:
-                ResizeWithAnchor(newPos, currentDragPoint, topRightPoint.transform, ResizeAxis.XZ);
+                ResizeWithAnchor(newPos, currentDragPoint, topRightPoint.transform);
                 break;
             case CheckpointType.BottomRight:
-                ResizeWithAnchor(newPos, currentDragPoint, topLeftPoint.transform, ResizeAxis.XZ);
+                ResizeWithAnchor(newPos, currentDragPoint, topLeftPoint.transform);
                 break;
             default:
                 break;
@@ -280,10 +272,10 @@ public partial class FurnitureItem : MonoBehaviour
         furnitureMergeToWall.Update();
     }
 
-    public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint,
-        ResizeAxis resizeAxis)
+    public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint)
     {
         // rotation hiện tại (dùng currentRotation của bạn)
+        ResizeAxis resizeAxis = dragPoint.GetReSizeAxis();
         Quaternion rotation = Quaternion.Euler(0f, currentRotation.y, 0f);
         Vector3 originalCenter = bounds.center;
         // Chuyển vị trí drag và anchor về "local chưa xoay" (unrotated local space)

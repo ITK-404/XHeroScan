@@ -507,6 +507,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
+      propertyPath: resizeAxis
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
       propertyPath: checkpointType
       value: 5
       objectReference: {fileID: 0}
@@ -719,6 +724,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
+      propertyPath: resizeAxis
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
       propertyPath: checkpointType
       value: 7
       objectReference: {fileID: 0}
@@ -823,6 +833,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4046321613941195839}
     m_Modifications:
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: resizeAxis
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: checkpointType
@@ -936,6 +951,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
+      propertyPath: resizeAxis
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
       propertyPath: checkpointType
       value: 4
       objectReference: {fileID: 0}
@@ -1045,6 +1065,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4046321613941195839}
     m_Modifications:
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: resizeAxis
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: checkpointType
@@ -1269,6 +1294,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4046321613941195839}
     m_Modifications:
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: resizeAxis
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: checkpointType

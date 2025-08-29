@@ -22,6 +22,7 @@ public class ModularPopupEdit : MonoBehaviour
 
     void Awake()
     {
+        gameObject.SetActive(false);
         if (editBtn)   editBtn.onClick.AddListener(() => ShowOnly(objectEdit));
         if (splitBtn)  splitBtn.onClick.AddListener(() => ShowOnly(objectSplit));
         if (doubleBtn) doubleBtn.onClick.AddListener(() => ShowOnly(objectDouble));

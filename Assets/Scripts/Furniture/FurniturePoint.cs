@@ -1,12 +1,12 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class FurniturePoint : MonoBehaviour
 {
     public static Camera mainCam;
-    public Transform center;
     public CheckpointType checkpointType;
     public FurnitureItem furniture;
-
+    public ResizeAxis resizeAxis;
     private void Awake()
     {
         if (mainCam == null)
@@ -14,6 +14,32 @@ public class FurniturePoint : MonoBehaviour
             mainCam = Camera.main;
         }
     }
+
+#if UNITY_EDITOR
+    [ContextMenu("LoadDefaultPreset")]
+    private void LoadDefaultPreset()
+    {
+        switch (checkpointType)
+        {
+            case CheckpointType.Left:
+            case CheckpointType.Right:
+                resizeAxis = ResizeAxis.X;
+                break;
+            case CheckpointType.Top:
+            case CheckpointType.Bottom:
+                resizeAxis = ResizeAxis.Z;
+                break;
+            case CheckpointType.TopLeft:
+            case CheckpointType.TopRight:
+            case CheckpointType.BottomLeft:
+            case CheckpointType.BottomRight:
+                resizeAxis = ResizeAxis.XZ;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+    #endif
 
     private void OnMouseDrag()
     {
@@ -30,5 +56,10 @@ public class FurniturePoint : MonoBehaviour
     private void OnMouseUp()
     {
         FurnitureItem.OnDragPoint = false;
+    }
+
+    public ResizeAxis GetReSizeAxis()
+    {
+        return resizeAxis;
     }
 }
