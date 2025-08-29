@@ -11,7 +11,7 @@ public class FurnitureManager : MonoBehaviour
     public ScaleByCameraZoom ScaleByCameraZoom;
     
     [Header("Snap Rotation Settings")]
-    [SerializeField] private float snapThreshold = 15f;
+    [SerializeField] private float snapRotationThreshold = 15f;
     [SerializeField] private List<FurnitureItem> furnitureItems = new List<FurnitureItem>();
     public bool IsSnapRotation;
 
@@ -220,7 +220,7 @@ public class FurnitureManager : MonoBehaviour
         foreach (var item in snapAngles)
         {
             var deltaAngle = Mathf.DeltaAngle(angle, item);
-            if (Mathf.Abs(deltaAngle) < snapThreshold)
+            if (Mathf.Abs(deltaAngle) < snapRotationThreshold)
             {
                 return item;
             }

@@ -32,10 +32,10 @@ public partial class FurnitureItem : MonoBehaviour
 
     public float minSizeZ
     {
-        get => data.size.heightMinMax.x / 2;
+        get => data.size.lengthMinMax.x / 2;
     }
 
-    [Header("Settings")]
+    [Header("Item Settings")]
     [SerializeField] private bool allowSnapToWall = false;
     [SerializeField] private bool allowShowAllCheckPoint = false;
     [SerializeField] private bool allowRotationByCheckPoint = false;
@@ -134,11 +134,12 @@ public partial class FurnitureItem : MonoBehaviour
         {
             topLeftPoint.gameObject.SetActive(false);
             topRightPoint.gameObject.SetActive(false);
-            leftPoint.gameObject.SetActive(false);
-            rightPoint.gameObject.SetActive(false);
 
-            bottomLeftPoint.gameObject.SetActive(true);
-            bottomRightPoint.gameObject.SetActive(true);
+            leftPoint.gameObject.SetActive(isUsingCenterPosToSnap);
+            rightPoint.gameObject.SetActive(isUsingCenterPosToSnap);
+
+            bottomLeftPoint.gameObject.SetActive(!isUsingCenterPosToSnap);
+            bottomRightPoint.gameObject.SetActive(!isUsingCenterPosToSnap);
         }
 
         rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
