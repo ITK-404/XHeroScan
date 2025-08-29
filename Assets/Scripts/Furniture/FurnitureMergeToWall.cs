@@ -105,7 +105,11 @@ public class FurnitureMergeToWall
                 Debug.Log("Wall line is not null, try to align with them");
                 Vector3 centerPosition = Vector3.Lerp(currentWallLine.start, currentWallLine.end, ratio);
                 FurnitureManager.Instance.debugPoint.transform.position = centerPosition;
-                furnitureItem.SetWorldPosition(centerPosition);
+                
+                centerPosition.y = furnitureItem.GetWorldPosition().y;
+                
+                furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, centerPosition);
+                furnitureItem.RefreshCheckPointsByBounds();
             }
         }
     }

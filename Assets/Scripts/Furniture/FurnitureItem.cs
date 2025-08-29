@@ -245,12 +245,13 @@ public partial class FurnitureItem : MonoBehaviour
 
     private void Update()
     {
-        // limit
+        // giới hạn dựa theo data
         width = Mathf.Clamp(width, minSizeX / 2, 100);
         length = Mathf.Clamp(length, minSizeZ / 2, 100);
 
         // scale sprite
         modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
+        data.worldPosition = modelContainer.transform.position;
 
         // using for update by zoom in or zoom out
         if (IUpdateWhenMoves == null) return;
@@ -259,7 +260,6 @@ public partial class FurnitureItem : MonoBehaviour
             item.UpdateWhenCameraZoom();
         }
 
-        data.worldPosition = modelContainer.transform.position;
 
         if (Input.GetKeyDown(KeyCode.B))
         {
@@ -271,7 +271,6 @@ public partial class FurnitureItem : MonoBehaviour
 
         furnitureMergeToWall.Update();
     }
-
 
     public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint,
         ResizeAxis resizeAxis)
@@ -313,7 +312,11 @@ public partial class FurnitureItem : MonoBehaviour
         modelContainer.transform.localPosition = bounds.center;
         modelContainer.transform.localRotation = Quaternion.Euler(90, currentRotation.y, 0);
     }
-
+    
+    
+    /// <summary>
+    /// Gọi method này khi thực hiện công việc liên quan tới thay đổi kích thước
+    /// </summary>
     private void UpdateWorldSizeFromLocal()
     {
         // rotation in degrees around Y
@@ -331,7 +334,10 @@ public partial class FurnitureItem : MonoBehaviour
         length = bounds.size.z;
     }
 
-
+    /// <summary>
+    /// Kéo furniture theo delta của mouse, không dựa vào vị trí của mouse
+    /// </summary>
+    /// <param name="dragTransform"></param>
     public void Dragging(Transform dragTransform)
     {
         var currentPos = GetWorldMousePosition();
@@ -353,13 +359,20 @@ public partial class FurnitureItem : MonoBehaviour
 
         OnDragPoint = true;
     }
-
+    
+    /// <summary>
+    /// Gọi khi drag kết thúc
+    /// </summary>
     public void DeActiveDrag()
     {
         furnitureMergeToWall.EndSnap();
         OnDragPoint = false;
     }
 
+    /// <summary>
+    /// Lấy vị trí chuột ở world 
+    /// </summary>
+    /// <returns></returns>
     private Vector3 GetWorldMousePosition()
     {
         float distance = Vector3.Distance(mainCam.transform.position, FurnitureManager.Instance.transform.position);
@@ -371,11 +384,17 @@ public partial class FurnitureItem : MonoBehaviour
         return worldMousePosition;
     }
 
+    /// <summary>
+    /// Gọi khi bắt đầu drag
+    /// </summary>
     public void StartDrag()
     {
         startPos = GetWorldMousePosition();
     }
 
+    /// <summary>
+    /// Xoay furniture dựa theo góc của center tới chuột, tích hợp snap bên trong
+    /// </summary>
     public void RotateToMouse()
     {
         Vector3 mouseWorld = GetWorldMousePosition();
@@ -412,7 +431,7 @@ public partial class FurnitureItem : MonoBehaviour
 
         MakeDirty();
     }
-
+    
     public void DisableCheckPoint()
     {
         checkPointParent.gameObject.SetActive(false);
@@ -428,11 +447,20 @@ public partial class FurnitureItem : MonoBehaviour
         return modelContainer.transform.position;
     }
 
+    /// <summary>
+    /// Cập nhật world position từ bên ngoài object
+    /// </summary>
+    /// <param name="worldPosition"></param>
     public void SetWorldPosition(Vector3 worldPosition)
     {
         modelContainer.transform.position = worldPosition;
+        bounds.center = modelContainer.transform.localPosition;
     }
 
+    /// <summary>
+    /// Nhận data từ bên ngoài
+    /// </summary>
+    /// <param name="furnitureData"></param>
     public void FetchData(DrawingInstanced furnitureData)
     {
         data = furnitureData;
@@ -453,6 +481,11 @@ public partial class FurnitureItem : MonoBehaviour
         RefreshCheckPointsByBounds();
     }
 
+    /// <summary>
+    /// Lấy các point dựa trên type
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
     public FurniturePoint GetFurniturePoint(CheckpointType type)
     {
         if (pointsArray == null) return null;
@@ -471,6 +504,11 @@ public partial class FurnitureItem : MonoBehaviour
         SaveLoadManager.MakeDirty();
     }
 
+    /// <summary>
+    /// Di chuyển furniture theo point nhưng vẫn giữa nguyên hình dạng
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="worldPosition"></param>
     public void MoveAnchorToPositionWithoutChangeShape(CheckpointType type, Vector3 worldPosition)
     {
         var targetAnchor = GetFurniturePoint(type);
