@@ -20,8 +20,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     [Header("Render layering (index -> Y)")]
     public int floorIndex = 1;       // floor = 1
     public float layerStepY = 0.002f; // mỗi index lệch 2mm
-    public float lineLift   = 0.0005f; // line nổi hơn mesh 0.5mm
-    public float labelLift  = 0.01f;   // label nổi hơn mesh 1cm
+    public float lineLift = 0.0005f; // line nổi hơn mesh 0.5mm
+    public float labelLift = 0.01f;   // label nổi hơn mesh 1cm
 
     private bool isDragging = false;
     private float yaw = 0f;
@@ -53,7 +53,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
     // 4 điểm góc và 4 điểm giữa (handle)
     private GameObject[] cornerHandles = new GameObject[4]; // A,B,D,E
-    private GameObject[] edgeHandles   = new GameObject[4]; // AB,BD,DE,EA
+    private GameObject[] edgeHandles = new GameObject[4]; // AB,BD,DE,EA
 
     // đánh dấu handle
     private class HandleTag : MonoBehaviour
@@ -274,9 +274,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             Quaternion rot = Quaternion.Euler(0f, yaw, 0f);
 
             Vector3 a = c + rot * new Vector3(-hw, 0, -hd);
-            Vector3 b = c + rot * new Vector3( hw, 0, -hd);
-            Vector3 d = c + rot * new Vector3( hw, 0,  hd);
-            Vector3 e = c + rot * new Vector3(-hw, 0,  hd);
+            Vector3 b = c + rot * new Vector3(hw, 0, -hd);
+            Vector3 d = c + rot * new Vector3(hw, 0, hd);
+            Vector3 e = c + rot * new Vector3(-hw, 0, hd);
 
             previewLR.SetPosition(0, a);
             previewLR.SetPosition(1, b);
@@ -286,9 +286,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
             if (previewMesh == null) previewMesh = new Mesh();
             previewMesh.Clear();
-            previewMesh.vertices  = new Vector3[] { a, b, d, e };
-            previewMesh.triangles = new int[]     { 0, 1, 2, 0, 2, 3 };
-            previewMesh.uv        = new Vector2[] { new(0,0), new(1,0), new(1,1), new(0,1) };
+            previewMesh.vertices = new Vector3[] { a, b, d, e };
+            previewMesh.triangles = new int[] { 0, 1, 2, 0, 2, 3 };
+            previewMesh.uv = new Vector2[] { new(0, 0), new(1, 0), new(1, 1), new(0, 1) };
             previewMesh.RecalculateNormals();
             previewMesh.RecalculateBounds();
             previewMF.sharedMesh = previewMesh;
@@ -296,6 +296,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             ShowEdgeLengths(a, b, d, e);
         }
     }
+// Mỗi floor một GO chứa preview/handles/labels
+private static readonly Dictionary<string, GameObject> s_floorVisuals = new();
 
     public void OnEndDrag(PointerEventData eventData)
     {
@@ -311,16 +313,16 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             Quaternion rot = Quaternion.Euler(0f, yaw, 0f);
 
             Vector3 a = c + rot * new Vector3(-hw, 0, -hd);
-            Vector3 b = c + rot * new Vector3( hw, 0, -hd);
-            Vector3 d = c + rot * new Vector3( hw, 0,  hd);
-            Vector3 e = c + rot * new Vector3(-hw, 0,  hd);
+            Vector3 b = c + rot * new Vector3(hw, 0, -hd);
+            Vector3 d = c + rot * new Vector3(hw, 0, hd);
+            Vector3 e = c + rot * new Vector3(-hw, 0, hd);
 
             // Lưu state để edit
             rectCenter = c;
-            rectYaw    = yaw;
-            rectHalfW  = hw;
-            rectHalfD  = hd;
-            hasRect    = true;
+            rectYaw = yaw;
+            rectHalfW = hw;
+            rectHalfD = hd;
+            hasRect = true;
 
             // Dữ liệu Floor (2D theo XZ)
             var floor = new Floor();
@@ -341,8 +343,21 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
             FloorStorage.floors.Add(floor);
 
-            if (lastFloorGO) { PlacementManager.Instance.DestroyFloor(lastFloorGO); lastFloorGO = null; }
-            lastFloorGO = new GameObject($"Floor_{floor.ID}");
+string id = floor.ID; // read-only, đã được Floor tự gán từ constructor / storage
+
+// Destroy visual cũ (nếu có) của đúng ID
+if (!string.IsNullOrEmpty(id) && s_floorVisuals.TryGetValue(id, out var oldGo) && oldGo)
+{
+    PlacementManager.Instance.DestroyFloor(oldGo);
+    s_floorVisuals.Remove(id);
+}
+
+// Tạo parent mới cho floor này
+lastFloorGO = new GameObject($"Floor_{(string.IsNullOrEmpty(id) ? "NoID" : id)}");
+
+// Lưu vào registry nếu có id
+if (!string.IsNullOrEmpty(id))
+    s_floorVisuals[id] = lastFloorGO;
 
             // Đưa preview vào parent
             if (previewGO != null)
@@ -495,9 +510,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         Vector3 c = rectCenter; // đã ở baseY của floor
 
         Vector3 a = c + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
-        Vector3 b = c + rot * new Vector3( rectHalfW, 0, -rectHalfD);
-        Vector3 d = c + rot * new Vector3( rectHalfW, 0,  rectHalfD);
-        Vector3 e = c + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
+        Vector3 b = c + rot * new Vector3(rectHalfW, 0, -rectHalfD);
+        Vector3 d = c + rot * new Vector3(rectHalfW, 0, rectHalfD);
+        Vector3 e = c + rot * new Vector3(-rectHalfW, 0, rectHalfD);
 
         floor.checkpoints.Clear();
         floor.checkpoints.Add(new Vector2(a.x, a.z));
@@ -579,7 +594,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         edgeLabels.Clear();
     }
 
-    private void RedrawRectangleFromState()
+    public void RedrawRectangleFromState()
     {
         if (!hasRect || previewGO == null) return;
 
@@ -587,9 +602,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         Vector3 c = rectCenter; // đã có y = baseY khi OnEndDrag
 
         Vector3 a = c + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
-        Vector3 b = c + rot * new Vector3( rectHalfW, 0, -rectHalfD);
-        Vector3 d = c + rot * new Vector3( rectHalfW, 0,  rectHalfD);
-        Vector3 e = c + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
+        Vector3 b = c + rot * new Vector3(rectHalfW, 0, -rectHalfD);
+        Vector3 d = c + rot * new Vector3(rectHalfW, 0, rectHalfD);
+        Vector3 e = c + rot * new Vector3(-rectHalfW, 0, rectHalfD);
 
         previewLR.SetPosition(0, a + Vector3.up * lineLift);
         previewLR.SetPosition(1, b + Vector3.up * lineLift);
@@ -599,9 +614,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         if (previewMesh == null) previewMesh = new Mesh();
         previewMesh.Clear();
-        previewMesh.vertices  = new Vector3[] { a, b, d, e };
-        previewMesh.triangles = new int[]     { 0, 1, 2, 0, 2, 3 };
-        previewMesh.uv        = new Vector2[] { new(0,0), new(1,0), new(1,1), new(0,1) };
+        previewMesh.vertices = new Vector3[] { a, b, d, e };
+        previewMesh.triangles = new int[] { 0, 1, 2, 0, 2, 3 };
+        previewMesh.uv = new Vector2[] { new(0, 0), new(1, 0), new(1, 1), new(0, 1) };
         previewMesh.RecalculateNormals();
         previewMesh.RecalculateBounds();
         previewMF.sharedMesh = previewMesh;
@@ -644,4 +659,139 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         InteractionFlags.IsFloorHandleDragging = false;
     }
+    // Gọi từ DimensionOkHandler sau khi bạn đã update FloorStorage
+// Tạo previewGO/previewLR/previewMF/previewMR nếu chưa có
+private void EnsurePreviewObjects()
+{
+    if (previewGO != null) return;
+
+    previewGO = new GameObject("FloorPreview");
+    previewGO.hideFlags = HideFlags.DontSave;
+
+    previewLR = previewGO.AddComponent<LineRenderer>();
+    previewLR.positionCount = 5;
+    previewLR.loop = false;
+    previewLR.widthMultiplier = lineWidth;
+    previewLR.material = lineMaterial;
+    previewLR.useWorldSpace = true;
+    previewLR.numCornerVertices = 4;
+    previewLR.sortingOrder = floorIndex;
+
+    previewMF   = previewGO.AddComponent<MeshFilter>();
+    previewMR   = previewGO.AddComponent<MeshRenderer>();
+    previewMesh = new Mesh { name = "FloorPreviewMesh" };
+    previewMF.sharedMesh = previewMesh;
+
+    var fillMat = new Material(Shader.Find("Standard"));
+    fillMat.SetFloat("_Mode", 3);
+    fillMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+    fillMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+    fillMat.SetInt("_ZWrite", 0);
+    fillMat.DisableKeyword("_ALPHATEST_ON");
+    fillMat.EnableKeyword("_ALPHABLEND_ON");
+    fillMat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+    fillMat.renderQueue = 3000;
+    fillMat.color = new Color(0.2f, 0.6f, 1f, 0.15f);
+    previewMR.sharedMaterial = fillMat;
+    previewMR.sortingOrder   = floorIndex;
+}
+
+// === NẠP STATE THEO ID (set hasRect, tạo preview/handles, vẽ, và GHI ĐÈ floor theo ID) ===
+public void LoadStateFromFloorId(string id)
+{
+    // 1) Tìm đúng floor theo ID
+    Floor f = null;
+    if (FloorStorage.floors != null)
+    {
+        for (int i = 0; i < FloorStorage.floors.Count; i++)
+        {
+            var ff = FloorStorage.floors[i];
+            if (ff != null && ff.ID == id) { f = ff; break; }
+        }
+    }
+    if (f == null || f.checkpoints == null || f.checkpoints.Count < 4)
+    {
+        Debug.LogWarning($"[SpawnFloor] Không tìm thấy floor hợp lệ với ID={id}");
+        return;
+    }
+
+    // 2) Destroy visual cũ (nếu có) của đúng ID trước khi tạo lại
+    if (s_floorVisuals.TryGetValue(f.ID, out var oldGo) && oldGo)
+    {
+        PlacementManager.Instance.DestroyFloor(oldGo);
+        s_floorVisuals.Remove(f.ID);
+    }
+
+    // 3) Tính state từ 4 điểm (A,B,D,E) trong XZ
+    Vector2 a2 = f.checkpoints[0];
+    Vector2 b2 = f.checkpoints[1];
+    Vector2 d2 = f.checkpoints[2];
+    Vector2 e2 = f.checkpoints[3];
+
+    Vector2 center2 = (a2 + b2 + d2 + e2) * 0.25f;
+    float halfW = Vector2.Distance(a2, b2) * 0.5f; // AB
+    float halfD = Vector2.Distance(b2, d2) * 0.5f; // BD
+    float yawDeg = Mathf.Atan2(b2.y - a2.y, b2.x - a2.x) * Mathf.Rad2Deg;
+
+    // 4) Bảo đảm preview/renderer đã có
+    EnsurePreviewObjects();
+
+    // 5) Tạo parent mới cho visual của ID này
+    lastFloorGO = new GameObject($"Floor_{f.ID}");
+    s_floorVisuals[f.ID] = lastFloorGO;
+    previewGO.transform.SetParent(lastFloorGO.transform, true);
+
+    // 6) Set state đầy đủ
+    hasRect    = true;
+    rectCenter = new Vector3(center2.x, BaseY(floorIndex), center2.y);
+    rectYaw    = yawDeg;
+    rectHalfW  = halfW;
+    rectHalfD  = halfD;
+
+    // 7) Tính 4 góc để spawn đủ 8 handle
+    Quaternion rot = Quaternion.Euler(0f, rectYaw, 0f);
+    Vector3 c3 = rectCenter;
+    Vector3 a3 = c3 + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
+    Vector3 b3 = c3 + rot * new Vector3( rectHalfW, 0, -rectHalfD);
+    Vector3 d3 = c3 + rot * new Vector3( rectHalfW, 0,  rectHalfD);
+    Vector3 e3 = c3 + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
+
+    ClearHandles();
+    SpawnHandles(a3, b3, d3, e3, lastFloorGO.transform);
+
+    // 8) Vẽ lại preview
+    RedrawRectangleFromState();
+
+    // 9) Ghi đè SẠCH dữ liệu của floor f theo state hiện tại
+    SyncFloorDataByState(f);
+}
+private void SyncFloorDataByState(Floor f)
+{
+    if (!hasRect) return;
+
+    Quaternion rot = Quaternion.Euler(0f, rectYaw, 0f);
+    Vector3 c3 = rectCenter;
+
+    Vector3 a3 = c3 + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
+    Vector3 b3 = c3 + rot * new Vector3( rectHalfW, 0, -rectHalfD);
+    Vector3 d3 = c3 + rot * new Vector3( rectHalfW, 0,  rectHalfD);
+    Vector3 e3 = c3 + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
+
+    // XÓA sạch & ghi lại 4 điểm
+    f.checkpoints.Clear();
+    f.checkpoints.Add(new Vector2(a3.x, a3.z));
+    f.checkpoints.Add(new Vector2(b3.x, b3.z));
+    f.checkpoints.Add(new Vector2(d3.x, d3.z));
+    f.checkpoints.Add(new Vector2(e3.x, e3.z));
+
+    f.floorLine.Clear();
+    f.floorLine.Add(new FloorLine(f.checkpoints[0], f.checkpoints[1]));
+    f.floorLine.Add(new FloorLine(f.checkpoints[1], f.checkpoints[2]));
+    f.floorLine.Add(new FloorLine(f.checkpoints[2], f.checkpoints[3]));
+    f.floorLine.Add(new FloorLine(f.checkpoints[3], f.checkpoints[0]));
+
+    f.heights.Clear();
+    for (int i = 0; i < 4; i++) f.heights.Add(0.1f);
+}
+
 }

@@ -117,7 +117,7 @@ public class RoomInfoDisplay : MonoBehaviour
             }
             selectedRoomID = "";
             selectedFloorID = "";
-            selectionKind   = SelectionKind.None;
+            selectionKind = SelectionKind.None;
 
             suppressAutoPick = false;
             forceSelectFirstRoom = false;
@@ -208,12 +208,12 @@ public class RoomInfoDisplay : MonoBehaviour
         // Tính anchor world: cùng X/Z với label, Y = max(centroidY, top of mesh) + lift
         var targetGO = GetFloorGO(curId);
         float baseY = targetGO ? targetGO.transform.position.y : 0f;
-        Vector2 c2  = PolygonCentroid(cps);
+        Vector2 c2 = PolygonCentroid(cps);
 
         // ===== Offset theo camera: X (right) và Z (forward), đều tính theo mét =====
         // ===== Offset theo camera: X (right) và Z (forward), đều tính theo mét =====
         Vector3 lateral = Vector3.zero; // X (right)
-        Vector3 depth   = Vector3.zero; // Z (forward)
+        Vector3 depth = Vector3.zero; // Z (forward)
 
         var cam = Camera.main;
         if (cam)
@@ -263,12 +263,12 @@ public class RoomInfoDisplay : MonoBehaviour
             Camera camLocal; // camera cho ScreenPointToLocalPointInRectangle
             if (uiCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
             {
-                camWS   = Camera.main; // dùng camera nhìn scene
+                camWS = Camera.main; // dùng camera nhìn scene
                 camLocal = null;       // overlay => null
             }
             else // ScreenSpaceCamera
             {
-                camWS   = uiCanvas.worldCamera ? uiCanvas.worldCamera : Camera.main;
+                camWS = uiCanvas.worldCamera ? uiCanvas.worldCamera : Camera.main;
                 camLocal = camWS;
             }
             if (!camWS) return;
@@ -312,8 +312,8 @@ public class RoomInfoDisplay : MonoBehaviour
             SetFloorColor(highlightedID, floorDefaultColor);
 
         selectedRoomID = roomId;
-        selectionKind  = SelectionKind.Room;
-        highlightedID  = roomId;
+        selectionKind = SelectionKind.Room;
+        highlightedID = roomId;
         SetFloorColor(highlightedID, floorSelectedColor);
 
         var room = RoomStorage.GetRoomByID(selectedRoomID);
@@ -338,8 +338,8 @@ public class RoomInfoDisplay : MonoBehaviour
             SetFloorColor(highlightedID, floorDefaultColor);
 
         selectedFloorID = floorId;
-        selectionKind   = SelectionKind.Floor;
-        highlightedID   = floorId;
+        selectionKind = SelectionKind.Floor;
+        highlightedID = floorId;
         SetFloorColor(highlightedID, floorSelectedColor);
 
         var floor = FindFloorByID(selectedFloorID);
@@ -690,7 +690,7 @@ public class RoomInfoDisplay : MonoBehaviour
             var p = pts[i];
             var q = pts[(i + 1) % n];
             float cross = p.x * q.y - q.x * p.y;
-            a  += cross;
+            a += cross;
             cx += (p.x + q.x) * cross;
             cy += (p.y + q.y) * cross;
         }
@@ -829,4 +829,19 @@ public class RoomInfoDisplay : MonoBehaviour
         popupUI.SetActive(true);
         if (popupWS) popupWS.SetActive(false);
     }
+public enum SelType { None, Room, Floor }
+
+public bool TryGetSelection(out SelType kind, out string id)
+{
+    if (selectionKind == SelectionKind.Room && !string.IsNullOrEmpty(selectedRoomID))
+    {
+        kind = SelType.Room; id = selectedRoomID; return true;
+    }
+    if (selectionKind == SelectionKind.Floor && !string.IsNullOrEmpty(selectedFloorID))
+    {
+        kind = SelType.Floor; id = selectedFloorID; return true;
+    }
+    kind = SelType.None; id = ""; return false;
+}
+
 }
