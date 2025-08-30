@@ -68,7 +68,7 @@ public class FloorMeshController : MonoBehaviour
         var list = FloorStorage.floors;
         if (list == null) return;
 
-        // 1) Cập nhật / tạo mới tất cả floors hiện có
+        // Cập nhật / tạo mới tất cả floors hiện có
         for (int i = 0; i < list.Count; i++)
         {
             var f = list[i];
@@ -88,7 +88,7 @@ public class FloorMeshController : MonoBehaviour
             }
         }
 
-        // 2) Thu dọn các GO của floors đã bị remove
+        // Thu dọn các GO của floors đã bị remove
         CleanupStaleFloors();
     }
 

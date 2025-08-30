@@ -66,6 +66,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     public bool editAfterPlace = true;   // false: vẽ xong là dọn sạch
 
     private float BaseY(int index) => index * layerStepY;
+    // Mỗi floor một GO chứa preview/handles/labels
+    private static readonly Dictionary<string, GameObject> s_floorVisuals = new();
 
     private void Awake()
     {
@@ -296,8 +298,6 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             ShowEdgeLengths(a, b, d, e);
         }
     }
-// Mỗi floor một GO chứa preview/handles/labels
-private static readonly Dictionary<string, GameObject> s_floorVisuals = new();
 
     public void OnEndDrag(PointerEventData eventData)
     {
@@ -343,20 +343,14 @@ private static readonly Dictionary<string, GameObject> s_floorVisuals = new();
 
             FloorStorage.floors.Add(floor);
 
-string id = floor.ID; // read-only, đã được Floor tự gán từ constructor / storage
+    string id = floor.ID; // read-only, đã được Floor tự gán từ constructor / storage
 
-// // Destroy visual cũ (nếu có) của đúng ID
-// if (!string.IsNullOrEmpty(id) && s_floorVisuals.TryGetValue(id, out var oldGo) && oldGo)
-// {
-//     PlacementManager.Instance.DestroyFloor(oldGo);
-//     s_floorVisuals.Remove(id);
-// }
+    // Tạo parent mới cho floor này
+    // lastFloorGO = new GameObject($"Floor_{(string.IsNullOrEmpty(id) ? "NoID" : id)}");
+    lastFloorGO = new GameObject($"FloorVis_{(string.IsNullOrEmpty(id) ? "NoID" : id)}");
 
-// Tạo parent mới cho floor này
-lastFloorGO = new GameObject($"Floor_{(string.IsNullOrEmpty(id) ? "NoID" : id)}");
-
-// Lưu vào registry nếu có id
-if (!string.IsNullOrEmpty(id))
+    // Lưu vào registry nếu có id
+    if (!string.IsNullOrEmpty(id))
     s_floorVisuals[id] = lastFloorGO;
 
             // Đưa preview vào parent
@@ -651,7 +645,8 @@ if (!string.IsNullOrEmpty(id))
         previewLR = null; previewMF = null; previewMR = null; previewMesh = null;
 
         // xoá floor parent nếu còn giữ
-        if (lastFloorGO) { PlacementManager.Instance.DestroyFloor(lastFloorGO); lastFloorGO = null; }
+        // if (lastFloorGO) { PlacementManager.Instance.DestroyFloor(lastFloorGO); lastFloorGO = null; }
+        if (lastFloorGO) { Destroy(lastFloorGO); lastFloorGO = null; }
 
         hasRect = false;
         isMovingHandle = false;
@@ -659,139 +654,136 @@ if (!string.IsNullOrEmpty(id))
 
         InteractionFlags.IsFloorHandleDragging = false;
     }
-    // Gọi từ DimensionOkHandler sau khi bạn đã update FloorStorage
-// Tạo previewGO/previewLR/previewMF/previewMR nếu chưa có
-private void EnsurePreviewObjects()
-{
-    if (previewGO != null) return;
-
-    previewGO = new GameObject("FloorPreview");
-    previewGO.hideFlags = HideFlags.DontSave;
-
-    previewLR = previewGO.AddComponent<LineRenderer>();
-    previewLR.positionCount = 5;
-    previewLR.loop = false;
-    previewLR.widthMultiplier = lineWidth;
-    previewLR.material = lineMaterial;
-    previewLR.useWorldSpace = true;
-    previewLR.numCornerVertices = 4;
-    previewLR.sortingOrder = floorIndex;
-
-    previewMF   = previewGO.AddComponent<MeshFilter>();
-    previewMR   = previewGO.AddComponent<MeshRenderer>();
-    previewMesh = new Mesh { name = "FloorPreviewMesh" };
-    previewMF.sharedMesh = previewMesh;
-
-    var fillMat = new Material(Shader.Find("Standard"));
-    fillMat.SetFloat("_Mode", 3);
-    fillMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-    fillMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-    fillMat.SetInt("_ZWrite", 0);
-    fillMat.DisableKeyword("_ALPHATEST_ON");
-    fillMat.EnableKeyword("_ALPHABLEND_ON");
-    fillMat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-    fillMat.renderQueue = 3000;
-    fillMat.color = new Color(0.2f, 0.6f, 1f, 0.15f);
-    previewMR.sharedMaterial = fillMat;
-    previewMR.sortingOrder   = floorIndex;
-}
-
-// === NẠP STATE THEO ID (set hasRect, tạo preview/handles, vẽ, và GHI ĐÈ floor theo ID) ===
-public void LoadStateFromFloorId(string id)
-{
-    // 1) Tìm đúng floor theo ID
-    Floor f = null;
-    if (FloorStorage.floors != null)
+    // Tạo previewGO/previewLR/previewMF/previewMR nếu chưa có
+    private void EnsurePreviewObjects()
     {
-        for (int i = 0; i < FloorStorage.floors.Count; i++)
+        if (previewGO != null) return;
+
+        previewGO = new GameObject("FloorPreview");
+        previewGO.hideFlags = HideFlags.DontSave;
+
+        previewLR = previewGO.AddComponent<LineRenderer>();
+        previewLR.positionCount = 5;
+        previewLR.loop = false;
+        previewLR.widthMultiplier = lineWidth;
+        previewLR.material = lineMaterial;
+        previewLR.useWorldSpace = true;
+        previewLR.numCornerVertices = 4;
+        previewLR.sortingOrder = floorIndex;
+
+        previewMF   = previewGO.AddComponent<MeshFilter>();
+        previewMR   = previewGO.AddComponent<MeshRenderer>();
+        previewMesh = new Mesh { name = "FloorPreviewMesh" };
+        previewMF.sharedMesh = previewMesh;
+
+        var fillMat = new Material(Shader.Find("Standard"));
+        fillMat.SetFloat("_Mode", 3);
+        fillMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        fillMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        fillMat.SetInt("_ZWrite", 0);
+        fillMat.DisableKeyword("_ALPHATEST_ON");
+        fillMat.EnableKeyword("_ALPHABLEND_ON");
+        fillMat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        fillMat.renderQueue = 3000;
+        fillMat.color = new Color(0.2f, 0.6f, 1f, 0.15f);
+        previewMR.sharedMaterial = fillMat;
+        previewMR.sortingOrder   = floorIndex;
+    }
+
+    // === NẠP STATE THEO ID (set hasRect, tạo preview/handles, vẽ, và GHI ĐÈ floor theo ID) ===
+    public void LoadStateFromFloorId(string id)
+    {
+        // 1) Tìm đúng floor theo ID
+        Floor f = null;
+        if (FloorStorage.floors != null)
         {
-            var ff = FloorStorage.floors[i];
-            if (ff != null && ff.ID == id) { f = ff; break; }
+            for (int i = 0; i < FloorStorage.floors.Count; i++)
+            {
+                var ff = FloorStorage.floors[i];
+                if (ff != null && ff.ID == id) { f = ff; break; }
+            }
         }
-    }
-    if (f == null || f.checkpoints == null || f.checkpoints.Count < 4)
-    {
-        Debug.LogWarning($"[SpawnFloor] Không tìm thấy floor hợp lệ với ID={id}");
-        return;
-    }
+        if (f == null || f.checkpoints == null || f.checkpoints.Count < 4)
+        {
+            Debug.LogWarning($"[SpawnFloor] Không tìm thấy floor hợp lệ với ID={id}");
+            return;
+        }
 
-    // 2) Destroy visual cũ (nếu có) của đúng ID trước khi tạo lại
     if (s_floorVisuals.TryGetValue(f.ID, out var oldGo) && oldGo)
     {
-        PlacementManager.Instance.DestroyFloor(oldGo);
+        Destroy(oldGo);                     // CHỈ xoá visual
         s_floorVisuals.Remove(f.ID);
     }
+    lastFloorGO = new GameObject($"FloorVis_{f.ID}");
 
-    // 3) Tính state từ 4 điểm (A,B,D,E) trong XZ
-    Vector2 a2 = f.checkpoints[0];
-    Vector2 b2 = f.checkpoints[1];
-    Vector2 d2 = f.checkpoints[2];
-    Vector2 e2 = f.checkpoints[3];
+        // Tính state từ 4 điểm (A,B,D,E) trong XZ
+        Vector2 a2 = f.checkpoints[0];
+        Vector2 b2 = f.checkpoints[1];
+        Vector2 d2 = f.checkpoints[2];
+        Vector2 e2 = f.checkpoints[3];
 
-    Vector2 center2 = (a2 + b2 + d2 + e2) * 0.25f;
-    float halfW = Vector2.Distance(a2, b2) * 0.5f; // AB
-    float halfD = Vector2.Distance(b2, d2) * 0.5f; // BD
-    float yawDeg = Mathf.Atan2(b2.y - a2.y, b2.x - a2.x) * Mathf.Rad2Deg;
+        Vector2 center2 = (a2 + b2 + d2 + e2) * 0.25f;
+        float halfW = Vector2.Distance(a2, b2) * 0.5f; // AB
+        float halfD = Vector2.Distance(b2, d2) * 0.5f; // BD
+        float yawDeg = Mathf.Atan2(b2.y - a2.y, b2.x - a2.x) * Mathf.Rad2Deg;
 
-    // 4) Bảo đảm preview/renderer đã có
-    EnsurePreviewObjects();
+        // Bảo đảm preview/renderer đã có
+        EnsurePreviewObjects();
 
-    // 5) Tạo parent mới cho visual của ID này
-    lastFloorGO = new GameObject($"Floor_{f.ID}");
-    s_floorVisuals[f.ID] = lastFloorGO;
-    previewGO.transform.SetParent(lastFloorGO.transform, true);
+        // Tạo preview
+        s_floorVisuals[f.ID] = lastFloorGO;
+        previewGO.transform.SetParent(lastFloorGO.transform, true);
 
-    // 6) Set state đầy đủ
-    hasRect    = true;
-    rectCenter = new Vector3(center2.x, BaseY(floorIndex), center2.y);
-    rectYaw    = yawDeg;
-    rectHalfW  = halfW;
-    rectHalfD  = halfD;
+        // Set state đầy đủ
+        hasRect    = true;
+        rectCenter = new Vector3(center2.x, BaseY(floorIndex), center2.y);
+        rectYaw    = yawDeg;
+        rectHalfW  = halfW;
+        rectHalfD  = halfD;
 
-    // 7) Tính 4 góc để spawn đủ 8 handle
-    Quaternion rot = Quaternion.Euler(0f, rectYaw, 0f);
-    Vector3 c3 = rectCenter;
-    Vector3 a3 = c3 + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
-    Vector3 b3 = c3 + rot * new Vector3( rectHalfW, 0, -rectHalfD);
-    Vector3 d3 = c3 + rot * new Vector3( rectHalfW, 0,  rectHalfD);
-    Vector3 e3 = c3 + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
+        // Tính 4 góc để spawn đủ 8 handle
+        Quaternion rot = Quaternion.Euler(0f, rectYaw, 0f);
+        Vector3 c3 = rectCenter;
+        Vector3 a3 = c3 + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
+        Vector3 b3 = c3 + rot * new Vector3( rectHalfW, 0, -rectHalfD);
+        Vector3 d3 = c3 + rot * new Vector3( rectHalfW, 0,  rectHalfD);
+        Vector3 e3 = c3 + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
 
-    ClearHandles();
-    SpawnHandles(a3, b3, d3, e3, lastFloorGO.transform);
+        ClearHandles();
+        SpawnHandles(a3, b3, d3, e3, lastFloorGO.transform);
 
-    // 8) Vẽ lại preview
-    RedrawRectangleFromState();
+        // Vẽ lại preview
+        RedrawRectangleFromState();
 
-    // 9) Ghi đè SẠCH dữ liệu của floor f theo state hiện tại
-    SyncFloorDataByState(f);
-}
-private void SyncFloorDataByState(Floor f)
-{
-    if (!hasRect) return;
+        // Ghi đè SẠCH dữ liệu của floor f theo state hiện tại
+        SyncFloorDataByState(f);
+    }
+    private void SyncFloorDataByState(Floor f)
+    {
+        if (!hasRect) return;
 
-    Quaternion rot = Quaternion.Euler(0f, rectYaw, 0f);
-    Vector3 c3 = rectCenter;
+        Quaternion rot = Quaternion.Euler(0f, rectYaw, 0f);
+        Vector3 c3 = rectCenter;
 
-    Vector3 a3 = c3 + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
-    Vector3 b3 = c3 + rot * new Vector3( rectHalfW, 0, -rectHalfD);
-    Vector3 d3 = c3 + rot * new Vector3( rectHalfW, 0,  rectHalfD);
-    Vector3 e3 = c3 + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
+        Vector3 a3 = c3 + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
+        Vector3 b3 = c3 + rot * new Vector3( rectHalfW, 0, -rectHalfD);
+        Vector3 d3 = c3 + rot * new Vector3( rectHalfW, 0,  rectHalfD);
+        Vector3 e3 = c3 + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
 
-    // XÓA sạch & ghi lại 4 điểm
-    f.checkpoints.Clear();
-    f.checkpoints.Add(new Vector2(a3.x, a3.z));
-    f.checkpoints.Add(new Vector2(b3.x, b3.z));
-    f.checkpoints.Add(new Vector2(d3.x, d3.z));
-    f.checkpoints.Add(new Vector2(e3.x, e3.z));
+        // XÓA sạch & ghi lại 4 điểm
+        f.checkpoints.Clear();
+        f.checkpoints.Add(new Vector2(a3.x, a3.z));
+        f.checkpoints.Add(new Vector2(b3.x, b3.z));
+        f.checkpoints.Add(new Vector2(d3.x, d3.z));
+        f.checkpoints.Add(new Vector2(e3.x, e3.z));
 
-    f.floorLine.Clear();
-    f.floorLine.Add(new FloorLine(f.checkpoints[0], f.checkpoints[1]));
-    f.floorLine.Add(new FloorLine(f.checkpoints[1], f.checkpoints[2]));
-    f.floorLine.Add(new FloorLine(f.checkpoints[2], f.checkpoints[3]));
-    f.floorLine.Add(new FloorLine(f.checkpoints[3], f.checkpoints[0]));
+        f.floorLine.Clear();
+        f.floorLine.Add(new FloorLine(f.checkpoints[0], f.checkpoints[1]));
+        f.floorLine.Add(new FloorLine(f.checkpoints[1], f.checkpoints[2]));
+        f.floorLine.Add(new FloorLine(f.checkpoints[2], f.checkpoints[3]));
+        f.floorLine.Add(new FloorLine(f.checkpoints[3], f.checkpoints[0]));
 
-    f.heights.Clear();
-    for (int i = 0; i < 4; i++) f.heights.Add(0.1f);
-}
-
+        f.heights.Clear();
+        for (int i = 0; i < 4; i++) f.heights.Add(0.1f);
+    }
 }

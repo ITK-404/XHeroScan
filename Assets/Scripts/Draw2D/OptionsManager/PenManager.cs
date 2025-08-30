@@ -261,10 +261,16 @@ public class PenManager : MonoBehaviour
                         return;
                     }
 
+                    // Chỉ block khi tên bắt đầu "RoomFloor_". Floor_<id> thì KHÔNG block.
                     if (hit.collider.gameObject.CompareTag("RoomFloor"))
                     {
-                        Debug.Log("Raycast đang hit RoomFloor ➜ Bỏ pan/zoom bàn cờ!");
-                        return; // Chặn bàn cờ ngay từ đầu
+                        string nm = hit.collider.gameObject.name;
+                        if (nm.StartsWith("RoomFloor_"))
+                        {
+                            Debug.Log("Hit ROOM floor → block pan/zoom");
+                            return;
+                        }
+                        // nm.StartsWith("Floor_") → cho phép pan/zoom bình thường
                     }
                 }
             }
