@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -24,7 +25,10 @@ public class FurnitureManager : MonoBehaviour
     private Camera mainCam;
     
     public GameObject debugPoint;
-    
+
+    public FurnitureItem CurrentFurnitureItem() => currentFurniture;
+
+
     private void Awake()
     {
         Instance = this;
@@ -194,6 +198,7 @@ public class FurnitureManager : MonoBehaviour
             currentFurniture = furniture;
             currentFurniture?.EnableCheckPoint();
         }
+
     }
 
     private Vector3 GetWorldMousePosition()

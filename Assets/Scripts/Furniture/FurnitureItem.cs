@@ -1,4 +1,5 @@
 using iTextSharp.text.pdf;
+using System;
 using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting;
@@ -546,5 +547,18 @@ public partial class FurnitureItem : MonoBehaviour
 
         RefreshCheckPointsByBounds();
         UpdateWorldSizeFromLocal();
+    }
+
+    public float GetHeightOffset()
+    {
+        return model2D.bounds.size.z;
+    }
+
+    public void SyncWithBounds()
+    {
+        var size = bounds.size;
+        size.x = width;
+        size.z = length;
+        bounds.size = size;
     }
 }

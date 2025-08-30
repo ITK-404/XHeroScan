@@ -4,8 +4,11 @@ using UnityEngine;
 public class BottomSheetInputUI : BottomSheetUI
 {
     [SerializeField] private TMP_InputField inputField;
+
+ 
     private float delayTime = 1;
     private bool previousState;
+
 
     protected override void Update()
     {
@@ -33,4 +36,13 @@ public class BottomSheetInputUI : BottomSheetUI
         PlayAnim(openPos + new Vector2(0, scaleHeight), openDuration, showEase);
         Debug.Log($"On Input Focus: {height} {scaleHeight} {TouchScreenKeyboard.visible}");
     }
+
+   
+}
+
+public enum UIType
+{
+    None = 0,
+    InputField = 5,
+    TextMeshProUGUI = 10,
 }
