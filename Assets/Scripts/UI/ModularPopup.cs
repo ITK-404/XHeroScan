@@ -1,36 +1,37 @@
 using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class ModularPopup : MonoBehaviour
 {
-    public static ModularPopup Prefab
+    public static PopupAsset PopupAsset
     {
         get
         {
-            if (modularPopupPrefab == null)
+            if (popupAsset == null)
             {
-                modularPopupPrefab = Resources.Load<ModularPopup>("Modular Popup");
+                popupAsset = Resources.Load<PopupAsset>("Popup Asset");
             }
 
-            return modularPopupPrefab;
+            return popupAsset;
         }
     }
 
-    private static ModularPopup modularPopupPrefab;
+    private static PopupAsset popupAsset;
 
     [SerializeField] private TextMeshProUGUI headerText;
+    [SerializeField] private TextMeshProUGUI descriptionText;
     [SerializeField] private TextMeshProUGUI yesBtnText;
     [SerializeField] private TextMeshProUGUI noBtnText;
 
     [SerializeField] private Button yesBtn;
     [SerializeField] private Button noBtn;
 
-    public Button YesBtn
-    {
-        get => yesBtn;
-    }
+    [SerializeField] private bool canAnimate = false;
+
+    private bool isClicked = false;
 
     public Button NoBtn
     {
@@ -42,12 +43,20 @@ public class ModularPopup : MonoBehaviour
     public Action EventWhenClickButtons;
 
     public bool autoClearWhenClick = false;
-
+    public bool autoClearWhenClickYes = false;
+    public bool autoClearWhenClickNo = false;
     public string Header
     {
         get => headerText.text;
         set => headerText.text = value;
     }
+
+    public string Description
+    {
+        get => descriptionText.text;
+        set => descriptionText.text = value;
+    }
+
 
     public string YesText
     {
@@ -63,30 +72,51 @@ public class ModularPopup : MonoBehaviour
 
     private void Awake()
     {
-        yesBtn.onClick.AddListener(OnYesClicked);
-        noBtn.onClick.AddListener(OnNoClicked);
+        if (yesBtn)
+            yesBtn.onClick.AddListener(OnYesClicked);
+        if (noBtn)
+            noBtn.onClick.AddListener(OnNoClicked);
+
+        isClicked = false;
+    }
+
+    private void Start()
+    {
+        if (canAnimate)
+        {
+            UIAnimationUltils.PopupScaleAnimation(gameObject, 0.2f);
+        }
     }
 
     private void OnYesClicked()
     {
+        if (isClicked) return;
+        isClicked = true;
+
         ClickYesEvent?.Invoke();
         EventWhenClickButtons?.Invoke();
-        TryToClear();
+        if (autoClearWhenClick || autoClearWhenClickYes)
+        {
+            TryToClear();
+        }
     }
 
     private void OnNoClicked()
     {
+        if (isClicked) return;
+        isClicked = true;
+
         ClickNoEvent?.Invoke();
         EventWhenClickButtons?.Invoke();
-        TryToClear();
+        if (autoClearWhenClick || autoClearWhenClickNo)
+        {
+            TryToClear();
+        }
     }
 
     private void TryToClear()
     {
-        if (autoClearWhenClick)
-        {
-            Destroy(gameObject);
-        }
+        Destroy(gameObject);
     }
 
     public void ResetAnchorOffsetAndScale()
@@ -100,7 +130,37 @@ public class ModularPopup : MonoBehaviour
     public void AutoFindCanvasAndSetup()
     {
         var canvas = FindFirstObjectByType<Canvas>(FindObjectsInactive.Exclude);
-        transform.SetParent(canvas.transform,false);
+        transform.SetParent(canvas.transform, false);
         ResetAnchorOffsetAndScale();
+    }
+
+    public void SetParent(Transform parent, int childIndex = 0)
+    {
+        transform.parent = parent;
+        transform.SetSiblingIndex(childIndex);
+    }
+
+    public void AutoDestruct(float delay = 2)
+    {
+        StartCoroutine(PlayDelayDestroy(delay));
+    }
+
+    private IEnumerator PlayDelayDestroy(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (canAnimate)
+        {
+            UIAnimationUltils.PopoutScaleAnimation(gameObject, 0.2f, true);
+        }
+        else
+        {
+            DestroySelf();
+        }
+
+    }
+
+    private void DestroySelf()
+    {
+        Destroy(gameObject);
     }
 }

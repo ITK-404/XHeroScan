@@ -141,7 +141,7 @@ public class ContentManager : MonoBehaviour
 
     void AutoMoveContent()
     {
-        Debug.Log("Update Time for move content");
+        // Debug.Log("Update Time for move content");
         // timer -= 1f; // Decrease timer every second
         timer -= Time.deltaTime;
         if (timer <= 0)

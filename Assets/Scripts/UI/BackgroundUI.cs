@@ -15,7 +15,7 @@ public class BackgroundUI : MonoBehaviour
     private Canvas canvas;
 
     private Action clickCallback;
-
+    private float alpha = 0.7f;
     public static BackgroundUI Instance
     {
         get
@@ -52,8 +52,9 @@ public class BackgroundUI : MonoBehaviour
 
     private Coroutine playDelayCoroutine;
     
-    public void Show(GameObject target, Action onClickCallback)
+    public void Show(GameObject target, Action onClickCallback,float alpha = 0.7f)
     {
+        this.alpha = alpha; 
         if (playDelayCoroutine != null)
         {
             CoroutineManager.Stop(playDelayCoroutine);
@@ -75,6 +76,7 @@ public class BackgroundUI : MonoBehaviour
             int targetIndex = target.transform.GetSiblingIndex();
             int newIndex = Mathf.Max(0, targetIndex - (background.transform.GetSiblingIndex() < targetIndex ? 1 : 0));
             background.transform.SetSiblingIndex(newIndex);
+            Debug.Log("On Show Background");
         }
         else
         {
@@ -90,7 +92,7 @@ public class BackgroundUI : MonoBehaviour
         if (!background)
         {
             background = new GameObject().AddComponent<Image>();
-            background.color = new Color(0, 0, 0, 0.7f);
+            background.color = new Color(0, 0, 0, alpha);
             background.raycastTarget = true;
             background.gameObject.name = "Background Black";
 
@@ -120,6 +122,7 @@ public class BackgroundUI : MonoBehaviour
             SceneManager.sceneLoaded += SceneManagerOnsceneLoaded;
             SceneManager.sceneUnloaded += SceneManagerOnsceneUnloaded;
             backgroundRect.gameObject.SetActive(false);
+            Debug.Log("Init Background Complete");
         }
     }
 
@@ -148,10 +151,14 @@ public class BackgroundUI : MonoBehaviour
         background.gameObject.SetActive(isActive);
     }
 
-
     private void ResetEverything()
     {
         background.transform.localScale = Vector3.one;
         background.transform.localPosition = Vector3.zero;
+    }
+
+    public bool IsActive()
+    {
+        return background.gameObject.activeSelf;
     }
 }

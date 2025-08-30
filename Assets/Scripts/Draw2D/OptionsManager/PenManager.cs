@@ -25,12 +25,11 @@ public class PenManager : MonoBehaviour
     private ToggleColorImage toggleColorImage;
 
     // == Thêm vào PenManager ==
-private bool _dragRoom = false;
-private string _dragRoomID = null;
-private Vector3 _lastWorld; // world pos frame trước khi drag
+    private bool _dragRoom = false;
+    private string _dragRoomID = null;
+    private Vector3 _lastWorld; // world pos frame trước khi drag
 
     // public bool IsPenActive => isPenActive;  // Getter để cung cấp trạng thái Pen
-    private Vector3 previewPosition; // Vị trí preview
     [SerializeField] private ToggleGroupUI toggleGroupUI;
 
     [SerializeField] DrawingTool drawingTool;
@@ -47,13 +46,6 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
         checkpointManager = FindFirstObjectByType<CheckpointManager>();
         movePointManager = FindFirstObjectByType<MovePointManager>();
 
-        // // Tự gán Collider nếu chưa có
-        // GameObject bg = GameObject.Find("Background Black");
-        // if (bg != null && bg.GetComponent<Collider>() == null)
-        // {
-        //     bg.AddComponent<BoxCollider>();
-        // }
-
         // Đảm bảo trạng thái ban đầu của Pen là tắt
         UpdatePenState();
         HandleToggleGroupUI(isPenActive);
@@ -62,36 +54,41 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
 
     void LateUpdate()
     {
+        if (CreateRoomOnFloor.IsCreateRooom) return;
         if (ConnectManager.isConnectActive) return;
+
+        // KHÔNG bật zoom/pan nếu đang kéo room HOẶC đang kéo point floor
+        bool blockZoomPan = InteractionFlags.IsRoomFloorDragging || InteractionFlags.IsFloorHandleDragging;
 
         if (!isPenActive)
         {
             checkpointManager.enabled = true;
-            HandleZoomAndPan(false);
+            HandleZoomAndPan(!blockZoomPan);
         }
         else
         {
             checkpointManager.enabled = false;
-            HandleZoomAndPan(!isRoomFloorBeingDragged);
+            HandleZoomAndPan(!blockZoomPan);
 
             if (Input.GetMouseButtonDown(0))
             {
-                // 1) Thử chọn checkpoint TRƯỚC
                 checkpointManager.SelectCheckpoint();
 
                 if (checkpointManager.selectedCheckpoint != null)
                 {
-                    // chuẩn bị kéo điểm
                     _dragRoom = false;
                     _dragRoomID = null;
-                    isRoomFloorBeingDragged = false;
+
+                    // đang kéo checkpoint -> gán cờ handle dragging (nếu checkpoint là handle floor)
+                    InteractionFlags.IsFloorHandleDragging = true;
+
                     _lastWorld = GetWorldOnXZ(Input.mousePosition);
                 }
                 else if (TryHitRoomFloor(out _dragRoomID))
                 {
-                    // 2) Không trúng điểm -> mới thử kéo room
                     _dragRoom = true;
                     isRoomFloorBeingDragged = true;
+                    InteractionFlags.IsRoomFloorDragging = true;
 
                     checkpointManager.DeselectCheckpoint();
                     checkpointManager.selectedCheckpoint = null;
@@ -113,8 +110,11 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
                 else if (checkpointManager.selectedCheckpoint != null)
                 {
                     checkpointManager.isMovingCheckpoint = true;
-                    movePointManager.MoveSelectedCheckpoint(); // hoặc checkpointManager.MoveSelectedCheckpoint()
+                    movePointManager.MoveSelectedCheckpoint();
                     checkpointManager.isDragging = true;
+
+                    // đang kéo checkpoint/handle → giữ cờ
+                    InteractionFlags.IsFloorHandleDragging = true;
                 }
             }
             else if (Input.GetMouseButtonUp(0))
@@ -125,15 +125,15 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
                 _dragRoom = false;
                 _dragRoomID = null;
                 isRoomFloorBeingDragged = false;
+                InteractionFlags.IsRoomFloorDragging = false;
 
+                // thôi kéo checkpoint/handle
                 checkpointManager.DeselectCheckpoint();
                 checkpointManager.isDragging = false;
                 checkpointManager.isMovingCheckpoint = false;
+                InteractionFlags.IsFloorHandleDragging = false;
             }
         }
-
-        mainCamera.transform.position =
-            GPUInstancedGrid.Instance.GetCameraBoundsPosition(mainCamera.transform.position);
     }
 
     // Raycast trúng mesh sàn phòng -> lấy roomID từ tên "RoomFloor_<id>" hoặc component
@@ -261,10 +261,16 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
                         return;
                     }
 
+                    // Chỉ block khi tên bắt đầu "RoomFloor_". Floor_<id> thì KHÔNG block.
                     if (hit.collider.gameObject.CompareTag("RoomFloor"))
                     {
-                        Debug.Log("Raycast đang hit RoomFloor ➜ Bỏ pan/zoom bàn cờ!");
-                        return; // Chặn bàn cờ ngay từ đầu
+                        string nm = hit.collider.gameObject.name;
+                        if (nm.StartsWith("RoomFloor_"))
+                        {
+                            Debug.Log("Hit ROOM floor → block pan/zoom");
+                            return;
+                        }
+                        // nm.StartsWith("Floor_") → cho phép pan/zoom bình thường
                     }
                 }
             }
@@ -296,7 +302,6 @@ private Vector3 _lastWorld; // world pos frame trước khi drag
                         mainCamera.nearClipPlane)) -
                     mainCamera.ScreenToWorldPoint(new Vector3(touch.position.x - touchDelta.x,
                         touch.position.y - touchDelta.y, mainCamera.nearClipPlane));
-                GPUInstancedGrid.Instance.GetCameraBoundsPosition(mainCamera.transform.position + -move);
                 mainCamera.transform.Translate(-move, Space.World);
                 
             }

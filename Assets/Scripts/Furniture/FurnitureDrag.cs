@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 public class FurnitureDrag : MonoBehaviour
@@ -12,8 +11,20 @@ public class FurnitureDrag : MonoBehaviour
 
     private void OnMouseDrag()
     {
-        if(FurnitureManager.Instance.IsSelectFurniture(furnitureItem))
+        if (Input.touchCount > 1)
+        {
+            return;
+        }
+
+        if (FurnitureManager.Instance.IsSelectFurniture(furnitureItem))
+        {
             furnitureItem.Dragging(transform);
+        }
+        else
+        {
+            FurnitureManager.Instance.SelectFurniture(furnitureItem);
+        }
+        
     }
 
     private void OnMouseUp()

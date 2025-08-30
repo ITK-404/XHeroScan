@@ -13,8 +13,8 @@ public class ClearAllRoomsButton : MonoBehaviour
     [SerializeField] private PenManager penManager;
     [SerializeField] private DrawingTool drawingTool;
 
-    private const string CLEAR_ALL_WARNING = "Bạn có chắc muốn xóa TẤT CẢ các Room?\nDữ liệu sẽ mất vĩnh viễn!";
-    private const string CLEAR_ONE_WARNING = "Xóa phòng \"{0}\"?\nDữ liệu phòng này sẽ mất vĩnh viễn!";
+    private const string CLEAR_ALL_WARNING = "Bạn có chắc chắn muốn xóa tất cả khung đã chọn?";
+    private const string CLEAR_ONE_WARNING = "Bạn có chắc chắn muốn xóa khung đã chọn?";
 
 
     void Start()
@@ -34,7 +34,8 @@ public class ClearAllRoomsButton : MonoBehaviour
     void OnClearAllClicked()
     {
         if (checkpointManager == null) return;
-
+        
+        SaveLoadManager.MakeDirty();
         // Nếu có phòng đang chọn -> xóa ngay phòng đó (không popup)
         string currentRoomID = checkpointManager.GetSelectedRoomID();
         if (!string.IsNullOrEmpty(currentRoomID))
@@ -42,7 +43,7 @@ public class ClearAllRoomsButton : MonoBehaviour
             var room = RoomStorage.GetRoomByID(currentRoomID);
             string displayName = !string.IsNullOrEmpty(room?.roomName) ? room.roomName : currentRoomID;
 
-            var popupOne = Instantiate(ModularPopup.Prefab);
+            var popupOne = Instantiate(ModularPopup.PopupAsset.modularPopupWarningDelete).GetComponent<ModularPopup>();
             popupOne.AutoFindCanvasAndSetup();
             popupOne.Header = string.Format(CLEAR_ONE_WARNING, displayName);
             popupOne.ClickYesEvent = () =>
@@ -61,7 +62,7 @@ public class ClearAllRoomsButton : MonoBehaviour
         }
 
         // Không có phòng được chọn -> hỏi xác nhận xóa tất cả
-        var popup = Instantiate(ModularPopup.Prefab);
+        var popup = Instantiate(ModularPopup.PopupAsset.modularPopupWarningDelete).GetComponent<ModularPopup>();
         popup.AutoFindCanvasAndSetup();
         popup.Header = CLEAR_ALL_WARNING;
         popup.ClickYesEvent = () =>
@@ -81,32 +82,28 @@ public class ClearAllRoomsButton : MonoBehaviour
     /// </summary>
     public void ClearRoomById(string roomID)
     {
-        if (string.IsNullOrEmpty(roomID))
-        {
-            Debug.LogWarning("[ClearRoomById] roomID rỗng.");
-            return;
-        }
+        if (string.IsNullOrEmpty(roomID)) { Debug.LogWarning("[ClearRoomById] roomID rỗng."); return; }
 
         var room = RoomStorage.GetRoomByID(roomID);
-        if (room == null)
+        if (room == null) { Debug.LogWarning($"[ClearRoomById] Không tìm thấy phòng: {roomID}"); return; }
+
+        // XÓA EXTRA GOs theo roomID (placedPointsByRoom)
+        var mpm = FindFirstObjectByType<MovePointManager>();
+        if (mpm != null && mpm.placedPointsByRoom != null &&
+            mpm.placedPointsByRoom.TryGetValue(roomID, out var extras) && extras != null)
         {
-            Debug.LogWarning($"[ClearRoomById] Không tìm thấy phòng: {roomID}");
-            return;
+            foreach (var go in extras) if (go) Destroy(go);
+            mpm.placedPointsByRoom.Remove(roomID);
         }
 
-        // 1. Xóa floor mesh của phòng này
+        // Xóa floor mesh
         var floors = GameObject.FindObjectsByType<RoomMeshController>(FindObjectsSortMode.None);
-        foreach (var floor in floors)
-        {
-            if (floor.RoomID == roomID)
-                Destroy(floor.gameObject);
-        }
+        foreach (var floor in floors) if (floor.RoomID == roomID) Destroy(floor.gameObject);
 
-        // 2. Xóa checkpoints của phòng này
+        // Xóa checkpoints (main) theo loop
         var loop = GetLoopByRoomID(roomID);
         if (loop != null)
         {
-            // Nếu đang chọn checkpoint thuộc phòng này -> hủy chọn
             if (checkpointManager != null &&
                 checkpointManager.selectedCheckpoint != null &&
                 loop.Contains(checkpointManager.selectedCheckpoint))
@@ -116,14 +113,16 @@ public class ClearAllRoomsButton : MonoBehaviour
                 checkpointManager.isMovingCheckpoint = false;
             }
 
-            foreach (var cp in loop)
-                if (cp != null) Destroy(cp);
-
-            if (checkpointManager != null)
-                checkpointManager.AllCheckpoints.Remove(loop);
+            foreach (var cp in loop) if (cp) Destroy(cp);
+            checkpointManager?.AllCheckpoints.Remove(loop);
         }
 
-        // 3. Xóa cửa/cửa sổ tạm của phòng này (nếu có)
+        // Gỡ mapping khác
+        checkpointManager?.RoomFloorMap.Remove(roomID);
+        if (checkpointManager?.currentCheckpoints != null)
+            checkpointManager.currentCheckpoints.RemoveAll(go => !go); // dọn null
+
+        // Xóa cửa/cửa sổ tạm
         if (checkpointManager != null &&
             checkpointManager.tempDoorWindowPoints != null &&
             checkpointManager.tempDoorWindowPoints.TryGetValue(roomID, out var doorPts))
@@ -136,19 +135,15 @@ public class ClearAllRoomsButton : MonoBehaviour
             checkpointManager.tempDoorWindowPoints.Remove(roomID);
         }
 
-        // 4. Xóa dữ liệu phòng trong RoomStorage
+        // Xóa dữ liệu phòng trong RoomStorage
         RoomStorage.rooms.RemoveAll(r => r.ID == roomID);
 
-        // 5. Vẽ lại
+        // Vẽ lại
         if (checkpointManager != null)
         {
             checkpointManager.ClearAllLines();
             checkpointManager.RedrawAllRooms();
-        }
-
-        if (checkpointManager != null)
-        {
-            checkpointManager.ClearSelectedRoom(); // ← đảm bảo GetSelectedRoomID() trả về null sau khi xóa
+            checkpointManager.ClearSelectedRoom();
         }
 
         Debug.Log($"Đã xóa phòng: {roomID}");

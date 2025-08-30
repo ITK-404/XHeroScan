@@ -53,8 +53,8 @@ public static class DirectionAnchorMapping
     {
         return dir switch
         {
-            Direction.North => AnchorPosition.MiddleBottom,
-            Direction.South => AnchorPosition.MiddleTop,
+            Direction.North => AnchorPosition.MiddleTop,
+            Direction.South => AnchorPosition.MiddleBottom,
             Direction.East  => AnchorPosition.MiddleRight,
             Direction.West  => AnchorPosition.MiddleLeft,
             _ => AnchorPosition.Center
@@ -93,6 +93,7 @@ public class DirectionRotationCalculator
 
 public class DirectionalItem : MonoBehaviour
 {
+    public AnchorPosition anchorIcon;
     [SerializeField] private TextMeshProUGUI Text;
     private Direction direction;
     

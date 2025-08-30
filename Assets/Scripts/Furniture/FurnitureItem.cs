@@ -1,6 +1,8 @@
+using iTextSharp.text.pdf;
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting.Antlr3.Runtime.Tree;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public enum ResizeAxis
@@ -9,24 +11,46 @@ public enum ResizeAxis
     Z,
     XZ
 }
-public class FurnitureItem : MonoBehaviour
+
+public enum FurnitureState
+{
+    Select,
+    UnSelect
+}
+
+public partial class FurnitureItem : MonoBehaviour
 {
     public static bool OnDragFurniture = false;
     public static bool OnDragPoint = false;
-    private static GameObject pointHolder;
+
     private static Camera mainCam;
-    private const float LIMIT_SIZE = 0.5f;
 
-    public FurnitureData data;
-    public FurniturePoint pointPrefab;
+    // public const float LIMIT_SIZE = 0.5f;
+    public float minSizeX
+    {
+        get => data.size.widthMinMax.x / 2;
+    }
 
-    public BoxCollider boxCollider;
-    public SpriteRenderer spriteRender;
-    private List<FurniturePoint> pointsList = new();
+    public float minSizeZ
+    {
+        get => data.size.lengthMinMax.x / 2;
+    }
+
+    [Header("Item Settings")]
+    [SerializeField] private bool allowSnapToWall = false;
+    [SerializeField] private bool allowShowAllCheckPoint = false;
+    [SerializeField] private bool allowRotationByCheckPoint = false;
+    public bool isUsingCenterPosToSnap = false; 
+    
+    [Header("References")]
+    public DrawingInstanced data;
+
+    public Transform modelContainer;
+    public SpriteRenderer model2D;
 
     [Header("Point")]
     [SerializeField] private GameObject checkPointParent;
-    
+
     [SerializeField] private FurniturePoint leftPoint;
     [SerializeField] private FurniturePoint rightPoint;
     [SerializeField] private FurniturePoint topPoint;
@@ -38,101 +62,222 @@ public class FurnitureItem : MonoBehaviour
     [SerializeField] private FurniturePoint topRightPoint;
 
     [SerializeField] private FurnitureRotate rotatePoint;
+
+    [Header("Bounds")]
     [SerializeField] private Bounds bounds;
+
+    [Header("Prefabs")]
+    [SerializeField] private LineRenderer lineRendererPrefab;
+
+    [SerializeField] private TextMeshPro textMeshProPrefab;
+
+    [SerializeField] private FurnitureMergeToWall furnitureMergeToWall;
+
+    private Quaternion currentRotation
+    {
+        get => data.size.rotation;
+        set => data.size.rotation = value;
+    }
+
+    private FurnitureVisuals furnitureVisuals;
+    private IUpdateWhenMove[] IUpdateWhenMoves;
     private FurniturePoint[] pointsArray;
     private Vector3 startPos;
-    public float width, height = 1;
 
-    [SerializeField] private float currentRotation;
+    public float width
+    {
+        get => data.size.width;
+        set => data.size.width = value;
+    }
+
+    public float length
+    {
+        get => data.size.length;
+        set => data.size.length = value;
+    }
+
+    public float height
+    {
+        get => data.size.height;
+        set => data.size.height = value;
+    }
+
+    private ObjectResizer resizer;
+
     private void Awake()
     {
+        data.size.Normalize();
+        resizer = GetComponentInChildren<ObjectResizer>();
+        resizer.Resize();
+
+        furnitureVisuals = new FurnitureVisuals(this);
+        furnitureMergeToWall = new FurnitureMergeToWall(this);
+
         bounds = new Bounds();
-        bounds.center = spriteRender.transform.localPosition;
-        bounds.size = new Vector3(width, 1, height);
+        bounds.center = modelContainer.transform.localPosition;
+        bounds.size = new Vector3(width, 1, length);
         if (mainCam == null)
         {
             mainCam = Camera.main;
         }
 
-        foreach (var item in GetComponentsInChildren<FurniturePoint>())
+        pointsArray = GetComponentsInChildren<FurniturePoint>();
+        foreach (var item in pointsArray)
         {
-            SetupPoint(item);
+            item.furniture = this;
         }
 
-        pointsArray = GetComponentsInChildren<FurniturePoint>();
-        
+        furnitureMergeToWall.SetupAnchor();
         DisableCheckPoint();
+        RefreshCheckPointsByBounds();
+
+        if (!allowShowAllCheckPoint)
+        {
+            topLeftPoint.gameObject.SetActive(false);
+            topRightPoint.gameObject.SetActive(false);
+
+            leftPoint.gameObject.SetActive(isUsingCenterPosToSnap);
+            rightPoint.gameObject.SetActive(isUsingCenterPosToSnap);
+
+            bottomLeftPoint.gameObject.SetActive(!isUsingCenterPosToSnap);
+            bottomRightPoint.gameObject.SetActive(!isUsingCenterPosToSnap);
+        }
+
+        rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
     }
 
 
-    private void SetupPoint(FurniturePoint point)
+    public void InitLineAndText()
     {
-        point.center = transform;
-        //point.scaleHandle = value;
-        point.furniture = this;
+        var topLine = new Outline(CreateLineRenderer(),
+            topLeftPoint.gameObject,
+            topRightPoint.gameObject);
+        var rightLine = new Outline(CreateLineRenderer(),
+            topRightPoint.gameObject,
+            bottomRightPoint.gameObject);
+        var leftLine = new Outline(CreateLineRenderer(),
+            topLeftPoint.gameObject,
+            bottomLeftPoint.gameObject);
+        var bottomLine = new Outline(CreateLineRenderer(),
+            bottomLeftPoint.gameObject,
+            bottomRightPoint.gameObject);
+
+        var topTextDistance = new TextDistance(CreateTextMeshPro(), topLine);
+        var rightTextDistance = new TextDistance(CreateTextMeshPro(), rightLine);
+
+        IUpdateWhenMoves = new IUpdateWhenMove[]
+            { topLine, leftLine, rightLine, bottomLine, topTextDistance, rightTextDistance };
     }
 
-    public void DragPoint(FurniturePoint point)
+    private LineRenderer CreateLineRenderer()
+    {
+        var line = Instantiate(lineRendererPrefab, checkPointParent.transform);
+        DrawingTool.Instance.SetupLine(line);
+        return line;
+    }
+
+    private TextMeshPro CreateTextMeshPro()
+    {
+        var text = Instantiate(textMeshProPrefab, transform);
+        return text;
+    }
+
+    public void DragPoint(FurniturePoint currentDragPoint)
     {
         Vector3 newPos = GetWorldMousePosition();
-        newPos = point.transform.parent.InverseTransformPoint(newPos);
+        newPos = currentDragPoint.transform.parent.InverseTransformPoint(newPos);
 
-        switch (point.checkpointType)
+        RefreshCheckPointsByBounds();
+
+        switch (currentDragPoint.checkpointType)
         {
             case CheckpointType.Left:
-                ResizeWithAnchor(newPos, point, rightPoint.transform, ResizeAxis.X);
+                ResizeWithAnchor(newPos, currentDragPoint, rightPoint.transform);
                 break;
             case CheckpointType.Right:
-                ResizeWithAnchor(newPos, point, leftPoint.transform, ResizeAxis.X);
+                ResizeWithAnchor(newPos, currentDragPoint, leftPoint.transform);
                 break;
             case CheckpointType.Top:
-                ResizeWithAnchor(newPos, point, bottomPoint.transform, ResizeAxis.Z);
+                ResizeWithAnchor(newPos, currentDragPoint, bottomPoint.transform);
                 break;
             case CheckpointType.Bottom:
-                ResizeWithAnchor(newPos, point, topPoint.transform, ResizeAxis.Z);
+                ResizeWithAnchor(newPos, currentDragPoint, topPoint.transform);
                 break;
             case CheckpointType.TopLeft:
-                ResizeWithAnchor(newPos, point, bottomRightPoint.transform, ResizeAxis.XZ);
+                ResizeWithAnchor(newPos, currentDragPoint, bottomRightPoint.transform);
                 break;
             case CheckpointType.TopRight:
-                ResizeWithAnchor(newPos, point, bottomLeftPoint.transform, ResizeAxis.XZ);
+                ResizeWithAnchor(newPos, currentDragPoint, bottomLeftPoint.transform);
                 break;
             case CheckpointType.BottomLeft:
-                ResizeWithAnchor(newPos, point, topRightPoint.transform, ResizeAxis.XZ);
+                ResizeWithAnchor(newPos, currentDragPoint, topRightPoint.transform);
                 break;
             case CheckpointType.BottomRight:
-                ResizeWithAnchor(newPos, point, topLeftPoint.transform, ResizeAxis.XZ);
+                ResizeWithAnchor(newPos, currentDragPoint, topLeftPoint.transform);
                 break;
             default:
                 break;
         }
 
-        width = bounds.size.x;
-        height = bounds.size.z;
-        spriteRender.transform.localPosition = bounds.center;
-        RefreshCheckPoints();
+        MakeDirty();
     }
 
-    public void RefreshCheckPoints()
+    public void RefreshCheckPointsByBounds()
     {
+        // tính toán vị trí của check point dựa theo bound
         foreach (var item in pointsArray)
         {
-            Recalculator(item.transform, item.checkpointType, bounds, Vector3.zero);
+            furnitureVisuals.Recalculator(item.transform, item.checkpointType, bounds, new Vector3(0, 0.1f, 0));
         }
-        Recalculator(rotatePoint.transform, CheckpointType.Bottom, bounds, new Vector3(0, 0, -1));
+
+        // Cập nhật point dùng để xoay object 
+        float z = bounds.size.y * 3 * FurnitureManager.Instance.ScaleByCameraZoom.Offset;
+        z = Mathf.Clamp(z, 0.25f, float.MaxValue);
+        Vector3 offset = new Vector3(0, 0.1f, -z);
+        furnitureVisuals.Recalculator(rotatePoint.transform, CheckpointType.Bottom, bounds, offset);
+
+        // update line
+        if (IUpdateWhenMoves == null) return;
+        foreach (var item in IUpdateWhenMoves)
+        {
+            item.Update();
+        }
     }
 
     private void Update()
     {
-        width = Mathf.Clamp(width, 0.1f, 100);
-        height = Mathf.Clamp(height, 0.1f, 100);
-        spriteRender.transform.localScale = new Vector3(width, height, 1 * height * 0.5f);
+        // giới hạn dựa theo data
+        width = Mathf.Clamp(width, minSizeX / 2, 100);
+        length = Mathf.Clamp(length, minSizeZ / 2, 100);
+
+        // scale sprite
+        modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
+        data.worldPosition = modelContainer.transform.position;
+
+        // using for update by zoom in or zoom out
+        if (IUpdateWhenMoves == null) return;
+        foreach (var item in IUpdateWhenMoves)
+        {
+            item.UpdateWhenCameraZoom();
+        }
+
+
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            if (allowSnapToWall)
+            {
+                furnitureMergeToWall.TryToMergeAndSnapInWall();
+            }
+        }
+
+        furnitureMergeToWall.Update();
     }
 
-    public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint, ResizeAxis resizeAxis)
+    public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint)
     {
         // rotation hiện tại (dùng currentRotation của bạn)
-        Quaternion rotation = Quaternion.Euler(0f, currentRotation, 0f);
+        ResizeAxis resizeAxis = dragPoint.GetReSizeAxis();
+        Quaternion rotation = Quaternion.Euler(0f, currentRotation.y, 0f);
         Vector3 originalCenter = bounds.center;
         // Chuyển vị trí drag và anchor về "local chưa xoay" (unrotated local space)
         Vector3 dragLocalUnrot = Quaternion.Inverse(rotation) * (localPoint - originalCenter);
@@ -145,49 +290,17 @@ public class FurnitureItem : MonoBehaviour
             dragLocalUnrot.z = anchorLocalUnrot.z;
 
         // --- Clamp trong không gian unrotated (giữ nguyên logic theo checkpoint type) ---
-        var type = dragPoint.checkpointType;
+        CheckpointType type = dragPoint.checkpointType;
 
-        // Left
-        if (type == CheckpointType.Left || type == CheckpointType.TopLeft || type == CheckpointType.BottomLeft)
-        {
-            if (dragLocalUnrot.x > -LIMIT_SIZE) dragLocalUnrot.x = -LIMIT_SIZE;
-        }
-
-        // Right
-        if (type == CheckpointType.Right || type == CheckpointType.TopRight || type == CheckpointType.BottomRight)
-        {
-            if (dragLocalUnrot.x < LIMIT_SIZE) dragLocalUnrot.x = LIMIT_SIZE;
-        }
-
-        // Top (positive Z in unrotated local)
-        if (type == CheckpointType.Top || type == CheckpointType.TopLeft || type == CheckpointType.TopRight)
-        {
-            if (dragLocalUnrot.z < LIMIT_SIZE) dragLocalUnrot.z = LIMIT_SIZE;
-        }
-
-        // Bottom (negative Z in unrotated local)
-        if (type == CheckpointType.Bottom || type == CheckpointType.BottomLeft || type == CheckpointType.BottomRight)
-        {
-            if (dragLocalUnrot.z > -LIMIT_SIZE) dragLocalUnrot.z = -LIMIT_SIZE;
-        }
+        dragLocalUnrot = furnitureVisuals.ClampPointToBounds(
+            dragLocalUnrot, type);
 
         // --- Tính center và size trong không gian unrotated ---
         Vector3 centerLocalUnrot = (anchorLocalUnrot + dragLocalUnrot) / 2f;
         Vector3 sizeLocal = bounds.size; // giữ cấu trúc: size.x -> width, size.z -> height
 
-        switch (resizeAxis)
-        {
-            case ResizeAxis.X:
-                sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
-                break;
-            case ResizeAxis.Z:
-                sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
-                break;
-            case ResizeAxis.XZ:
-                sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
-                sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
-                break;
-        }
+        sizeLocal = furnitureVisuals.ClampSizeToBounds(
+            sizeLocal, resizeAxis, dragLocalUnrot, anchorLocalUnrot);
 
         // --- Chuyển center trở về không gian local (có xoay) và cập nhật bounds ---
         bounds.center = originalCenter + rotation * centerLocalUnrot;
@@ -197,15 +310,18 @@ public class FurnitureItem : MonoBehaviour
         UpdateWorldSizeFromLocal();
 
         // Sau khi resize xong, cập nhật hiển thị / điểm:
-        spriteRender.transform.localPosition = bounds.center;
-        spriteRender.transform.localRotation = Quaternion.Euler(90, currentRotation, 0);
-
+        modelContainer.transform.localPosition = bounds.center;
+        SetRotation(currentRotation.y);
     }
 
+
+    /// <summary>
+    /// Gọi method này khi thực hiện công việc liên quan tới thay đổi kích thước
+    /// </summary>
     private void UpdateWorldSizeFromLocal()
     {
         // rotation in degrees around Y
-        float angleDeg = currentRotation;
+        float angleDeg = currentRotation.y;
         float rad = angleDeg * Mathf.Deg2Rad;
 
         float c = Mathf.Abs(Mathf.Cos(rad));
@@ -215,95 +331,49 @@ public class FurnitureItem : MonoBehaviour
         float lx = bounds.size.x; // local width (X)
         float lz = bounds.size.z; // local height (Z)
 
-        // AABB trên world X/Z
-        //worldWidth = c * lx + s * lz;   // full size along world X
-        //worldHeight = s * lx + c * lz;   // full size along world Z
-
-        // cho tiện, cũng cập nhật public width/height nếu bạn dùng 2 biến đó hiển thị
         width = bounds.size.x;
-        height = bounds.size.z;
+        length = bounds.size.z;
     }
 
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(bounds.center, bounds.size);
-    }
-
-    private void Recalculator(Transform point, CheckpointType type, Bounds bounds, Vector3 offset)
-    {
-        Vector3 newPosition = point.transform.localPosition;
-        float xExtend = Mathf.Max(bounds.extents.x, LIMIT_SIZE);
-        float yExtend = Mathf.Max(bounds.extents.z, LIMIT_SIZE);
-
-        // left
-        switch (type)
-        {
-            case CheckpointType.Left:
-            case CheckpointType.TopLeft:
-            case CheckpointType.BottomLeft:
-                offset += new Vector3(-xExtend, 0, 0);
-                break;
-
-            default:
-                break;
-        }
-        // right
-        switch (type)
-        {
-            case CheckpointType.Right:
-            case CheckpointType.TopRight:
-            case CheckpointType.BottomRight:
-                offset += new Vector3(xExtend, 0, 0);
-                break;
-            default:
-                break;
-        }
-        // top
-        switch (type)
-        {
-            case CheckpointType.Top:
-            case CheckpointType.TopLeft:
-            case CheckpointType.TopRight:
-                offset += new Vector3(0, 0, yExtend);
-                break;
-            default:
-                break;
-        }
-        // bottom
-        switch (type)
-        {
-            case CheckpointType.Bottom:
-            case CheckpointType.BottomLeft:
-            case CheckpointType.BottomRight:
-                offset += new Vector3(0, 0, -yExtend);
-                break;
-            default:
-                break;
-        }
-        offset = Quaternion.Euler(0, currentRotation, 0) * offset;
-        newPosition = bounds.center + offset;
-        point.transform.localPosition = newPosition;
-    }
-
+    /// <summary>
+    /// Kéo furniture theo delta của mouse, không dựa vào vị trí của mouse
+    /// </summary>
+    /// <param name="dragTransform"></param>
     public void Dragging(Transform dragTransform)
     {
         var currentPos = GetWorldMousePosition();
         var delta = currentPos - startPos;
+
         dragTransform.localPosition += delta;
+
+        if (allowSnapToWall)
+        {
+            furnitureMergeToWall.StartSnap();
+        }
+
         startPos = currentPos;
         bounds.center = dragTransform.localPosition;
 
-        RefreshCheckPoints();
+        RefreshCheckPointsByBounds();
         UpdateWorldSizeFromLocal();
+        MakeDirty();
+
         OnDragPoint = true;
     }
 
+    /// <summary>
+    /// Gọi khi drag kết thúc
+    /// </summary>
     public void DeActiveDrag()
     {
+        furnitureMergeToWall.EndSnap();
         OnDragPoint = false;
     }
 
+    /// <summary>
+    /// Lấy vị trí chuột ở world 
+    /// </summary>
+    /// <returns></returns>
     private Vector3 GetWorldMousePosition()
     {
         float distance = Vector3.Distance(mainCam.transform.position, FurnitureManager.Instance.transform.position);
@@ -315,11 +385,17 @@ public class FurnitureItem : MonoBehaviour
         return worldMousePosition;
     }
 
+    /// <summary>
+    /// Gọi khi bắt đầu drag
+    /// </summary>
     public void StartDrag()
     {
         startPos = GetWorldMousePosition();
     }
 
+    /// <summary>
+    /// Xoay furniture dựa theo góc của center tới chuột, tích hợp snap bên trong
+    /// </summary>
     public void RotateToMouse()
     {
         Vector3 mouseWorld = GetWorldMousePosition();
@@ -337,16 +413,20 @@ public class FurnitureItem : MonoBehaviour
 
         // Cách 1 — trực tiếp với Atan2: trả về angle (deg) với 0 = +Z (forward)
         float angleDeg = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-
+        Debug.Log("Angle in degrees: " + angleDeg);
         // chuẩn hoá góc vào [0,360)
         angleDeg = (angleDeg % 360f + 360f) % 360f;
 
-        currentRotation = angleDeg;
-        spriteRender.transform.localRotation = Quaternion.Euler(90f, -currentRotation, 0f);
+        angleDeg = FurnitureManager.Instance.CheckSnapRotation(angleDeg);
 
+        float yRotation = (angleDeg + 180f) % 360f;
+        SetRotation(yRotation);
         // cập nhật point/size nếu cần
-        RefreshCheckPoints();
+        RefreshCheckPointsByBounds();
+
         UpdateWorldSizeFromLocal(); // nếu bạn đang dùng
+
+        MakeDirty();
     }
 
     public void DisableCheckPoint()
@@ -358,13 +438,127 @@ public class FurnitureItem : MonoBehaviour
     {
         checkPointParent.gameObject.SetActive(true);
     }
-}
 
-[Serializable]
-public class FurnitureData
-{
-    public string ItemID = "Item";
-    public float Width = 1;
-    public float Height = 1;
-    public float ObjectHeight = 0.5f;
+    public Vector3 GetWorldPosition()
+    {
+        return modelContainer.transform.position;
+    }
+
+    /// <summary>
+    /// Cập nhật world position từ bên ngoài object
+    /// </summary>
+    /// <param name="worldPosition"></param>
+    public void SetWorldPosition(Vector3 worldPosition)
+    {
+        modelContainer.transform.position = worldPosition;
+        bounds.center = modelContainer.transform.localPosition;
+    }
+
+    /// <summary>
+    /// Nhận data từ bên ngoài
+    /// </summary>
+    /// <param name="furnitureData"></param>
+    public void FetchData(DrawingInstanced furnitureData)
+    {
+        data = furnitureData;
+
+        // Cập nhật các thuộc tính từ dữ liệu
+
+        // Cập nhật vị trí và kích thước của sprite
+        data.size.Normalize();
+        // set from data
+        SetWorldPosition(data.worldPosition);
+        modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
+
+        SetRotation(currentRotation.y);
+        // Cập nhật bounds
+        bounds.center = modelContainer.transform.localPosition;
+        bounds.size = new Vector3(width, 1, length);
+        // cập nhật lại rotation và position theo check point
+        RefreshCheckPointsByBounds();
+    }
+
+    /// <summary>
+    /// Lấy các point dựa trên type
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public FurniturePoint GetFurniturePoint(CheckpointType type)
+    {
+        if (pointsArray == null) return null;
+        foreach (var item in pointsArray)
+        {
+            if (item.checkpointType == type)
+            {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    public void SetRotation(float yRotation)
+    {
+        modelContainer.transform.localRotation = Quaternion.Euler(90, yRotation, 0);
+        data.size.rotation.y = yRotation;
+    }
+    
+    private void MakeDirty()
+    {
+        SaveLoadManager.MakeDirty();
+    }
+
+    /// <summary>
+    /// Di chuyển furniture theo point nhưng vẫn giữa nguyên hình dạng
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="worldPosition"></param>
+    public void MoveAnchorToPositionWithoutChangeShape(CheckpointType type, Vector3 worldPosition)
+    {
+        
+        
+        var targetAnchor = GetFurniturePoint(type);
+        var furnitureWorldPosition = GetWorldPosition();
+        Vector3 anchorWorldPos = targetAnchor.transform.position;
+
+        // Calculate the offset from the object's center to the anchor in world space
+        Vector3 centerToAnchorOffset = anchorWorldPos - furnitureWorldPosition;
+
+        // The new center should be the target world position minus the offset
+        Vector3 newCenterWorld = worldPosition - centerToAnchorOffset;
+
+        // Convert the new center to local space relative to the parent
+        Vector3 newCenterLocal = transform.InverseTransformPoint(newCenterWorld);
+
+        var localPosition = newCenterLocal;
+        var debugPoint = FurnitureManager.Instance.debugPoint;
+        localPosition.y = modelContainer.transform.localPosition.y;
+
+        if (isUsingCenterPosToSnap)
+        {
+            localPosition = transform.InverseTransformPoint(worldPosition);
+        } 
+        
+        // debugPoint.transform.SetParent(modelContainer.transform.parent);
+        // debugPoint.transform.localPosition = actualPosition;
+
+        bounds.center = localPosition;
+        modelContainer.transform.localPosition = localPosition;
+
+        RefreshCheckPointsByBounds();
+        UpdateWorldSizeFromLocal();
+    }
+
+    public float GetHeightOffset()
+    {
+        return model2D.bounds.size.z;
+    }
+
+    public void SyncWithBounds()
+    {
+        var size = bounds.size;
+        size.x = width;
+        size.z = length;
+        bounds.size = size;
+    }
 }

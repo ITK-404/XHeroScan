@@ -5,11 +5,15 @@ using TMPro;
 
 public class DrawingTool : MonoBehaviour
 {
+    #region Variables
+    public static DrawingTool Instance;
     public float wallTextOffset = 0.2f;
     public float doorTextOffset = 0.2f;
     public float windowTextOffset = 0.2f;
+
     [Header("Prefabs")]
     public GameObject linePrefab;
+
     public GameObject distanceTextPrefab;
 
     [Header("Materials")]
@@ -32,6 +36,12 @@ public class DrawingTool : MonoBehaviour
 
     private float auxiliaryLineLength = 0.1f; // Độ dài line phụ (10cm)
     private GameObject selectedCheckpoint = null; // Điểm được chọn để di chuyển    
+    #endregion
+
+    private void Awake()
+    {
+        Instance = this;
+    }
 
     Material GetMaterialForType(LineType type)
     {
@@ -57,12 +67,7 @@ public class DrawingTool : MonoBehaviour
         lr.SetPosition(1, end);
 
         // Đảm bảo LineRenderer setup chuẩn để tile texture hoạt động tốt
-        lr.textureMode = LineTextureMode.Tile;
-        lr.alignment = LineAlignment.View; // Quan trọng: để line luôn xoay đúng góc nhìn
-        lr.numCapVertices = 0;
-        lr.widthMultiplier = 0.04f;
-        lr.positionCount = 2;
-
+        SetupLine(lr);
         // Lấy chiều dài đoạn
         float len = Vector3.Distance(start, end);
 
@@ -98,6 +103,21 @@ public class DrawingTool : MonoBehaviour
             lines.Add(lr);
 
         // Khoảng cách và text
+
+
+        // Hiển thị text khoảng cách
+        // TextMeshPro textMesh = GetOrCreateText();
+        // textMesh.text = $"{distanceInCm:F1} cm";
+        TextMeshPro textMesh = GetOrCreateText(); // Dùng pool
+
+        UpdateText(textMesh, start, end, GetTextOffset(currentLineType));
+        // Lưu dữ liệu tường
+        wallLines.Add(new WallLine(start, end, currentLineType));
+    }
+
+    public void UpdateText(TextMeshPro tmp, Vector3 start, Vector3 end, float offset)
+    {
+        float len = Vector3.Distance(start, end);
         float distanceInM = len * 1f;
 
         // Tạo line phụ để đặt text (vuông góc line chính)
@@ -107,21 +127,28 @@ public class DrawingTool : MonoBehaviour
         Vector3 aux1End = start + perpendicular * auxiliaryLineLength / 2;
         Vector3 aux2End = end + perpendicular * auxiliaryLineLength / 2;
 
-        // Hiển thị text khoảng cách
-        // TextMeshPro textMesh = GetOrCreateText();
-        // textMesh.text = $"{distanceInCm:F1} cm";
-        TextMeshPro textMesh = GetOrCreateText(); // Dùng pool
-        textMesh.text = $"{distanceInM:F2}";
+        tmp.text = $"{distanceInM:F2}";
 
         Vector3 textPosition = (aux1End + aux2End) / 2;
 
         float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
-        textMesh.transform.rotation = Quaternion.Euler(90, 0, angle);
-        textMesh.transform.position = textPosition + textMesh.transform.up * GetTextOffset(currentLineType);
-        textMesh.color = GetTextColor(currentLineType);
-        // Lưu dữ liệu tường
-        wallLines.Add(new WallLine(start, end, currentLineType));
+
+        tmp.transform.rotation = Quaternion.Euler(90, 0, angle);
+        tmp.transform.position = textPosition + tmp.transform.up * offset;
+        tmp.color = GetTextColor(currentLineType);
     }
+
+
+    public void SetupLine(LineRenderer lr)
+    {
+        if (lr == null) return;
+        lr.textureMode = LineTextureMode.Tile;
+        lr.alignment = LineAlignment.View; // Quan trọng: để line luôn xoay đúng góc nhìn
+        lr.numCapVertices = 0;
+        lr.widthMultiplier = 0.04f;
+        lr.positionCount = 2;
+    }
+
 
     private float GetTextOffset(LineType lineType)
     {
@@ -167,6 +194,10 @@ public class DrawingTool : MonoBehaviour
             return;
         }
 
+        const int BASE_ORDER = 0;        // nếu bạn đang dùng order nào khác, đổi ở đây
+        const int PREVIEW_OFFSET = 99;   // “+99” như yêu cầu        
+        int previewOrder = BASE_ORDER + PREVIEW_OFFSET;
+    
         // Kiểm tra xem đã có previewLine chưa
         if (previewLine == null)
         {
@@ -179,6 +210,19 @@ public class DrawingTool : MonoBehaviour
         previewLine.SetPosition(0, start);
         previewLine.SetPosition(1, end);
 
+        // đảm bảo render trên cùng
+        var lineRenderer = previewLine.GetComponent<Renderer>();
+        if (lineRenderer != null)
+        {
+            // Sorting Layer giữ "Default" (hoặc layer bạn đang dùng)
+            // lineRenderer.sortingLayerName = "Default";
+            lineRenderer.sortingOrder = previewOrder;
+
+            // đẩy renderQueue cao để vẽ sau cùng (overlay)
+            if (lineRenderer.material != null) lineRenderer.material.renderQueue = 5000;
+        }
+
+        // TEXT
         float distanceInM = Vector3.Distance(start, end) * 1f;
 
         // Kiểm tra xem đã có previewText chưa
@@ -237,6 +281,7 @@ public class DrawingTool : MonoBehaviour
         linePool.Add(newLine);
         return newLine;
     }
+    
     private TextMeshPro GetOrCreateText()
     {
         foreach (var text in textPool)
@@ -274,14 +319,36 @@ public class DrawingTool : MonoBehaviour
         textPool.Add(newText);
         return newText;
     }
+
     public void ClearAllLines()
     {
-        foreach (var lr in linePool)
-            lr.gameObject.SetActive(false);
+        // Xoá toàn bộ LineRenderer trong pool
+        for (int i = linePool.Count - 1; i >= 0; i--)
+        {
+            var lr = linePool[i];
+            if (lr)
+            {
+                var go = lr.gameObject;
+                linePool[i] = null;
+                Destroy(go);
+            }
+        }
+        linePool.Clear();
 
-        foreach (var tmp in textPool)
-            tmp.gameObject.SetActive(false);
+        // Xoá toàn bộ Text (TMP_Text / TextMeshProUGUI / Text) trong pool
+        for (int i = textPool.Count - 1; i >= 0; i--)
+        {
+            var txt = textPool[i];
+            if (txt)
+            {
+                var go = txt.gameObject;
+                textPool[i] = null;
+                Destroy(go);
+            }
+        }
+        textPool.Clear();
 
+        // Xoá toàn bộ WallLine
         wallLines.Clear();
     }
 
@@ -290,7 +357,7 @@ public class DrawingTool : MonoBehaviour
         foreach (LineRenderer lr in linePool)
         {
             lr.startWidth = lr.endWidth = 0.02f; // kích thước line mặc định
-            lr.material.color = Color.black;     // màu sắc mặc định
+            lr.material.color = Color.black; // màu sắc mặc định
         }
 
         foreach (TextMeshPro tmp in textPool)

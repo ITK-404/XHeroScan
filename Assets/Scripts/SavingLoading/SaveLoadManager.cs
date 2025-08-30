@@ -6,10 +6,34 @@ using UnityEngine.SceneManagement;
 
 public static class SaveLoadManager
 {
-    public static string saveName = "DrawingData";
+    private static readonly string DefaultSaveFileName = "DrawingData";
 
+    private static string currentFileName;
+    private static bool isDirty = false;
+    
+    public static bool IsDirty() => isDirty;
+    public static void Clear() => currentFileName = string.Empty;
+    public static void MakeDirty()
+    {
+        isDirty = true;
+    }
+    
+    public static bool IsFileLoaded()
+    {
+        if (string.IsNullOrEmpty(currentFileName)) return false;
+        Debug.Log("Current File Name " +currentFileName);
+        return true;
+    }
+    
+    public static void Save()
+    {
+        Debug.Log("Save without parameter");
+        Save(currentFileName);
+    }
+    
     public static void Save(string customName = null)
     {
+        Debug.Log("Save with parameter");
         SaveData saveData = new SaveData
         {
             timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -31,6 +55,7 @@ public static class SaveLoadManager
                 roomName = room.roomName,                // lưu name
                 floorMaterial = room.floorMaterial,      // lưu vật liệu sàn
                 points = room.checkpoints.ConvertAll(p => new Vector2Serializable(p)),
+                pointsExtra = room.extraCheckpoints.ConvertAll(p => new Vector2Serializable(p)),
                 heights = new List<float>(room.heights),
                 wallLines = room.wallLines.ConvertAll(w => new SavedWallLine
                 {
@@ -40,6 +65,7 @@ public static class SaveLoadManager
                     isVisible = w.isVisible,
                     distanceHeight = w.distanceHeight,
                     Height = w.Height,
+                    isManualConnection = w.isManualConnection,
                     materialFront = w.materialFront,
                     materialBack = w.materialBack
                 }),
@@ -49,17 +75,21 @@ public static class SaveLoadManager
             saveData.paths.Add(path);
         }
 
+        saveData.furnitureDatas = FurnitureManager.GetAllFurnitureData();
         // Tạo timestamp phù hợp cho tên file
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
         // Dùng custom name nếu có, ngược lại dùng mặc định
-        string baseName = string.IsNullOrEmpty(customName) ? saveName : customName;
+        string baseName = string.IsNullOrEmpty(customName) ? String.Empty : customName;
         string fileName = $"{baseName}.json";
 
         string pathToSave = Path.Combine(Application.persistentDataPath, fileName);
         File.WriteAllText(pathToSave, JsonUtility.ToJson(saveData, true));
 
         Debug.Log($"[Save] OK: {pathToSave}");
+
+        currentFileName = customName;
+        isDirty = false;
     }
 
     public static void Load(string fileName = "DrawingData.json")
@@ -76,7 +106,7 @@ public static class SaveLoadManager
         SaveData saveData = JsonUtility.FromJson<SaveData>(json);
 
         RoomStorage.rooms = new List<Room>();
-
+        FurnitureManager.AddFurnitures(saveData.furnitureDatas);
         foreach (var path in saveData.paths)
         {
             Room room = new Room();
@@ -86,11 +116,13 @@ public static class SaveLoadManager
             room.floorMaterial = path.floorMaterial;        // load vật liệu sàn
 
             room.checkpoints = path.points.ConvertAll(p => p.ToVector2());
+            room.extraCheckpoints = path.pointsExtra.ConvertAll(p => p.ToVector2());
             room.heights = new List<float>(path.heights);
 
             room.wallLines = path.wallLines.ConvertAll(w =>
             {
                 var line = new WallLine(w.start, w.end, w.type, w.distanceHeight, w.Height, w.materialFront, w.materialBack);
+                line.isManualConnection = w.isManualConnection;
                 line.isVisible = w.isVisible;
                 return line;
             });
@@ -100,6 +132,8 @@ public static class SaveLoadManager
             RoomStorage.rooms.Add(room);
         }
 
+        currentFileName = RemoveExtension(fileName);
+        
         Debug.Log("[Load] Loaded " + RoomStorage.rooms.Count + " rooms from: " + fileName);
         SceneManager.LoadScene("FlatExampleScene");
     }
@@ -229,14 +263,33 @@ public static class SaveLoadManager
 
     public static string EnsureJsonExtension(string fileName)
     {
+        return EnsureExtension(fileName, ".json");
+    }
+
+    private static string EnsureExtension(string fileName,string extension)
+    {
         if (string.IsNullOrWhiteSpace(fileName))
             return null;
 
-        if (!fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+        if (!fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
         {
-            fileName += ".json";
+            fileName += extension;
         }
 
         return fileName;
+    }
+
+    private static string RemoveExtension(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return null;
+
+        int dotIndex = fileName.LastIndexOf('.');
+        if (dotIndex > 0)
+        {
+            return fileName.Substring(0, dotIndex);
+        }
+
+        return fileName; 
     }
 }

@@ -7,6 +7,7 @@ public class SaveData
 {
     public string timestamp;
     public List<SavedPath> paths = new List<SavedPath>();
+    public List<DrawingInstanced> furnitureDatas = new List<DrawingInstanced>();
 }
 
 [System.Serializable]
@@ -18,6 +19,7 @@ public class SavedWallLine
     public bool isVisible;
     public float distanceHeight;
     public float Height;
+    public bool isManualConnection;
     public string materialFront;
     public string materialBack;
 }
@@ -32,6 +34,7 @@ public class SavedPath
     public string floorMaterial;  
     
     public List<Vector2Serializable> points;
+    public List<Vector2Serializable> pointsExtra;
     public List<float> heights;
     public List<SavedWallLine> wallLines;
     public Vector2Serializable compass;
