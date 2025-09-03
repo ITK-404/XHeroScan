@@ -217,6 +217,7 @@ public class CheckpointManager : MonoBehaviour
 
             foreach (var wl in room.wallLines)
             {
+                if (wl.type != LineType.Wall) continue;
                 if (!wl.isVisible) continue;
 
                 // --- dùng Y theo index 2 khi vẽ ---

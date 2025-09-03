@@ -36,14 +36,14 @@ public partial class FurnitureItem : MonoBehaviour
         get => data.size.lengthMinMax.x / 2;
     }
 
-    [Header("Item Settings")]
+    [Header("Cấu hình để phân biệt cửa/cửa sổ và đồ nội thất")]
     [SerializeField] private bool allowSnapToWall = false; // có thể gắn vào tường
     [SerializeField] private bool allowShowAllCheckPoint = false; // hiển thị 1 phần check point (chỉ bật cho cửa, cửa sổ )
     [SerializeField] private bool allowRotationByCheckPoint = false; // bật point điều khiển rotation
     public bool allowEditWhenSnapToWall = false; // chỉ cho phép điểu chỉnh kích thước khi gắn vào tường
     public bool isUsingCenterPosToSnap = false; // khi biến này = false và allow snap to wall = true, furniture sẽ gắn vào tường bằng bottom anchor
     public bool alwayMakeSquare = false; // nếu kích hoạt thì hình dạng luôn tạo thành hình vuông
-    
+    public LineType lineType;
     [Header("References")]
     public DrawingInstanced data;
 
@@ -129,7 +129,15 @@ public partial class FurnitureItem : MonoBehaviour
             item.furniture = this;
         }
 
-        furnitureMergeToWall.SetupAnchor();
+        if (lineType == LineType.Window)
+        {
+            furnitureMergeToWall.SetupAnchor(CheckpointType.Left, CheckpointType.Right);
+        }
+        else
+        {
+            furnitureMergeToWall.SetupAnchor(CheckpointType.BottomLeft, CheckpointType.BottomRight);
+        }
+
         DisableCheckPoint();
         RefreshCheckPointsByBounds();
 
@@ -144,8 +152,8 @@ public partial class FurnitureItem : MonoBehaviour
             bottomLeftPoint.gameObject.SetActive(!isUsingCenterPosToSnap);
             bottomRightPoint.gameObject.SetActive(!isUsingCenterPosToSnap);
 
-            topPoint.gameObject.SetActive(isUsingCenterPosToSnap);
-            bottomPoint.gameObject.SetActive(isUsingCenterPosToSnap);
+            topPoint.gameObject.SetActive(false);
+            bottomPoint.gameObject.SetActive(false);
         }
 
         rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
@@ -577,5 +585,14 @@ public partial class FurnitureItem : MonoBehaviour
         size.x = width;
         size.z = length;
         bounds.size = size;
+    }
+
+    public void Destroy()
+    {
+        Debug.Log("Destroy furniture");
+        furnitureMergeToWall.TryRemoveWallLine();
+        FurnitureManager.Instance.RemoveFromRuntime(this);
+        FurnitureManager.Instance.SelectFurniture(null);
+        Destroy(gameObject);
     }
 }
