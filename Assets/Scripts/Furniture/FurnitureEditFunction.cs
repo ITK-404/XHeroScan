@@ -67,8 +67,8 @@ public class FurnitureEditFunction : MonoBehaviour
                 width = length = higherValue;
             }
 
-            currentFurniture.data.size.width = TryParse(widthInputField, data.size.width);
-            currentFurniture.data.size.length = TryParse(lengthInputField, data.size.length);
+            currentFurniture.data.size.width = width;
+            currentFurniture.data.size.length = length;
             currentFurniture.SyncWithBounds();
             currentFurniture.data.size.ClampSize();
 

@@ -254,5 +254,33 @@ public class FurnitureManager : MonoBehaviour
     {
         tempSaveDataFurnitureDatas = saveDataFurnitureDatas;
     }
+    public LayerMask furnitureLayerMask;
+    public bool TryPickFurniture()
+    {
+        Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
+        FurnitureItem item = null;
+        if(Physics.Raycast(ray,out var hitInfo,1000000f, furnitureLayerMask))
+        {
+            item = hitInfo.collider.GetComponentInParent<FurnitureItem>();
+        }
+       
+        SelectFurniture(item);
+        return item != null;
+    }
 
+    public void ResetAttachedWallLine()
+    {
+        foreach(var item in runtimeFurnitures)
+        {
+            item.furnitureMergeToWall.ResetAttachedWallLine();
+        }
+    }
+
+    public void AttachedWallLine()
+    {
+        foreach(var item in runtimeFurnitures)
+        {
+            item.furnitureMergeToWall.TryToMergeAndSnapInWall(false);
+        }
+    }
 }

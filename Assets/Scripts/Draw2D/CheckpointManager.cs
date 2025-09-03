@@ -281,6 +281,7 @@ public class CheckpointManager : MonoBehaviour
                 }
             }
         }
+
     }
 
     bool TrySelectCheckpoint(Vector3 position)

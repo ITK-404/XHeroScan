@@ -36,7 +36,7 @@ public class RoomInfoDisplay : MonoBehaviour
     [SerializeField] private float popupZ = 0.2f;
 
     // ===== State =====
-    private enum SelectionKind { None, Room, Floor }
+    private enum SelectionKind { None, Room, Floor, Furniture }
     private SelectionKind selectionKind = SelectionKind.None;
     private string selectedRoomID = "";
     private string selectedFloorID = "";
@@ -76,6 +76,14 @@ public class RoomInfoDisplay : MonoBehaviour
         // Click chọn
         if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
         {
+            if (FurnitureManager.Instance.TryPickFurniture())
+            {
+                DeselectAll();
+                ResetState();
+                selectionKind = SelectionKind.Furniture;
+                return;
+            }
+
             if (TryPickRoomUnderPointer(out var roomId))
             {
                 SelectRoom(roomId);
@@ -127,7 +135,7 @@ public class RoomInfoDisplay : MonoBehaviour
             if (popupWS) popupWS.SetActive(false);
             return;
         }
-
+        if (selectionKind == SelectionKind.Furniture) return;
         // Cập nhật label realtime
         if (selectionKind != SelectionKind.Floor)
         {
@@ -301,6 +309,11 @@ public class RoomInfoDisplay : MonoBehaviour
     }
 
     // ===================== SELECTION =====================
+    private void SelectFurniture()
+    {
+
+    }
+
     private void SelectRoom(string roomId)
     {
         if (selectionKind == SelectionKind.Floor && !string.IsNullOrEmpty(selectedFloorID))
