@@ -44,10 +44,23 @@ public class FurnitureEditFunction : MonoBehaviour
             Debug.Log("On Change size of furniture item");
             // change size here
             var data = currentFurniture.data;
+
+            
+
+            float width = TryParse(widthInputField, data.size.width);
+            float length = TryParse(lengthInputField, data.size.length);
+            float higherValue = 0;
+            // Xử lý để furniture tạo thành hình vuông nếu
+            // if (currentFurniture.alwayMakeSquare)
+            {
+                higherValue = Mathf.Max(width, length);
+                width = length = higherValue;
+            }
+
             currentFurniture.data.size.width = TryParse(widthInputField, data.size.width);
             currentFurniture.data.size.length = TryParse(lengthInputField, data.size.length);
             currentFurniture.SyncWithBounds();
-            currentFurniture.data.size.Normalize();
+            currentFurniture.data.size.ClampSize();
 
             currentFurniture.RefreshCheckPointsByBounds();
         }

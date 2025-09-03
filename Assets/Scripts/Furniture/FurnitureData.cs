@@ -39,7 +39,7 @@ public struct DrawItemSize
         return new Vector3(width, height, length);
     }
 
-    public void Normalize()
+    public void ClampSize()
     {
         width = Math.Clamp(width, widthMinMax.x, widthMinMax.y);
         height = Math.Clamp(height, heightMinMax.x, heightMinMax.y);
