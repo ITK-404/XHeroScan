@@ -6,10 +6,10 @@ using System.Collections;
 public class ModularPopupEdit : MonoBehaviour
 {
     [Header("Buttons")]
-    [SerializeField] private Button editBtn;
-    [SerializeField] private Button splitBtn;
-    [SerializeField] private Button doubleBtn;
-    [SerializeField] private Button deleteBtn;
+    public Button editBtn;
+    public Button splitBtn;
+    public Button doubleBtn;
+    public Button deleteBtn;
 
     [Header("Contents (chỉ 1 hiển thị tại 1 thời điểm)")]
     [SerializeField] private GameObject objectEdit;

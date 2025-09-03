@@ -61,6 +61,11 @@ public class FurnitureManager : MonoBehaviour
         Debug.Log("Loading furniture data: " + tempSaveDataFurnitureDatas.Count);
     }
 
+    public void RemoveFromRuntime(FurnitureItem furnitureItem)
+    {
+        runtimeFurnitures.Remove(furnitureItem);
+    }
+
     public void StartDragItem(string ItemID)
     {
         tempDragItem = InitItemByID(ItemID);
