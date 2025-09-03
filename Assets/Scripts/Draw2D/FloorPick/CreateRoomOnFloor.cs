@@ -445,7 +445,7 @@ public class CreateRoomOnFloor : MonoBehaviour
             if (floor != null) return true;
         }
 
-        // Fallback: đoán ID từ tên "Floor_<ID>" hoặc "RoomFloor_<ID>"
+        // ID từ tên "Floor_<ID>" hoặc "RoomFloor_<ID>"
         string name = floorRoot.name;
         int idx = name.LastIndexOf('_');
         if (idx >= 0 && idx + 1 < name.Length)
