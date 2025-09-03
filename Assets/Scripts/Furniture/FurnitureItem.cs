@@ -40,6 +40,7 @@ public partial class FurnitureItem : MonoBehaviour
     [SerializeField] private bool allowSnapToWall = false;
     [SerializeField] private bool allowShowAllCheckPoint = false;
     [SerializeField] private bool allowRotationByCheckPoint = false;
+    public bool allowEditWhenSnapToWall = false;
     public bool isUsingCenterPosToSnap = false; 
     
     [Header("References")]
@@ -141,6 +142,9 @@ public partial class FurnitureItem : MonoBehaviour
 
             bottomLeftPoint.gameObject.SetActive(!isUsingCenterPosToSnap);
             bottomRightPoint.gameObject.SetActive(!isUsingCenterPosToSnap);
+            
+            topPoint.gameObject.SetActive(isUsingCenterPosToSnap);
+            bottomPoint.gameObject.SetActive(isUsingCenterPosToSnap);
         }
 
         rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
@@ -436,7 +440,12 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void EnableCheckPoint()
     {
-        checkPointParent.gameObject.SetActive(true);
+        bool canShowCheckPoint = (allowEditWhenSnapToWall && furnitureMergeToWall.IsInWall()) || !allowEditWhenSnapToWall;
+        Debug.Log("Can show check point: " + canShowCheckPoint);
+        if(canShowCheckPoint)
+        {
+            checkPointParent.gameObject.SetActive(true);
+        }
     }
 
     public Vector3 GetWorldPosition()
