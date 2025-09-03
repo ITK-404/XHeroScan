@@ -37,10 +37,12 @@ public partial class FurnitureItem : MonoBehaviour
     }
 
     [Header("Item Settings")]
-    [SerializeField] private bool allowSnapToWall = false;
-    [SerializeField] private bool allowShowAllCheckPoint = false;
-    [SerializeField] private bool allowRotationByCheckPoint = false;
-    public bool isUsingCenterPosToSnap = false; 
+    [SerializeField] private bool allowSnapToWall = false; // có thể gắn vào tường
+    [SerializeField] private bool allowShowAllCheckPoint = false; // hiển thị 1 phần check point (chỉ bật cho cửa, cửa sổ )
+    [SerializeField] private bool allowRotationByCheckPoint = false; // bật point điều khiển rotation
+    public bool allowEditWhenSnapToWall = false; // chỉ cho phép điểu chỉnh kích thước khi gắn vào tường
+    public bool isUsingCenterPosToSnap = false; // khi biến này = false và allow snap to wall = true, furniture sẽ gắn vào tường bằng bottom anchor
+    public bool alwayMakeSquare = false; // nếu kích hoạt thì hình dạng luôn tạo thành hình vuông
     
     [Header("References")]
     public DrawingInstanced data;
@@ -106,7 +108,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     private void Awake()
     {
-        data.size.Normalize();
+        data.size.ClampSize();
         resizer = GetComponentInChildren<ObjectResizer>();
         resizer.Resize();
 
@@ -141,6 +143,9 @@ public partial class FurnitureItem : MonoBehaviour
 
             bottomLeftPoint.gameObject.SetActive(!isUsingCenterPosToSnap);
             bottomRightPoint.gameObject.SetActive(!isUsingCenterPosToSnap);
+
+            topPoint.gameObject.SetActive(isUsingCenterPosToSnap);
+            bottomPoint.gameObject.SetActive(isUsingCenterPosToSnap);
         }
 
         rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
@@ -272,7 +277,14 @@ public partial class FurnitureItem : MonoBehaviour
 
         furnitureMergeToWall.Update();
     }
-
+    /// <summary>
+    /// Hàm này được gọi khi người dùng muốn điều chỉnh kích thước bằng tay
+    /// Tác dụng của hàm là sẽ khiến cho point được kéo được clamp lại theo trục quy định sẵn
+    /// Vd: X thì chỉ kéo ngang, Z thì có thể kéo đọc, XZ thì có thể tác động cả 2
+    /// </summary>
+    /// <param name="localPoint"></param>
+    /// <param name="dragPoint"></param>
+    /// <param name="anchorPoint"></param>
     public void ResizeWithAnchor(Vector3 localPoint, FurniturePoint dragPoint, Transform anchorPoint)
     {
         // rotation hiện tại (dùng currentRotation của bạn)
@@ -300,7 +312,7 @@ public partial class FurnitureItem : MonoBehaviour
         Vector3 sizeLocal = bounds.size; // giữ cấu trúc: size.x -> width, size.z -> height
 
         sizeLocal = furnitureVisuals.ClampSizeToBounds(
-            sizeLocal, resizeAxis, dragLocalUnrot, anchorLocalUnrot);
+            sizeLocal, resizeAxis, dragLocalUnrot, anchorLocalUnrot, alwayMakeSquare);
 
         // --- Chuyển center trở về không gian local (có xoay) và cập nhật bounds ---
         bounds.center = originalCenter + rotation * centerLocalUnrot;
@@ -436,7 +448,12 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void EnableCheckPoint()
     {
-        checkPointParent.gameObject.SetActive(true);
+        bool canShowCheckPoint = (allowEditWhenSnapToWall && furnitureMergeToWall.IsInWall()) || !allowEditWhenSnapToWall;
+        Debug.Log("Can show check point: " + canShowCheckPoint);
+        if (canShowCheckPoint)
+        {
+            checkPointParent.gameObject.SetActive(true);
+        }
     }
 
     public Vector3 GetWorldPosition()
@@ -465,7 +482,7 @@ public partial class FurnitureItem : MonoBehaviour
         // Cập nhật các thuộc tính từ dữ liệu
 
         // Cập nhật vị trí và kích thước của sprite
-        data.size.Normalize();
+        data.size.ClampSize();
         // set from data
         SetWorldPosition(data.worldPosition);
         modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
@@ -502,7 +519,7 @@ public partial class FurnitureItem : MonoBehaviour
         modelContainer.transform.localRotation = Quaternion.Euler(90, yRotation, 0);
         data.size.rotation.y = yRotation;
     }
-    
+
     private void MakeDirty()
     {
         SaveLoadManager.MakeDirty();
@@ -515,8 +532,8 @@ public partial class FurnitureItem : MonoBehaviour
     /// <param name="worldPosition"></param>
     public void MoveAnchorToPositionWithoutChangeShape(CheckpointType type, Vector3 worldPosition)
     {
-        
-        
+
+
         var targetAnchor = GetFurniturePoint(type);
         var furnitureWorldPosition = GetWorldPosition();
         Vector3 anchorWorldPos = targetAnchor.transform.position;
@@ -537,8 +554,8 @@ public partial class FurnitureItem : MonoBehaviour
         if (isUsingCenterPosToSnap)
         {
             localPosition = transform.InverseTransformPoint(worldPosition);
-        } 
-        
+        }
+
         // debugPoint.transform.SetParent(modelContainer.transform.parent);
         // debugPoint.transform.localPosition = actualPosition;
 

@@ -202,12 +202,12 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 61299f3b716b8354dab605586dec8a1c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 4be576826494cc341845079609d50581, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 1
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 1.1, y: 1.1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -253,7 +253,7 @@ Transform:
   m_GameObject: {fileID: 4657399046887679853}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.7622, y: 0, z: -0.3907}
+  m_LocalPosition: {x: -0.7622, y: 0.327, z: -0.3907}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -276,7 +276,9 @@ MonoBehaviour:
   allowSnapToWall: 1
   allowShowAllCheckPoint: 0
   allowRotationByCheckPoint: 0
+  allowEditWhenSnapToWall: 1
   isUsingCenterPosToSnap: 0
+  alwayMakeSquare: 1
   data:
     roomID: 
     instanceID: 
@@ -287,7 +289,7 @@ MonoBehaviour:
     size:
       width: 1
       height: 1
-      length: 0.5
+      length: 1
       rotation: {x: 0, y: 0.8870109, z: 0, w: 0.4617486}
       widthMinMax: {x: 0.1, y: 5000}
       heightMinMax: {x: 1, y: 5000}
@@ -313,8 +315,8 @@ MonoBehaviour:
   textMeshProPrefab: {fileID: 4512470224821213514, guid: 3af0173042a2bfd468e70f9011b7fdb0,
     type: 3}
   furnitureMergeToWall:
-    ratio: 0
     offset: 0
+    ratio: 0
 --- !u!114 &5451159717796942090
 MonoBehaviour:
   m_ObjectHideFlags: 0

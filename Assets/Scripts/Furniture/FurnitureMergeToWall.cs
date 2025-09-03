@@ -5,6 +5,8 @@ using UnityEngine;
 [Serializable]
 public class FurnitureMergeToWall
 {
+    [SerializeField] private float offset;
+   
     private FurnitureItem furnitureItem;
 
     private FurniturePoint leftPoint;
@@ -124,7 +126,6 @@ public class FurnitureMergeToWall
         }
     }
 
-    [SerializeField] private float offset;
     private void RotationToWallLine()
     {
         Vector3 dir = currentWallLine.end - currentWallLine.start;
@@ -138,5 +139,10 @@ public class FurnitureMergeToWall
         point1.y = 0;
         point2.y = 0;
         return Vector3.Distance(point1, point2) < distance;
+    }
+
+    public bool IsInWall()
+    {
+        return currentWallLine != null;
     }
 }
