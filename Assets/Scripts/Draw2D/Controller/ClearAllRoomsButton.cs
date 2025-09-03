@@ -160,85 +160,93 @@ public class ClearAllRoomsButton : MonoBehaviour
 
         // === TRƯỜNG HỢP: Xoá 1 floor cụ thể ===
         if (roomInfoDisplay != null &&
-            roomInfoDisplay.TryGetSelection(out RoomInfoDisplay.SelType kind, out string floorId) &&
-            kind == RoomInfoDisplay.SelType.Floor &&
-            !string.IsNullOrEmpty(floorId))
-        {
-            // Gom rooms trên floor
-            var roomsOnFloor = new List<Room>();
-            for (int i = 0; i < RoomStorage.rooms.Count; i++)
+                roomInfoDisplay.TryGetSelection(out RoomInfoDisplay.SelType kind, out string floorId) &&
+                kind == RoomInfoDisplay.SelType.Floor &&
+                !string.IsNullOrEmpty(floorId))
             {
-                var r = RoomStorage.rooms[i];
-                if (r != null && r.floorID == floorId)
-                    roomsOnFloor.Add(r);
-            }
-
-            // Undo (rooms)
-            List<Delete_RoomData> deleteRoomDataList = new();
-            if (isCreateCommand)
-            {
-                var meshes = GameObject.FindObjectsByType<RoomMeshController>(FindObjectsSortMode.None);
-                foreach (var r in roomsOnFloor)
+                // Lấy danh sách room trên floor này
+                var roomsOnFloor = new List<Room>();
+                for (int i = 0; i < RoomStorage.rooms.Count; i++)
                 {
-                    Vector3 meshPos = Vector3.zero;
-                    foreach (var m in meshes)
-                    {
-                        if (m != null && m.RoomID == r.ID) { meshPos = m.transform.position; break; }
-                    }
-                    deleteRoomDataList.Add(new Delete_RoomData(new Room(r), meshPos));
+                    var r = RoomStorage.rooms[i];
+                    if (r != null && r.floorID == floorId)
+                        roomsOnFloor.Add(r);
                 }
+
+                // Undo data
+                List<Delete_RoomData> deleteRoomDataList = new();
+                if (isCreateCommand)
+                {
+                    var meshes = GameObject.FindObjectsByType<RoomMeshController>(FindObjectsSortMode.None);
+                    foreach (var r in roomsOnFloor)
+                    {
+                        Vector3 meshPos = Vector3.zero;
+                        foreach (var m in meshes)
+                        {
+                            if (m != null && m.RoomID == r.ID)
+                            {
+                                meshPos = m.transform.position;
+                                break;
+                            }
+                        }
+                        deleteRoomDataList.Add(new Delete_RoomData(new Room(r), meshPos));
+                    }
+                }
+
+                // Xoá room
+                for (int i = 0; i < roomsOnFloor.Count; i++)
+                    ClearRoomById(roomsOnFloor[i].ID);
+
+                // Xoá floor trong FloorStorage
+                Floor floorData = null;
+                for (int i = 0; i < FloorStorage.floors.Count; i++)
+                {
+                    var f = FloorStorage.floors[i];
+                    if (f != null && f.ID == floorId)
+                    {
+                        floorData = f;
+                        break;
+                    }
+                }
+                if (floorData != null)
+                {
+                    floorData.checkpoints.Clear();
+                    floorData.floorLine.Clear();
+                    floorData.heights.Clear();
+                    floorData.roomIDs.Clear();
+                    FloorStorage.floors.Remove(floorData);
+                }
+
+                // Xoá GameObject floor mesh
+                GameObject floorGO = GameObject.Find($"Floor_{floorId}");
+                if (!floorGO) floorGO = GameObject.Find($"RoomFloor_{floorId}");
+                if (floorGO) Destroy(floorGO);
+
+                // 6. Xoá FloorVis (visuals: point, line, label…)
+                var visGo = GameObject.Find($"FloorVis_{floorId}");
+                if (visGo) Destroy(visGo);
+
+                // Reset
+                if (checkpointManager != null)
+                {
+                    checkpointManager.ClearAllLines();
+                    checkpointManager.RedrawAllRooms();
+                    checkpointManager.ClearSelectedRoom();
+                }
+                if (drawingTool != null) drawingTool.currentLineType = LineType.Wall;
+
+                // Undo
+                if (isCreateCommand && deleteRoomDataList.Count > 0)
+                {
+                    var deleteAllRoomCommand = new DeleteAllRoomCommand(deleteRoomDataList);
+                    deleteAllRoomCommand.ClearAllRoom = this;
+                    UndoRedoController.Instance.AddToUndo(deleteAllRoomCommand);
+                }
+
+                FurnitureManager.Instance?.ClearAllFurnitures();
+                Debug.Log($"Đã xoá floor {floorId} và {roomsOnFloor.Count} phòng trên sàn.");
+                return;
             }
-
-            // Xoá rooms
-            for (int i = 0; i < roomsOnFloor.Count; i++)
-                ClearRoomById(roomsOnFloor[i].ID);
-
-            // Xoá record floor
-            Floor floorData = null;
-            for (int i = 0; i < FloorStorage.floors.Count; i++)
-            {
-                var f = FloorStorage.floors[i];
-                if (f != null && f.ID == floorId) { floorData = f; break; }
-            }
-            if (floorData != null)
-            {
-                floorData.checkpoints.Clear();
-                floorData.floorLine.Clear();
-                floorData.heights.Clear();
-                floorData.roomIDs.Clear();
-                FloorStorage.floors.Remove(floorData);
-            }
-
-            // Xoá floor mesh GO (Floor_<id>)
-            GameObject floorGO = GameObject.Find($"Floor_{floorId}");
-            if (!floorGO) floorGO = GameObject.Find($"RoomFloor_{floorId}");
-            if (floorGO) Destroy(floorGO);
-
-            // Xoá FloorVis_<id> (preview/handles/labels)
-            var visGo = GameObject.Find($"FloorVis_{floorId}");
-            if (visGo) Destroy(visGo);
-
-            // Reset vẽ
-            if (checkpointManager != null)
-            {
-                checkpointManager.ClearAllLines();
-                checkpointManager.RedrawAllRooms();
-                checkpointManager.ClearSelectedRoom();
-            }
-            if (drawingTool != null) drawingTool.currentLineType = LineType.Wall;
-
-            // Undo rooms
-            if (isCreateCommand && deleteRoomDataList.Count > 0)
-            {
-                var cmd = new DeleteAllRoomCommand(deleteRoomDataList);
-                cmd.ClearAllRoom = this;
-                UndoRedoController.Instance.AddToUndo(cmd);
-            }
-
-            FurnitureManager.Instance?.ClearAllFurnitures();
-            Debug.Log($"Đã xoá floor {floorId} và {roomsOnFloor.Count} phòng trên sàn.");
-            return;
-        }
 
         // === TRƯỜNG HỢP: Không chọn gì -> Xoá TẤT CẢ floors & rooms ===
 
