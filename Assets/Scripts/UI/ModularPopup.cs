@@ -127,11 +127,25 @@ public class ModularPopup : MonoBehaviour
         popupRect.transform.localScale = Vector3.one;
     }
 
-    public void AutoFindCanvasAndSetup()
+    public void AutoFindCanvasAndSetup(Canvas preferred = null)
     {
-        var canvas = FindFirstObjectByType<Canvas>(FindObjectsInactive.Exclude);
-        transform.SetParent(canvas.transform, false);
-        ResetAnchorOffsetAndScale();
+        Canvas target = preferred;
+        if (target == null)
+        {
+            // Chỉ nhận Screen-Space canvas
+            var canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+            foreach (var c in canvases)
+            {
+                if (c != null && (c.renderMode == RenderMode.ScreenSpaceOverlay ||
+                                  c.renderMode == RenderMode.ScreenSpaceCamera))
+                {
+                    target = c;
+                    break;
+                }
+            }
+        }
+        if (target != null)
+            transform.SetParent(target.transform, false);
     }
 
     public void SetParent(Transform parent, int childIndex = 0)

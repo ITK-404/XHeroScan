@@ -322,40 +322,51 @@ public class CreateRoomOnFloor : MonoBehaviour
             return;
         }
 
+        // Lấy floor tương ứng
+        if (!TryGetFloorFromRoot(floorRoot, out var floor) || floor == null)
+        {
+            Debug.LogError("[CreateRoom] Không tìm ra Floor từ floorRoot → huỷ tạo phòng.");
+            ResetDragState(keepPlacing: true);
+            return;
+        }
+
+        // Checkpoints (XZ)
         Vector2 l0 = new(v0.x, v0.z);
         Vector2 l1 = new(v1.x, v1.z);
         Vector2 l2 = new(v2.x, v2.z);
         Vector2 l3 = new(v3.x, v3.z);
 
-        // Line của room nhô nhẹ so với mặt sàn của room
-        Vector3 v0_show = new Vector3(v0.x, baseRoomY + roomWallLift, v0.z);
-        Vector3 v1_show = new Vector3(v1.x, baseRoomY + roomWallLift, v1.z);
-        Vector3 v2_show = new Vector3(v2.x, baseRoomY + roomWallLift, v2.z);
-        Vector3 v3_show = new Vector3(v3.x, baseRoomY + roomWallLift, v3.z);
+        // WallLines (nổi nhẹ)
+        Vector3 v0_show = new(v0.x, v0.y + roomWallLift, v0.z);
+        Vector3 v1_show = new(v1.x, v1.y + roomWallLift, v1.z);
+        Vector3 v2_show = new(v2.x, v2.y + roomWallLift, v2.z);
+        Vector3 v3_show = new(v3.x, v3.y + roomWallLift, v3.z);
 
-        var room = new Room
+        // === Tạo room trên floor ===
+        var room = new Room(floor)   // constructor này sẽ gán room.floorID = floor.ID
         {
             checkpoints = new List<Vector2> { l0, l1, l2, l3 },
             extraCheckpoints = new List<Vector2>(),
             wallLines = new List<WallLine>
-            {
-                new WallLine(v0_show, v1_show, LineType.Wall),
-                new WallLine(v1_show, v2_show, LineType.Wall),
-                new WallLine(v2_show, v3_show, LineType.Wall),
-                new WallLine(v3_show, v0_show, LineType.Wall),
-            }
+        {
+            new WallLine(v0_show, v1_show, LineType.Wall),
+            new WallLine(v1_show, v2_show, LineType.Wall),
+            new WallLine(v2_show, v3_show, LineType.Wall),
+            new WallLine(v3_show, v0_show, LineType.Wall),
+        }
         };
 
+        // Lưu storage
         RoomStorage.UpdateOrAddRoom(room);
-
-        // Floor GO (mesh holder) – đặt cả GameObject lên baseRoomY để mesh phòng > mesh floor
+        floor.RegisterRoom(room); // gắn room.ID vào floor.roomIDs
+        
         GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
         floorGO.transform.SetPositionAndRotation(new Vector3(0f, baseRoomY, 0f), Quaternion.identity);
         var meshCtrl = floorGO.AddComponent<RoomMeshController>();
         meshCtrl.Initialize(room.ID);
         meshCtrl.GenerateMesh(room.checkpoints);
 
-        // Gắn vào CheckpointManager để có thể kéo/snap ngay
+        // Gắn vào CheckpointManager
         if (checkPointManager != null)
         {
             checkPointManager.RoomFloorMap ??= new Dictionary<string, GameObject>();
@@ -377,9 +388,9 @@ public class CreateRoomOnFloor : MonoBehaviour
             checkPointManager.RedrawAllRooms();
         }
 
-        Debug.Log($"[CreateRoom] Tạo room {room.ID} (index={roomIndex}) trong RoomFloor '{floorRoot.name}' | 4 đỉnh: {l0}, {l1}, {l2}, {l3}");
+        Debug.Log($"[CreateRoom] Tạo room {room.ID} thuộc floor {floor.ID} | 4 đỉnh: {l0}, {l1}, {l2}, {l3}");
 
-        // Tắt chế độ sau khi tạo xong (tuỳ ý)
+        // Reset
         ResetDragState(keepPlacing: false);
         placingActive = false;
         if (CreateRoomButton != null)
