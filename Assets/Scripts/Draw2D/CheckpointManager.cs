@@ -70,7 +70,7 @@ public class CheckpointManager : MonoBehaviour
         // splitRoomManager = FindFirstObjectByType<SplitRoomManager>();
         handleCheckpointManger = FindFirstObjectByType<HandleCheckpointManger>();
         movePointManager = FindFirstObjectByType<MovePointManager>();
-        LoadPointsFromRoomStorage();
+        LoadPointsFromStorage();
     }
 
     void Update()
@@ -427,73 +427,137 @@ public class CheckpointManager : MonoBehaviour
 
         return ray.GetPoint(5f);
     }
-    void LoadPointsFromRoomStorage()
+void LoadPointsFromStorage()
+{
+    const float layerStepY = 0.002f;
+    const float floorIndexY = 1 * layerStepY; // Floor index = 1
+    const float roomIndexY  = 2 * layerStepY; // Room  index = 2
+    const float lineLift    = 0.0005f;        // nhô line tránh z-fighting
+    const float lineWidth   = 0.03f;
+
+    // ====== FLOOR ======
+    if (FloorStorage.floors != null && FloorStorage.floors.Count > 0)
     {
-        var rooms = RoomStorage.rooms;
-        if (rooms.Count == 0)
+        foreach (var floor in FloorStorage.floors)
         {
-            Debug.Log("Không có Room nào để hiển thị.");
-            return;
-        }
+            if (floor == null || floor.checkpoints == null || floor.checkpoints.Count < 3) continue;
 
-        foreach (var room in rooms)
-        {
-            // === Tạo lại checkpoint GameObject từ room.checkpoints
-            List<GameObject> loopGO = new List<GameObject>();
-            var placed = new List<GameObject>();
-            foreach (var pt in room.checkpoints)
-            {
-                Vector3 worldPos = new Vector3(pt.x, 0, pt.y);
-                GameObject cp = Instantiate(checkpointPrefab, worldPos, Quaternion.identity);
-                loopGO.Add(cp);
-            }
-            foreach (var ept in room.extraCheckpoints)
-                {
-                    Vector3 w = new Vector3(ept.x, 0, ept.y);
-                    GameObject extra = Instantiate(checkpointPrefab, w, Quaternion.identity);
-                    extra.name = "CheckpointExtra";
-                    extra.tag = "CheckpointExtra";
-                    extra.layer = checkpointPrefab.layer; // để raycast mask khớp
-
-                    // không add vào loopGO để tránh phá polygon
-                    placed.Add(extra);
-                    currentCheckpoints.Add(extra);
-                }
-
-            // === Lưu vào ánh xạ checkpoint<->RoomID
-            allCheckpoints.Add(loopGO);
-            loopMappings.Add(new LoopMap(room.ID, loopGO));
-
-            // === Tạo lại mesh sàn (có thể drag)
-            GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
+            // --- Mesh Floor ---
+            GameObject floorGO = new GameObject($"Floor_{floor.ID}");
             floorGO.transform.position = Vector3.zero;
             floorGO.transform.rotation = Quaternion.identity;
-            floorGO.transform.localScale = Vector3.one;
-            var meshCtrl = floorGO.AddComponent<RoomMeshController>();
-            meshCtrl.Initialize(room.ID); // tự gọi GenerateMesh(room.checkpoints)
 
-            // === Vẽ lại các wallLines
-            foreach (var wl in room.wallLines)
+            var fmc = floorGO.AddComponent<FloorMeshController>();
+            fmc.floorID = floor.ID;
+            fmc.doubleSided = true;
+            // FloorMeshController.Update() sẽ tự dựng mesh từ FloorStorage.floors
+
+            // --- Spawn checkpoints của floor ---
+            var floorPointsParent = new GameObject($"FloorPoints_{floor.ID}");
+            floorPointsParent.transform.SetParent(floorGO.transform, false);
+
+            foreach (var pt in floor.checkpoints)
             {
-                DrawingTool.currentLineType = wl.type;
-                DrawingTool.DrawLineAndDistance(wl.start, wl.end);
+                Vector3 pos = new Vector3(pt.x, floorIndexY, pt.y);
+                var cp = Instantiate(checkpointPrefab, pos, Quaternion.identity, floorPointsParent.transform);
+                cp.name = "FloorCheckpoint";
+            }
 
-                // Nếu là cửa hoặc cửa sổ: tạo 2 điểm đầu/cuối riêng
-                if (wl.type == LineType.Door || wl.type == LineType.Window)
-                {
-                    GameObject p1 = Instantiate(checkpointPrefab, wl.start, Quaternion.identity);
-                    GameObject p2 = Instantiate(checkpointPrefab, wl.end, Quaternion.identity);
-                    p1.name = $"{wl.type}_P1";
-                    p2.name = $"{wl.type}_P2";
+            // --- Vẽ polyline đường viền floor ---
+            var lineGO = new GameObject($"FloorOutline_{floor.ID}");
+            lineGO.transform.SetParent(floorGO.transform, false);
+            var lr = lineGO.AddComponent<LineRenderer>();
+            lr.loop = true;
+            lr.useWorldSpace = true;
+            lr.alignment = LineAlignment.View;
+            lr.numCornerVertices = 4;
+            lr.widthMultiplier = lineWidth;
 
-                    if (!tempDoorWindowPoints.ContainsKey(room.ID))
-                        tempDoorWindowPoints[room.ID] = new List<(WallLine, GameObject, GameObject)>();
+            var unlit = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
+            lr.material = new Material(unlit);
+            if (lr.material.HasProperty("_Color"))
+                lr.material.color = new Color(0.1f, 0.1f, 0.1f, 1f);
 
-                    tempDoorWindowPoints[room.ID].Add((wl, p1, p2));
-                }
+            int n = floor.checkpoints.Count;
+            lr.positionCount = n;
+            for (int i = 0; i < n; i++)
+            {
+                var p = floor.checkpoints[i];
+                lr.SetPosition(i, new Vector3(p.x, floorIndexY + lineLift, p.y));
             }
         }
     }
+
+    // ====== ROOM ======
+    var rooms = RoomStorage.rooms;
+    if (rooms == null || rooms.Count == 0)
+    {
+        Debug.Log("Không có Room nào để hiển thị.");
+        return;
+    }
+
+    foreach (var room in rooms)
+    {
+        if (room == null || room.checkpoints == null || room.checkpoints.Count < 3) continue;
+
+        Vector3 centerPos = new Vector3(room.center.x, roomIndexY, room.center.y);
+
+        // --- Checkpoints chính ---
+        List<GameObject> loopGO = new List<GameObject>();
+        foreach (var pt in room.checkpoints)
+        {
+            Vector3 worldPos = new Vector3(pt.x, roomIndexY, pt.y);
+            GameObject cp = Instantiate(checkpointPrefab, worldPos, Quaternion.identity);
+            loopGO.Add(cp);
+        }
+
+        // --- Extra checkpoints ---
+        foreach (var ept in room.extraCheckpoints)
+        {
+            Vector3 worldPos = new Vector3(ept.x, roomIndexY, ept.y);
+            GameObject extra = Instantiate(checkpointPrefab, worldPos, Quaternion.identity);
+            extra.name = "CheckpointExtra";
+            extra.tag = "CheckpointExtra";
+            extra.layer = checkpointPrefab.layer;
+            currentCheckpoints.Add(extra);
+        }
+
+        // --- Map checkpoint <-> RoomID ---
+        allCheckpoints.Add(loopGO);
+        loopMappings.Add(new LoopMap(room.ID, loopGO));
+
+        // --- Mesh cho room ---
+        GameObject roomGO = new GameObject($"RoomFloor_{room.ID}");
+        roomGO.transform.SetPositionAndRotation(centerPos, Quaternion.identity);
+        var meshCtrl = roomGO.AddComponent<RoomMeshController>();
+        meshCtrl.Initialize(room.ID);
+        meshCtrl.GenerateMesh(room.checkpoints);
+
+        // --- WallLines ---
+        foreach (var wl in room.wallLines)
+        {
+            var s = new Vector3(wl.start.x, roomIndexY + lineLift, wl.start.z);
+            var e = new Vector3(wl.end.x, roomIndexY + lineLift, wl.end.z);
+
+            DrawingTool.currentLineType = wl.type;
+            DrawingTool.DrawLineAndDistance(s, e);
+
+            if (wl.type == LineType.Door || wl.type == LineType.Window)
+            {
+                GameObject p1 = Instantiate(checkpointPrefab, s, Quaternion.identity);
+                GameObject p2 = Instantiate(checkpointPrefab, e, Quaternion.identity);
+                p1.name = $"{wl.type}_P1";
+                p2.name = $"{wl.type}_P2";
+
+                if (!tempDoorWindowPoints.ContainsKey(room.ID))
+                    tempDoorWindowPoints[room.ID] = new List<(WallLine, GameObject, GameObject)>();
+
+                tempDoorWindowPoints[room.ID].Add((wl, p1, p2));
+            }
+        }
+    }
+}
+
 
     public void ClearAllLines() => DrawingTool.ClearAllLines();
     public void DrawAllLinesFromRoomStorage()=> DrawingTool.DrawAllLinesFromRoomStorage();

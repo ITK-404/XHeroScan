@@ -356,6 +356,7 @@ public class CreateRoomOnFloor : MonoBehaviour
         }
         };
 
+        room.center = GeoUtil.Centroid(room.checkpoints);
         // Lưu storage
         RoomStorage.UpdateOrAddRoom(room);
         floor.RegisterRoom(room); // gắn room.ID vào floor.roomIDs

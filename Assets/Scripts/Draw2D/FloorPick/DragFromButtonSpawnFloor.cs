@@ -341,6 +341,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
             for (int i = 0; i < 4; i++) floor.heights.Add(0.1f);
 
+            floor.center = GeoUtil.Centroid(floor.checkpoints);
             FloorStorage.floors.Add(floor);
 
     string id = floor.ID; // read-only, đã được Floor tự gán từ constructor / storage
@@ -519,6 +520,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         floor.floorLine.Add(new FloorLine(floor.checkpoints[1], floor.checkpoints[2]));
         floor.floorLine.Add(new FloorLine(floor.checkpoints[2], floor.checkpoints[3]));
         floor.floorLine.Add(new FloorLine(floor.checkpoints[3], floor.checkpoints[0]));
+        
+        floor.center = GeoUtil.Centroid(floor.checkpoints);
 
         if (floor.heights.Count != 4)
         {
@@ -782,6 +785,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         f.floorLine.Add(new FloorLine(f.checkpoints[1], f.checkpoints[2]));
         f.floorLine.Add(new FloorLine(f.checkpoints[2], f.checkpoints[3]));
         f.floorLine.Add(new FloorLine(f.checkpoints[3], f.checkpoints[0]));
+
+        f.center = GeoUtil.Centroid(f.checkpoints); 
 
         f.heights.Clear();
         for (int i = 0; i < 4; i++) f.heights.Add(0.1f);

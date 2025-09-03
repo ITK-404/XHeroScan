@@ -70,6 +70,8 @@ public class Room
     public string roomName;
     public string floorID; // ID sàn liên kết (nếu có)
 
+    public Vector2 center; // tọa độ trung tâm phòng
+
     public List<Vector2> checkpoints = new List<Vector2>(); // polygon chính
     public List<Vector2> extraCheckpoints = new List<Vector2>(); // điểm lẻ trong phòng
     public List<WallLine> wallLines = new List<WallLine>();
@@ -139,12 +141,12 @@ public enum LineType
 [System.Serializable]
 public class FloorLine
 {
-    public Vector2 start;
-    public Vector2 end;
+    public Vector3 start;
+    public Vector3 end;
 
     public FloorLine() { }
 
-    public FloorLine(Vector2 start, Vector2 end)
+    public FloorLine(Vector3 start, Vector3 end)
     {
         this.start = start;
         this.end = end;
@@ -153,7 +155,12 @@ public class FloorLine
 [System.Serializable]
 public class Floor
 {
+    private static int floorCounter = 0; // Biến đếm số lượng phòng
+
     public string ID { get; private set; }  // ID chỉ đọc từ bên ngoài
+    public string floorName;
+
+    public Vector2 center; // tọa độ trung tâm sàn
 
     public List<Vector2> checkpoints = new List<Vector2>(); // polygon chính
     public List<FloorLine> floorLine = new List<FloorLine>();
@@ -165,6 +172,8 @@ public class Floor
     public Floor()
     {
         ID = GenerateID(); // Tự tạo ID khi khởi tạo
+
+        floorName = "Floor" + (++floorCounter);
     }
 
     // Tiện dùng: tạo Room mới trên chính sàn này

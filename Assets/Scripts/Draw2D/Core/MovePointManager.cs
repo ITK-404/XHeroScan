@@ -185,7 +185,7 @@ public class MovePointManager : MonoBehaviour
             // Danh sách điểm cùng loop sẽ xóa (không sửa list trong foreach)
             var sameLoopToRemove = new List<GameObject>();
 
-            // A) Duy trì hysteresis cho các neighbor hiện có
+            // Duy trì hysteresis cho các neighbor hiện có
             foreach (var n in neighbors.ToList())
             {
                 if (n == null) { RemoveEdge(selected, n); neighbors.Remove(n); continue; }
@@ -224,7 +224,7 @@ public class MovePointManager : MonoBehaviour
                 }
             }
 
-            // B) Tạo weld mới với MỌI điểm trong WELD_ON
+            // Tạo weld mới với MỌI điểm trong WELD_ON
             foreach (var lp in checkPointManager.AllCheckpoints)
             {
                 foreach (var cp in lp)
@@ -280,7 +280,7 @@ public class MovePointManager : MonoBehaviour
 
             bool isDuplicate = false;
 
-            // 1: Ghi checkpoints từ loop (chặn duplicate XZ)
+            // Ghi checkpoints từ loop (chặn duplicate XZ)
             List<Vector2> newCheckpoints = new();
             for (int i = 0; i < loop.Count; i++)
             {
@@ -297,9 +297,15 @@ public class MovePointManager : MonoBehaviour
                 if (isDuplicate) break;
                 newCheckpoints.Add(new Vector2(pos.x, pos.z));
             }
-            if (!isDuplicate) room.checkpoints = newCheckpoints;
+            // if (!isDuplicate) room.checkpoints = newCheckpoints;
+            if (!isDuplicate)
+            {
+                room.checkpoints = newCheckpoints;
+                // CẬP NHẬT CENTER CỦA ROOM
+                room.center = GeoUtil.Centroid(room.checkpoints);
+            }
 
-            // 2: Update tường viền (KHÔNG đụng manual)
+            // Update tường viền (KHÔNG đụng manual)
             if (!isDuplicate)
             {
                 int wallLineIndex = 0;
@@ -318,7 +324,7 @@ public class MovePointManager : MonoBehaviour
                 }
             }
 
-            // 3: Manual connections bám theo CẢ selected + NHIỀU partner 
+            // Manual connections bám theo CẢ selected + NHIỀU partner 
             foreach (var line in room.wallLines)
             {
                 bool nearSelectedStart = XZDist(line.start, oldPos) < 0.15f;
@@ -359,7 +365,7 @@ public class MovePointManager : MonoBehaviour
                 }
             }
 
-            // 4: Cập nhật cửa/cửa sổ bám tường gần nhất 
+            // Cập nhật cửa/cửa sổ bám tường gần nhất 
             foreach (var door in room.wallLines.Where(w => w.type != LineType.Wall))
             {
                 WallLine parentWall = null; float minDistance = float.MaxValue;
@@ -382,13 +388,13 @@ public class MovePointManager : MonoBehaviour
                     { p1GO.transform.position = line.start; p2GO.transform.position = line.end; }
             }
 
-            // 5: Lưu & redraw (phòng của selected)
+            // Lưu & redraw (phòng của selected)
             // RoomStorage.UpdateOrAddRoom(room);
             var floorGO = GameObject.Find($"RoomFloor_{roomID}");
             if (floorGO != null)
                 floorGO.GetComponent<RoomMeshController>()?.GenerateMesh(room.checkpoints);
 
-            // 6: Rebuild các phòng chứa neighbor 
+            // Rebuild các phòng chứa neighbor 
             var rebuilt = new HashSet<string>();
             foreach (var nGo in neighbors)
             {
@@ -399,6 +405,11 @@ public class MovePointManager : MonoBehaviour
 
                 // FastRebuildPerimeter(nRoomID, nLoop);
                 FastRebuildPerimeter(nRoomID, nLoop);
+
+                var nRoom = RoomStorage.GetRoomByID(nRoomID);
+                if (nRoom != null && nRoom.checkpoints != null && nRoom.checkpoints.Count >= 1)
+                    nRoom.center = GeoUtil.Centroid(nRoom.checkpoints);
+
                 rebuilt.Add(nRoomID);
             }
 
