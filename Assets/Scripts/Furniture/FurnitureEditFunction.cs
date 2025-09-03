@@ -27,13 +27,25 @@ public class FurnitureEditFunction : MonoBehaviour
         lengthInputField = elementHandler.GetItemByFiler<TMP_InputField>("length");
         
         buttonOk.onClick.AddListener(OnChangeSize);
+
+        var popupEdit = currentPopup.GetComponent<ModularPopupEdit>();
+        popupEdit.deleteBtn.onClick.AddListener(DeleteFurniture);
     }
+
 
     private void OnDestroy()
     {
         if (buttonOk)
         {
             buttonOk.onClick.RemoveListener(OnChangeSize);
+        }
+    }
+
+    private void DeleteFurniture()
+    {
+        if(currentFurniture != null)
+        {
+            currentFurniture.Destroy();
         }
     }
 
@@ -44,8 +56,6 @@ public class FurnitureEditFunction : MonoBehaviour
             Debug.Log("On Change size of furniture item");
             // change size here
             var data = currentFurniture.data;
-
-            
 
             float width = TryParse(widthInputField, data.size.width);
             float length = TryParse(lengthInputField, data.size.length);

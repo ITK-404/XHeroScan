@@ -1,5 +1,4 @@
 ﻿using System;
-using iTextSharp.text.pdf.parser;
 using UnityEngine;
 
 [Serializable]
@@ -13,18 +12,29 @@ public class FurnitureMergeToWall
     private FurniturePoint rightPoint;
     private FurniturePoint bottomPoint;
 
-    private WallLine currentWallLine;
+    private WallLine attachedWallLine;
+
+    private WallLine typedWallLine;
 
     public FurnitureMergeToWall(FurnitureItem furnitureItem)
     {
         this.furnitureItem = furnitureItem;
+
+        typedWallLine = new WallLine();
+        typedWallLine.type = furnitureItem.lineType;
     }
 
-    public void SetupAnchor()
+    public void SetupAnchor(CheckpointType leftPoint, CheckpointType rightPoint)
     {
-        this.leftPoint = furnitureItem.GetFurniturePoint(CheckpointType.BottomLeft);
-        this.rightPoint = furnitureItem.GetFurniturePoint(CheckpointType.BottomRight);
+        this.leftPoint = furnitureItem.GetFurniturePoint(leftPoint);
+        this.rightPoint = furnitureItem.GetFurniturePoint(rightPoint);
         this.bottomPoint = furnitureItem.GetFurniturePoint(CheckpointType.Bottom);
+    }
+
+    private void UpdateWallLine()
+    {
+        typedWallLine.start = leftPoint.transform.position;
+        typedWallLine.end = rightPoint.transform.position;
     }
 
     private bool allowSnap = false;
@@ -78,8 +88,8 @@ public class FurnitureMergeToWall
             ratio = 0;
             return;
         }
-
-        currentWallLine = wallLine;
+        
+        SetAttachedWallLine(wallLine);
 
         //Debug.Log("Kiếm được wall line để snap vào");
         //Debug.Log($"Thông số {wallLine.start} {wallLine.end}");
@@ -88,6 +98,30 @@ public class FurnitureMergeToWall
         ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
         // cách xoay này chưa được hoàn hảo
         // RotationToWallLine();
+    }
+
+    private void SetAttachedWallLine(WallLine wallLine)
+    {
+        // Thoát sớm nếu không có thay đổi
+        if (attachedWallLine == wallLine) return;
+
+        if (wallLine == null) return;
+
+        if (attachedWallLine != null)
+        {
+            var _room = RoomStorage.GetRoomByWall(attachedWallLine);
+            if (_room.wallLines.Contains(attachedWallLine) == false)
+            {
+                _room.wallLines.Remove(typedWallLine);
+            }
+        }
+
+        attachedWallLine = wallLine;
+        var room = RoomStorage.GetRoomByWall(attachedWallLine);
+        if(room.wallLines.Contains(attachedWallLine))
+        {
+            room.wallLines.Add(typedWallLine);
+        }
     }
 
     public float ratio;
@@ -109,11 +143,11 @@ public class FurnitureMergeToWall
 
         else
         {
-            if (currentWallLine != null)
+            if (attachedWallLine != null)
             {
                 // moving but using center of wall line
                 // Debug.Log("Wall line is not null, try to align with them");
-                Vector3 centerPosition = Vector3.Lerp(currentWallLine.start, currentWallLine.end, ratio);
+                Vector3 centerPosition = Vector3.Lerp(attachedWallLine.start, attachedWallLine.end, ratio);
                 FurnitureManager.Instance.debugPoint.transform.position = centerPosition;
                 // sync y position from model 2D
                 centerPosition.y = furnitureItem.GetWorldPosition().y;
@@ -124,11 +158,13 @@ public class FurnitureMergeToWall
                 RotationToWallLine();
             }
         }
+
+        UpdateWallLine();
     }
 
     private void RotationToWallLine()
     {
-        Vector3 dir = currentWallLine.end - currentWallLine.start;
+        Vector3 dir = attachedWallLine.end - attachedWallLine.start;
         dir.y = 0;
         float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
         furnitureItem.SetRotation(-angle + offset);
@@ -143,6 +179,19 @@ public class FurnitureMergeToWall
 
     public bool IsInWall()
     {
-        return currentWallLine != null;
+        return attachedWallLine != null;
+    }
+
+    public void TryRemoveWallLine()
+    {
+        if(attachedWallLine != null)
+        {
+            var room = RoomStorage.GetRoomByWallLine(attachedWallLine);
+            if (room.wallLines.Contains(typedWallLine))
+            {
+                room.wallLines.Remove(typedWallLine);
+            }
+        }
+
     }
 }
