@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6447085774176705639}
   - component: {fileID: 6567203990392283915}
   - component: {fileID: 1797357889568239072}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Square
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -136,7 +136,7 @@ GameObject:
   - component: {fileID: 5824219951104008082}
   - component: {fileID: 3354348105385316814}
   - component: {fileID: 4057246774921060612}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Square
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -237,7 +237,7 @@ GameObject:
   - component: {fileID: 7234985322380843007}
   - component: {fileID: 5451159717796942090}
   - component: {fileID: 7209895080006037711}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Door2D
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -363,7 +363,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4046321613941195839}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Parent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -406,6 +406,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Left Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -523,6 +528,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Top Right Point
       objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -628,6 +638,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Right Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -740,6 +755,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Bottom Right Point
       objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -850,6 +870,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Bottom Left Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -967,6 +992,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Top Left Point
       objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -1083,6 +1113,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Bottom Point
       objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -1188,6 +1223,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Rotate Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -1311,6 +1351,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Top Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}

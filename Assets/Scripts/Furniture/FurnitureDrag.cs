@@ -20,10 +20,10 @@ public class FurnitureDrag : MonoBehaviour
         {
             furnitureItem.Dragging(transform);
         }
-        else
-        {
-            FurnitureManager.Instance.SelectFurniture(furnitureItem);
-        }
+        //else
+        //{
+        //    FurnitureManager.Instance.SelectFurniture(furnitureItem);
+        //}
         
     }
 
