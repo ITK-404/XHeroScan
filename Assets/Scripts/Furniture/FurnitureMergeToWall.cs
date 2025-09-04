@@ -211,42 +211,10 @@ public class FurnitureMergeToWall
 
     private void RotationToWallLine()
     {
-        //Vector3 dir = attachedWallLine.end - attachedWallLine.start;
-        //dir.y = 0;
-        //float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
-        //furnitureItem.SetRotation(-angle + offset);
-
-        Vector3 start = attachedWallLine.start;
-        Vector3 end = attachedWallLine.end;
-
-        Vector3 dir = (end - start).normalized;
-        Vector3 left = new Vector3(-dir.z, 0, dir.x);
-        Vector3 right = -left;
-
-        Vector3 midpoint = (start + end) * 0.5f;
-        Vector3 toCenter = (GetRoomCenter() - midpoint).normalized;
-
-        // chọn pháp tuyến nào cùng hướng với vector đi vào phòng
-        Vector3 inward = (Vector3.Dot(toCenter, left) > Vector3.Dot(toCenter, right)) ? left : right;
-        Vector3 outward = -inward;
-
-        float angle = Mathf.Atan2(outward.z, outward.x) * Mathf.Rad2Deg;
-        furnitureItem.SetRotation(angle);
-    }
-
-    private Vector3 GetRoomCenter()
-    {
-        Bounds bounds = new();
-        foreach (var item in attachedRoom.wallLines)
-        {
-            if(item.type == LineType.Wall)
-            {
-                bounds.Encapsulate(item.start);
-                bounds.Encapsulate(item.end);
-            }
-        }
-
-        return bounds.center;
+        Vector3 dir = attachedWallLine.end - attachedWallLine.start;
+        dir.y = 0;
+        float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
+        furnitureItem.SetRotation(-angle + offset);
     }
 
     private bool IsWithinDistance(Vector3 point1, Vector3 point2, float distance)
