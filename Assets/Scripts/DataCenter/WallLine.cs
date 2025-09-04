@@ -133,7 +133,8 @@ public enum LineType
 {
     Wall,
     Door,
-    Window
+    Window,
+    None
 }
 #endregion
 

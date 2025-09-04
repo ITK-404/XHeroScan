@@ -146,7 +146,10 @@ public class FurnitureMergeToWall
 
         attachedWallLine = wallLine;
 
-        if (attachedWallLine == null) return;
+        if (attachedWallLine == null)
+        {
+            attachedRoom = null;
+        }
 
         var room = RoomStorage.GetRoomByWall(attachedWallLine);
         if (room == null)
@@ -207,6 +210,7 @@ public class FurnitureMergeToWall
         }
 
         UpdateOwnWallLine();
+        
     }
 
     private void RotationToWallLine()
@@ -242,3 +246,4 @@ public class FurnitureMergeToWall
     }
 
 }
+

@@ -39,7 +39,7 @@ public class UndoRedoController : MonoBehaviour
     public void AddToUndo(IUndoRedoCommand command)
     {
         Debug.Log("Add to undo stack");
-
+        return;
         undoList.Add(command);
         
         redoList.Clear(); // Clear redo khi có hành động mới

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
+using Org.BouncyCastle.Security;
 
 public class RoomInfoDisplay : MonoBehaviour
 {
@@ -73,6 +74,10 @@ public class RoomInfoDisplay : MonoBehaviour
 
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            FurnitureManager.Instance.SetVisibleObjects(selectedRoomID, true);
+        }
         // Click chọn
         if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
         {
