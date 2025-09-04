@@ -192,12 +192,12 @@ public class FurnitureManager : MonoBehaviour
         }
         else
         {
-            if (currentFurniture == furniture)
-            {
-                currentFurniture.DisableCheckPoint();
-                currentFurniture = null;
-                return;
-            }
+            //if (currentFurniture == furniture)
+            //{
+            //    currentFurniture.DisableCheckPoint();
+            //    currentFurniture = null;
+            //    return;
+            //}
 
             currentFurniture?.DisableCheckPoint();
             currentFurniture = furniture;
@@ -268,19 +268,19 @@ public class FurnitureManager : MonoBehaviour
         return item != null;
     }
 
-    public void ResetAttachedWallLine()
+    public void RecheckValidWall()
     {
         foreach(var item in runtimeFurnitures)
         {
-            item.furnitureMergeToWall.ResetAttachedWallLine();
+            item.furnitureMergeToWall.CheckWallLineValid();
         }
     }
 
-    public void AttachedWallLine()
+    public void TrySnapToNearestWall()
     {
         foreach(var item in runtimeFurnitures)
         {
-            item.furnitureMergeToWall.TryToMergeAndSnapInWall(false);
+            item.furnitureMergeToWall.SnapToCurrentRoom();
         }
     }
 }

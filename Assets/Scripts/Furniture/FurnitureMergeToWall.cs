@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
 public class FurnitureMergeToWall
 {
-    private float offset ;
+    private float offset;
+    public float ratio;
 
     private FurnitureItem furnitureItem;
 
@@ -12,7 +14,8 @@ public class FurnitureMergeToWall
     private FurniturePoint rightPoint;
     private FurniturePoint bottomPoint;
 
-    WallLine attachedWallLine;
+    private WallLine attachedWallLine;
+    private Room attachedRoom;
 
     private WallLine typedWallLine;
 
@@ -31,7 +34,7 @@ public class FurnitureMergeToWall
         this.bottomPoint = furnitureItem.GetFurniturePoint(CheckpointType.Bottom);
     }
 
-    private void UpdateWallLine()
+    private void UpdateOwnWallLine()
     {
         typedWallLine.start = leftPoint.transform.position;
         typedWallLine.end = rightPoint.transform.position;
@@ -46,41 +49,13 @@ public class FurnitureMergeToWall
         return furnitureItem.isUsingCenterPosToSnap ? furnitureItem.GetWorldPosition() : bottomPoint.transform.position;
     }
 
-    public void TryToMergeAndSnapInWall(bool isActiveRange = true)
+    public void TryToMergeAndSnapInWall()
     {
         if (allowSnap == false) return;
         Debug.Log("bắt đầu check để snap wall line");
-        // var anchorPoint = centerPoint;
-        // Vector3 centerPosition = anchorPoint.transform.position;
-        Vector3 centerPosition = GetCenterPosition();
-        float minDist = float.MaxValue;
-        WallLine wallLine = null;
 
-        Vector3 firstDoorPoint = Vector3.zero;
-        Vector3 secondDoorPoint = Vector3.zero;
-
-        foreach (Room room in RoomStorage.rooms)
-        {
-            foreach (var wl in room.wallLines)
-            {
-                if (wl.type != LineType.Wall) continue; // chỉ chọn từ tường thường
-
-                Vector3 projected =
-                    CheckpointManager.Instance.ProjectPointOnLineSegment(wl.start, wl.end, centerPosition);
-                centerPosition.y = projected.y;
-                float dist = Vector3.Distance(centerPosition, projected);
-                float distance = isActiveRange ? 0.2f : 100;
-                bool isObjectNearLine = IsWithinDistance(centerPosition, projected, distance);
-
-                if (dist < minDist && isObjectNearLine)
-                {
-                    minDist = dist;
-                    wallLine = wl;
-                    firstDoorPoint = projected;
-                }
-                //Debug.Log("Distance: " + dist);
-            }
-        }
+        SnapToNearestWallLine(RoomStorage.rooms, 0.2f, out var wallLine, out var firstDoorPoint);
+        SetAttachedWallLine(wallLine);
 
         if (wallLine == null)
         {
@@ -88,8 +63,6 @@ public class FurnitureMergeToWall
             ratio = 0;
             return;
         }
-
-        SetAttachedWallLine(wallLine);
 
         //Debug.Log("Kiếm được wall line để snap vào");
         //Debug.Log($"Thông số {wallLine.start} {wallLine.end}");
@@ -99,34 +72,107 @@ public class FurnitureMergeToWall
         // cách xoay này chưa được hoàn hảo
         // RotationToWallLine();
     }
+    
+    public void SnapToCurrentRoom()
+    {
+        if (attachedRoom == null) return;
 
+        SnapToNearestWallLine(new[] { attachedRoom }, float.MaxValue, out var wallLine, out var firstDoorPoint);
+
+        SetAttachedWallLine(wallLine);
+
+        if (wallLine == null)
+        {
+            Debug.Log("không kiếm được wallline để snap vào");
+            ratio = 0;
+            return;
+        }
+
+        furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, firstDoorPoint);
+
+    }
+
+    private void SnapToNearestWallLine(IEnumerable<Room> rooms, float minDistance, out WallLine foundWallLine, out Vector3 foundPoint)
+    {
+        Vector3 centerPosition = GetCenterPosition();
+        float minDist = float.MaxValue;
+        WallLine wallLine = null;
+        Vector3 firstDoorPoint = Vector3.zero;
+
+        foreach (Room room in rooms)
+        {
+            FindNearestWallLine(room, centerPosition, minDistance, ref minDist, ref wallLine, ref firstDoorPoint);
+        }
+
+        foundWallLine = wallLine;
+        foundPoint = firstDoorPoint;
+    }
+
+    private void FindNearestWallLine(Room room, Vector3 centerPosition, float minDistance, ref float minDist, ref WallLine wallLine, ref Vector3 firstDoorPoint)
+    {
+        foreach (var wl in room.wallLines)
+        {
+            if (wl.type != LineType.Wall) continue; // chỉ chọn từ tường thường
+
+            Vector3 projected =
+                CheckpointManager.Instance.ProjectPointOnLineSegment(wl.start, wl.end, centerPosition);
+            centerPosition.y = projected.y;
+            float dist = Vector3.Distance(centerPosition, projected);
+
+            bool isObjectNearLine = IsWithinDistance(centerPosition, projected, minDistance);
+
+            if (dist < minDist && isObjectNearLine)
+            {
+                minDist = dist;
+                wallLine = wl;
+                firstDoorPoint = projected;
+            }
+            //Debug.Log("Distance: " + dist);
+        }
+    }
+    
     private void SetAttachedWallLine(WallLine wallLine)
     {
         // Thoát sớm nếu không có thay đổi
         if (attachedWallLine == wallLine) return;
 
-        if (wallLine == null) return;
-
+        // Need refactor
         if (attachedWallLine != null)
         {
-            var _room = RoomStorage.GetRoomByWall(attachedWallLine);
-            if (_room == null) return;
-            if (_room.wallLines.Contains(attachedWallLine) == false)
+            if (attachedRoom.wallLines.Contains(attachedWallLine) && attachedRoom.wallLines.Contains(typedWallLine))
             {
-                _room.wallLines.Remove(typedWallLine);
+                attachedRoom.wallLines.Remove(typedWallLine);
             }
         }
 
         attachedWallLine = wallLine;
+
+        if (attachedWallLine == null) return;
+
         var room = RoomStorage.GetRoomByWall(attachedWallLine);
-        if (room == null) return;
+        if (room == null)
+        {
+            attachedWallLine = null;
+            return;
+        }
         if (room.wallLines.Contains(attachedWallLine))
         {
             room.wallLines.Add(typedWallLine);
+            attachedRoom = room;
         }
     }
 
-    public float ratio;
+    public void CheckWallLineValid()
+    {
+        if (attachedWallLine != null)
+        {
+            if (attachedRoom.wallLines.Contains(attachedWallLine) == false)
+            {
+                attachedWallLine = null;
+            }
+        }
+    }
+
 
     float GetPointRatio(Vector3 start, Vector3 end, Vector3 point)
     {
@@ -161,7 +207,7 @@ public class FurnitureMergeToWall
             }
         }
 
-        UpdateWallLine();
+        UpdateOwnWallLine();
     }
 
     private void RotationToWallLine()
@@ -186,21 +232,14 @@ public class FurnitureMergeToWall
 
     public void TryRemoveWallLine()
     {
-        if (attachedWallLine != null)
+        if (attachedWallLine != null && attachedRoom != null)
         {
-            var room = RoomStorage.GetRoomByWallLine(attachedWallLine);
-            if (room == null) return;   
-            if (room.wallLines.Contains(typedWallLine))
+            if (attachedRoom.wallLines.Contains(typedWallLine))
             {
-                room.wallLines.Remove(typedWallLine);
+                attachedRoom.wallLines.Remove(typedWallLine);
             }
         }
 
     }
 
-    public void ResetAttachedWallLine()
-    {
-        TryRemoveWallLine();
-        attachedWallLine = null;
-    }
 }
