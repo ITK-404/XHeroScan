@@ -432,130 +432,52 @@ public class CheckpointManager : MonoBehaviour
     void LoadPointsFromStorage()
     {
         const float layerStepY = 0.002f;
-        const float floorIndexY = 1 * layerStepY; // Floor index = 1
-        const float roomIndexY = 2 * layerStepY; // Room  index = 2
-        const float lineLift = 0.0005f;        // nhô line tránh z-fighting
-        const float lineWidth = 0.03f;
+        const float floorIndexY = 1 * layerStepY;
+        const float roomIndexY = 2 * layerStepY;
+        const float lineLift = 0.0005f;
 
-        // ====== FLOOR ======
-        if (FloorStorage.floors != null && FloorStorage.floors.Count > 0)
+        // FLOOR
+        foreach (var floor in FloorStorage.floors)
         {
-            foreach (var floor in FloorStorage.floors)
-            {
-                if (floor == null || floor.checkpoints == null || floor.checkpoints.Count < 3) continue;
+            if (floor == null || floor.checkpoints == null || floor.checkpoints.Count < 3) continue;
 
-                // --- Mesh Floor ---
-                GameObject floorGO = new GameObject($"Floor_{floor.ID}");
-                floorGO.transform.position = Vector3.zero;
-                floorGO.transform.rotation = Quaternion.identity;
-
-                var fmc = floorGO.AddComponent<FloorMeshController>();
-                fmc.floorID = floor.ID;
-                fmc.doubleSided = true;
-                // FloorMeshController.Update() sẽ tự dựng mesh từ FloorStorage.floors
-
-                // --- Spawn checkpoints của floor ---
-                var floorPointsParent = new GameObject($"FloorPoints_{floor.ID}");
-                floorPointsParent.transform.SetParent(floorGO.transform, false);
-
-                foreach (var pt in floor.checkpoints)
-                {
-                    Vector3 pos = new Vector3(pt.x, floorIndexY, pt.y);
-                    var cp = Instantiate(checkpointPrefab, pos, Quaternion.identity, floorPointsParent.transform);
-                    cp.name = "FloorCheckpoint";
-                }
-
-                // --- Vẽ polyline đường viền floor ---
-                var lineGO = new GameObject($"FloorOutline_{floor.ID}");
-                lineGO.transform.SetParent(floorGO.transform, false);
-                var lr = lineGO.AddComponent<LineRenderer>();
-                lr.loop = true;
-                lr.useWorldSpace = true;
-                lr.alignment = LineAlignment.View;
-                lr.numCornerVertices = 4;
-                lr.widthMultiplier = lineWidth;
-
-                var unlit = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
-                lr.material = new Material(unlit);
-                if (lr.material.HasProperty("_Color"))
-                    lr.material.color = new Color(0.1f, 0.1f, 0.1f, 1f);
-
-                int n = floor.checkpoints.Count;
-                lr.positionCount = n;
-                for (int i = 0; i < n; i++)
-                {
-                    var p = floor.checkpoints[i];
-                    lr.SetPosition(i, new Vector3(p.x, floorIndexY + lineLift, p.y));
-                }
-            }
+            var floorGO = new GameObject($"Floor_{floor.ID}");
+            floorGO.transform.position = new Vector3(0, floorIndexY, 0);
+            floorGO.tag = "RoomFloor";
+            var fmc = floorGO.AddComponent<FloorMeshController>();
+            fmc.floorID = floor.ID;
+            fmc.doubleSided = true;
         }
 
-        // ====== ROOM ======
-        var rooms = RoomStorage.rooms;
-        if (rooms == null || rooms.Count == 0)
-        {
-            Debug.Log("Không có Room nào để hiển thị.");
-            return;
-        }
-
-        foreach (var room in rooms)
+        // ROOMS
+        foreach (var room in RoomStorage.rooms)
         {
             if (room == null || room.checkpoints == null || room.checkpoints.Count < 3) continue;
 
-            Vector3 centerPos = new Vector3(room.center.x, roomIndexY, room.center.y);
-
-            // --- Checkpoints chính ---
-            List<GameObject> loopGO = new List<GameObject>();
-            foreach (var pt in room.checkpoints)
+            // Checkpoints (world)
+            var loopGO = new List<GameObject>();
+            foreach (var p in room.checkpoints)
             {
-                Vector3 worldPos = new Vector3(pt.x, roomIndexY, pt.y);
-                GameObject cp = Instantiate(checkpointPrefab, worldPos, Quaternion.identity);
-                loopGO.Add(cp);
+                var wp = new Vector3(p.x, roomIndexY, p.y);
+                loopGO.Add(Instantiate(checkpointPrefab, wp, Quaternion.identity));
             }
-
-            // --- Extra checkpoints ---
-            foreach (var ept in room.extraCheckpoints)
-            {
-                Vector3 worldPos = new Vector3(ept.x, roomIndexY, ept.y);
-                GameObject extra = Instantiate(checkpointPrefab, worldPos, Quaternion.identity);
-                extra.name = "CheckpointExtra";
-                extra.tag = "CheckpointExtra";
-                extra.layer = checkpointPrefab.layer;
-                currentCheckpoints.Add(extra);
-            }
-
-            // --- Map checkpoint <-> RoomID ---
             allCheckpoints.Add(loopGO);
             loopMappings.Add(new LoopMap(room.ID, loopGO));
 
-            // --- Mesh cho room ---
-            GameObject roomGO = new GameObject($"RoomFloor_{room.ID}");
-            roomGO.transform.SetPositionAndRotation(centerPos, Quaternion.identity);
-            var meshCtrl = roomGO.AddComponent<RoomMeshController>();
-            meshCtrl.Initialize(room.ID);
-            meshCtrl.GenerateMesh(room.checkpoints);
+            // Mesh (world)
+            var roomGO = new GameObject($"RoomFloor_{room.ID}");
+            roomGO.transform.position = new Vector3(0, roomIndexY, 0);
+            var mesh = roomGO.AddComponent<RoomMeshController>();
+            mesh.Initialize(room.ID);
+            mesh.GenerateMesh(room.checkpoints); // truyền world points
 
-            // --- WallLines ---
+            // Wall lines (world + nâng y)
             foreach (var wl in room.wallLines)
             {
                 var s = new Vector3(wl.start.x, roomIndexY + lineLift, wl.start.z);
                 var e = new Vector3(wl.end.x, roomIndexY + lineLift, wl.end.z);
-
                 DrawingTool.currentLineType = wl.type;
                 DrawingTool.DrawLineAndDistance(s, e);
-
-                if (wl.type == LineType.Door || wl.type == LineType.Window)
-                {
-                    GameObject p1 = Instantiate(checkpointPrefab, s, Quaternion.identity);
-                    GameObject p2 = Instantiate(checkpointPrefab, e, Quaternion.identity);
-                    p1.name = $"{wl.type}_P1";
-                    p2.name = $"{wl.type}_P2";
-
-                    if (!tempDoorWindowPoints.ContainsKey(room.ID))
-                        tempDoorWindowPoints[room.ID] = new List<(WallLine, GameObject, GameObject)>();
-
-                    tempDoorWindowPoints[room.ID].Add((wl, p1, p2));
-                }
             }
         }
     }
