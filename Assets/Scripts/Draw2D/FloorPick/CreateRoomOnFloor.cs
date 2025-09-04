@@ -173,7 +173,7 @@ public class CreateRoomOnFloor : MonoBehaviour
         if (!Physics.Raycast(ray, out var hit, 5000f, floorMask))
             return false;
 
-        // leo lên parent để tìm object có tag "RoomFloor"
+        // leo lên parent để tìm object có tag "RoomFloor" 
         Transform t = hit.collider ? hit.collider.transform : null;
         while (t != null && !t.CompareTag("RoomFloor")) t = t.parent;
         if (t == null) return false;
@@ -356,6 +356,7 @@ public class CreateRoomOnFloor : MonoBehaviour
         }
         };
 
+        room.center = GeoUtil.Centroid(room.checkpoints);
         // Lưu storage
         RoomStorage.UpdateOrAddRoom(room);
         floor.RegisterRoom(room); // gắn room.ID vào floor.roomIDs
@@ -444,7 +445,7 @@ public class CreateRoomOnFloor : MonoBehaviour
             if (floor != null) return true;
         }
 
-        // Fallback: đoán ID từ tên "Floor_<ID>" hoặc "RoomFloor_<ID>"
+        // ID từ tên "Floor_<ID>" hoặc "RoomFloor_<ID>"
         string name = floorRoot.name;
         int idx = name.LastIndexOf('_');
         if (idx >= 0 && idx + 1 < name.Length)

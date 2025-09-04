@@ -37,23 +37,20 @@ public static class SaveLoadManager
         SaveData saveData = new SaveData
         {
             timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-            paths = new List<SavedPath>()
+            paths = new List<SavedPath>(),
+            furnitureDatas = FurnitureManager.GetAllFurnitureData()
         };
 
-        if (DoesNameExist(customName))
-        {
-            Debug.LogWarning("Tên đã tồn tại. Hãy chọn tên khác.");
-            return;
-        }
-
+        // Save Rooms
         foreach (Room room in RoomStorage.rooms)
         {
             var path = new SavedPath
             {
                 roomID = room.ID,
-                groupID = room.groupID,                  // lưu groupID
-                roomName = room.roomName,                // lưu name
-                floorMaterial = room.floorMaterial,      // lưu vật liệu sàn
+                groupID = room.groupID,
+                roomName = room.roomName,
+                floorMaterial = room.floorMaterial,
+                floorID = room.floorID,
                 points = room.checkpoints.ConvertAll(p => new Vector2Serializable(p)),
                 pointsExtra = room.extraCheckpoints.ConvertAll(p => new Vector2Serializable(p)),
                 heights = new List<float>(room.heights),
@@ -70,28 +67,45 @@ public static class SaveLoadManager
                     materialBack = w.materialBack
                 }),
                 compass = new Vector2Serializable(room.Compass),
+                center = new Vector2Serializable(room.center),
                 headingCompass = room.headingCompass
             };
             saveData.paths.Add(path);
         }
 
-        saveData.furnitureDatas = FurnitureManager.GetAllFurnitureData();
-        // Tạo timestamp phù hợp cho tên file
-        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        // Save Floors
+        saveData.floors = new List<SavedFloor>();
+        foreach (Floor floor in FloorStorage.floors)
+        {
+            var f = new SavedFloor
+            {
+                floorID = floor.ID,
+                floorName = floor.floorName,
+                points = floor.checkpoints.ConvertAll(p => new Vector2Serializable(p)),
+                heights = new List<float>(floor.heights),
+                floorLine = floor.floorLine.ConvertAll(fl => new SavedFloorLine
+                {
+                    start = fl.start,
+                    end = fl.end
+                }),
+                center = new Vector2Serializable(floor.center),
+                roomIDs = new List<string>(floor.roomIDs)
+            };
+            saveData.floors.Add(f);
+        }
 
-        // Dùng custom name nếu có, ngược lại dùng mặc định
-        string baseName = string.IsNullOrEmpty(customName) ? String.Empty : customName;
+        // Save file
+        string baseName = string.IsNullOrEmpty(customName) ? DefaultSaveFileName : customName;
         string fileName = $"{baseName}.json";
-
         string pathToSave = Path.Combine(Application.persistentDataPath, fileName);
         File.WriteAllText(pathToSave, JsonUtility.ToJson(saveData, true));
 
         Debug.Log($"[Save] OK: {pathToSave}");
-
-        currentFileName = customName;
+        currentFileName = baseName;
         isDirty = false;
     }
 
+    // ==== LOAD ====
     public static void Load(string fileName = "DrawingData.json")
     {
         string pathToLoad = Path.Combine(Application.persistentDataPath, fileName);
@@ -105,20 +119,23 @@ public static class SaveLoadManager
         string json = File.ReadAllText(pathToLoad);
         SaveData saveData = JsonUtility.FromJson<SaveData>(json);
 
+        // Clear current
         RoomStorage.rooms = new List<Room>();
+        FloorStorage.floors = new List<Floor>();
         FurnitureManager.AddFurnitures(saveData.furnitureDatas);
+
+        // Load Rooms
         foreach (var path in saveData.paths)
         {
             Room room = new Room();
             room.SetID(path.roomID);
-            room.groupID = path.groupID;                    // load groupID
-            room.roomName = path.roomName;                  // load name
-            room.floorMaterial = path.floorMaterial;        // load vật liệu sàn
-
+            room.groupID = path.groupID;
+            room.roomName = path.roomName;
+            room.floorMaterial = path.floorMaterial;
+            room.floorID = path.floorID;
             room.checkpoints = path.points.ConvertAll(p => p.ToVector2());
             room.extraCheckpoints = path.pointsExtra.ConvertAll(p => p.ToVector2());
             room.heights = new List<float>(path.heights);
-
             room.wallLines = path.wallLines.ConvertAll(w =>
             {
                 var line = new WallLine(w.start, w.end, w.type, w.distanceHeight, w.Height, w.materialFront, w.materialBack);
@@ -126,15 +143,32 @@ public static class SaveLoadManager
                 line.isVisible = w.isVisible;
                 return line;
             });
-
             room.Compass = path.compass.ToVector2();
+            room.center = path.center.ToVector2();
             room.headingCompass = path.headingCompass;
             RoomStorage.rooms.Add(room);
         }
 
+        // Load Floors
+        if (saveData.floors != null)
+        {
+            foreach (var f in saveData.floors)
+            {
+                Floor floor = new Floor();
+                floor.SetID(f.floorID);
+                floor.floorName = f.floorName;
+                floor.checkpoints = f.points.ConvertAll(p => p.ToVector2());
+                floor.heights = new List<float>(f.heights);
+                floor.floorLine = f.floorLine.ConvertAll(fl => new FloorLine(fl.start, fl.end));
+                floor.center = f.center.ToVector2();
+                floor.roomIDs = new List<string>(f.roomIDs);
+                FloorStorage.floors.Add(floor);
+            }
+        }
+
         currentFileName = RemoveExtension(fileName);
-        
-        Debug.Log("[Load] Loaded " + RoomStorage.rooms.Count + " rooms from: " + fileName);
+        Debug.Log($"[Load] Loaded {RoomStorage.rooms.Count} rooms + {FloorStorage.floors.Count} floors from: {fileName}");
+
         SceneManager.LoadScene("FlatExampleScene");
     }
 
