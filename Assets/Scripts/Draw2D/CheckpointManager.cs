@@ -699,7 +699,7 @@ public class CheckpointManager : MonoBehaviour
             Vector3 pos = cp.transform.position;
             newRoom.checkpoints.Add(new Vector2(pos.x, pos.z));
         }
-
+ 
         if (MeshGenerator.CalculateArea(newRoom.checkpoints) > 0)
         {
             newRoom.checkpoints.Reverse();

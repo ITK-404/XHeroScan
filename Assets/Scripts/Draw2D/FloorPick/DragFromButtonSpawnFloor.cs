@@ -491,7 +491,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         if (Physics.Raycast(ray, out var hit, 3000f, mask)) { point = hit.point; return true; }
         Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
-        if (groundPlane.Raycast(ray, out float enter)) { point = ray.GetPoint(enter); return true; }
+        if (groundPlane.Raycast(ray, out float enter)) { point = ray.GetPoint(enter); return true; } 
         return false;
     }
 

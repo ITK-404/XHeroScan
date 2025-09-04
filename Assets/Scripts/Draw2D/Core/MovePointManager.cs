@@ -126,6 +126,79 @@ public class MovePointManager : MonoBehaviour
         }
         return best < radius;
     }
+    
+    private static Floor FindFloorById(string id)
+        {
+            if (string.IsNullOrEmpty(id) || FloorStorage.floors == null) return null;
+            for (int i = 0; i < FloorStorage.floors.Count; i++)
+            {
+                var f = FloorStorage.floors[i];
+                if (f != null && f.ID == id) return f;
+            }
+            return null;
+        }
+
+    private static bool IsInsideFloorXZ(Vector3 p, Floor floor, float boundaryEps = 1e-4f)
+    {
+        if (floor == null || floor.checkpoints == null || floor.checkpoints.Count < 3) return true; // không có floor => cho qua
+        Vector2 q = new Vector2(p.x, p.z);
+
+        // ray-casting + on-boundary (giống phần bạn dùng ở nơi khác)
+        int c = 0; var poly = floor.checkpoints;
+        for (int i = 0, n = poly.Count; i < n; i++)
+        {
+            var a = poly[i];
+            var b = (i + 1 < n) ? poly[i + 1] : poly[0];
+            bool cond = ((a.y > q.y) != (b.y > q.y)) &&
+                        (q.x < (b.x - a.x) * (q.y - a.y) / (b.y - a.y + 1e-12f) + a.x);
+            if (cond) c++;
+            // on-boundary quick check
+            float d2 = DistPointToSegment2(q, a, b);
+            if (d2 <= boundaryEps * boundaryEps) return true;
+        }
+        return (c & 1) == 1;
+    }
+
+    private static float DistPointToSegment2(Vector2 p, Vector2 a, Vector2 b)
+    {
+        var ab = b - a;
+        float ab2 = Vector2.Dot(ab, ab);
+        if (ab2 < 1e-12f) return (p - a).sqrMagnitude;
+        float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab2);
+        var proj = a + t * ab;
+        return (p - proj).sqrMagnitude;
+    }
+
+    private static Vector3 ClosestPointOnPolygonXZ(Vector3 p, List<Vector2> poly)
+    {
+        if (poly == null || poly.Count < 2) return p;
+        Vector2 q = new Vector2(p.x, p.z);
+
+        float bestD2 = float.MaxValue;
+        Vector2 best = q;
+
+        for (int i = 0, n = poly.Count; i < n; i++)
+        {
+            var a = poly[i];
+            var b = (i + 1 < n) ? poly[i + 1] : poly[0];
+
+            // project q onto segment ab
+            Vector2 ab = b - a;
+            float ab2 = Vector2.Dot(ab, ab);
+            Vector2 cand;
+            if (ab2 < 1e-12f) cand = a;
+            else
+            {
+                float t = Mathf.Clamp01(Vector2.Dot(q - a, ab) / ab2);
+                cand = a + t * ab;
+            }
+
+            float d2 = (q - cand).sqrMagnitude;
+            if (d2 < bestD2) { bestD2 = d2; best = cand; }
+        }
+
+        return new Vector3(best.x, p.y, best.y);
+    }
 
     // MOVE POINT (WELD CLUSTER)
     public void MoveSelectedCheckpoint()
@@ -139,22 +212,35 @@ public class MovePointManager : MonoBehaviour
             if (MoveSelectedCheckpointExtra()) return;
         }
 
-        Vector3 newPosition = checkPointManager.GetWorldPositionFromScreen(Input.mousePosition);
+        // Lấy checkpoint được chọn + vị trí mới theo chuột
         var selected = checkPointManager.selectedCheckpoint;
-        Vector3 oldPos = selected.transform.position;
-        Vector3 selectedDelta = newPosition - oldPos;
 
-        // === Nếu là điểm cửa/cửa sổ ===
+        // TÌM LOOP & ROOM trước để còn biết FLOOR nào mà kẹp (clamp)
+        List<GameObject> ownerLoop = null;
+        foreach (var lp in checkPointManager.AllCheckpoints)
+        {
+            if (lp != null && lp.Contains(selected)) { ownerLoop = lp; break; }
+        }
+        if (ownerLoop == null) return;
+
+        string roomID = checkPointManager.FindRoomIDForLoop(ownerLoop);
+        if (string.IsNullOrEmpty(roomID)) return;
+        Room room = RoomStorage.GetRoomByID(roomID);
+        if (room == null) return;
+
+        // If this selected is one of the door/window anchor points, handle early-returns
         foreach (var kvp in checkPointManager.tempDoorWindowPoints)
         {
             foreach (var (line, p1GO, p2GO) in kvp.Value)
             {
                 if (selected == p1GO || selected == p2GO)
                 {
+                    Vector3 newPosRaw = checkPointManager.GetWorldPositionFromScreen(Input.mousePosition);
+                    // Cửa/cửa sổ: vẫn bám tường gần nhất của chính ROOM này (không kẹp theo floor vì đã nằm trong perimeter)
                     WallLine wall = FindClosestWallLine(line, kvp.Key);
                     if (wall == null) return;
 
-                    Vector3 projected = checkPointManager.ProjectPointOnLineSegment(wall.start, wall.end, newPosition);
+                    Vector3 projected = checkPointManager.ProjectPointOnLineSegment(wall.start, wall.end, newPosRaw);
                     if (selected == p1GO) line.start = projected; else line.end = projected;
 
                     selected.transform.position = projected;
@@ -164,220 +250,198 @@ public class MovePointManager : MonoBehaviour
             }
         }
 
-        // === Nếu là checkpoint chính trong polygon
-        selected.transform.position = newPosition;
+        // === KẸP VỊ TRÍ THEO FLOOR ===
+        Vector3 newPositionRaw = checkPointManager.GetWorldPositionFromScreen(Input.mousePosition);
+        Vector3 oldPos = selected.transform.position;
 
-        foreach (var loop in checkPointManager.AllCheckpoints)
+        // tìm floor để giới hạn
+        Floor floor = FindFloorById(room.floorID);
+        Vector3 newPositionClamped = newPositionRaw;
+        if (floor != null && floor.checkpoints != null && floor.checkpoints.Count >= 3)
         {
-            if (!loop.Contains(selected)) continue;
+            // nếu ra ngoài -> kẹp về biên gần nhất
+            if (!IsInsideFloorXZ(newPositionRaw, floor, 1e-3f))
+                newPositionClamped = ClosestPointOnPolygonXZ(newPositionRaw, floor.checkpoints);
+            // giữ nguyên cao độ hiện tại của checkpoint
+            newPositionClamped.y = oldPos.y;
+        }
 
-            string roomID = checkPointManager.FindRoomIDForLoop(loop);
-            if (string.IsNullOrEmpty(roomID)) return;
-            Room room = RoomStorage.GetRoomByID(roomID);
-            if (room == null) return;
+        selected.transform.position = newPositionClamped;
+        Vector3 selectedDelta = newPositionClamped - oldPos;
+        
+        // WELD / SNAP (CLUSTER)
+        var neighbors = new HashSet<GameObject>(Neighbors(selected));
+        var neighborOldPos = new Dictionary<GameObject, Vector3>(neighbors.Count);
+        foreach (var n in neighbors) if (n != null) neighborOldPos[n] = n.transform.position;
 
-            // WELD / SNAP (CLUSTER)
-            // Ghi lại vị trí cũ của tất cả neighbor đang dính để tính delta riêng
-            var neighbors = new HashSet<GameObject>(Neighbors(selected));
-            var neighborOldPos = new Dictionary<GameObject, Vector3>(neighbors.Count);
-            foreach (var n in neighbors) if (n != null) neighborOldPos[n] = n.transform.position;
+        var sameLoopToRemove = new List<GameObject>();
 
-            // Danh sách điểm cùng loop sẽ xóa (không sửa list trong foreach)
-            var sameLoopToRemove = new List<GameObject>();
+        foreach (var n in neighbors.ToList())
+        {
+            if (n == null) { RemoveEdge(selected, n); neighbors.Remove(n); continue; }
 
-            // Duy trì hysteresis cho các neighbor hiện có
-            foreach (var n in neighbors.ToList())
+            float d = XZDist(selected.transform.position, n.transform.position);
+            bool isSameLoop = FindLoopContains(n) == ownerLoop;
+
+            if (isSameLoop && n != selected && d <= WELD_ON)
             {
-                if (n == null) { RemoveEdge(selected, n); neighbors.Remove(n); continue; }
-
-                float d = XZDist(selected.transform.position, n.transform.position);
-                bool isSameLoop = FindLoopContains(n) == loop;
-
-                // NEW: Nếu là cùng phòng và đã chạm (<= WELD_ON) thì gộp về selected bằng cách xóa n
-                if (isSameLoop && n != selected && d <= WELD_ON)
+                if (ownerLoop.Count - sameLoopToRemove.Count > 3)
                 {
-                    if (loop.Count - sameLoopToRemove.Count > 3) // giữ >=3 đỉnh
-                    {
-                        sameLoopToRemove.Add(n);
-                        neighbors.Remove(n);
-                        neighborOldPos.Remove(n);
-                        continue;
-                    }
-                    // nếu chỉ còn 3 đỉnh thì KHÔNG xóa; rơi xuống dưới xử lý bình thường
-                }
-
-                if (d <= WELD_ON)
-                {
-                    // khác phòng: snap trùng selected
-                    n.transform.position = selected.transform.position;
-                }
-                else if (d > WELD_OFF)
-                {
-                    RemoveEdge(selected, n);
+                    sameLoopToRemove.Add(n);
                     neighbors.Remove(n);
                     neighborOldPos.Remove(n);
+                    continue;
+                }
+            }
+
+            if (d <= WELD_ON)
+            {
+                n.transform.position = selected.transform.position;
+            }
+            else if (d > WELD_OFF)
+            {
+                RemoveEdge(selected, n);
+                neighbors.Remove(n);
+                neighborOldPos.Remove(n);
+            }
+            else
+            {
+                n.transform.position += selectedDelta;
+            }
+        }
+
+        foreach (var lp in checkPointManager.AllCheckpoints)
+        {
+            foreach (var cp in lp)
+            {
+                if (cp == selected) continue;
+                if (neighbors.Contains(cp)) continue;
+
+                float d = XZDist(selected.transform.position, cp.transform.position);
+                if (d > WELD_ON) continue;
+
+                bool isSameLoop = (lp == ownerLoop);
+
+                if (isSameLoop)
+                {
+                    if (cp != selected && ownerLoop.Count - sameLoopToRemove.Count > 3)
+                    {
+                        sameLoopToRemove.Add(cp);
+                    }
                 }
                 else
                 {
-                    // vùng trễ: kéo theo delta của selected
-                    n.transform.position += selectedDelta;
+                    if (!neighborOldPos.ContainsKey(cp)) neighborOldPos[cp] = cp.transform.position;
+                    AddEdge(selected, cp);
+                    neighbors.Add(cp);
+                    cp.transform.position = selected.transform.position;
                 }
             }
+        }
 
-            // Tạo weld mới với MỌI điểm trong WELD_ON
-            foreach (var lp in checkPointManager.AllCheckpoints)
+        if (sameLoopToRemove.Count > 0)
+        {
+            foreach (var cp in sameLoopToRemove)
             {
-                foreach (var cp in lp)
+                foreach (var nb in Neighbors(cp).ToList()) RemoveEdge(cp, nb);
+                if (_weldAdj.ContainsKey(cp)) _weldAdj.Remove(cp);
+                ownerLoop.Remove(cp);
+                if (cp != null) Destroy(cp);
+            }
+        }
+
+        var neighborDelta = new Dictionary<GameObject, Vector3>(neighbors.Count);
+        foreach (var n in neighbors)
+            if (neighborOldPos.TryGetValue(n, out var o))
+                neighborDelta[n] = n.transform.position - o;
+
+        bool isDuplicate = false;
+
+        List<Vector2> newCheckpoints = new();
+        for (int i = 0; i < ownerLoop.Count; i++)
+        {
+            Vector3 pos = ownerLoop[i].transform.position;
+            for (int j = 0; j < i; j++)
+            {
+                Vector3 otherPos = ownerLoop[j].transform.position;
+                if (XZDist(pos, otherPos) < 0.01f)
                 {
-                    if (cp == selected) continue;
-                    if (neighbors.Contains(cp)) continue;
-
-                    float d = XZDist(selected.transform.position, cp.transform.position);
-                    if (d > WELD_ON) continue;
-
-                    bool isSameLoop = (lp == loop);
-
-                    if (isSameLoop)
-                    {
-                        // NEW: cùng phòng -> xóa bớt điểm trùng (giữ selected)
-                        if (cp != selected && loop.Count - sameLoopToRemove.Count > 3)
-                        {
-                            sameLoopToRemove.Add(cp);
-                        }
-                        // nếu còn đúng 3 đỉnh thì thôi, không xóa để bảo toàn polygon
-                    }
-                    else
-                    {
-                        // khác phòng -> weld + snap
-                        if (!neighborOldPos.ContainsKey(cp)) neighborOldPos[cp] = cp.transform.position;
-                        AddEdge(selected, cp);
-                        neighbors.Add(cp);
-                        cp.transform.position = selected.transform.position;
-                    }
+                    Debug.LogWarning($"[BỎ QUA] Điểm {i} trùng điểm {j} -> Không update checkpoint để tránh mesh lỗi.");
+                    isDuplicate = true; break;
                 }
             }
+            if (isDuplicate) break;
+            newCheckpoints.Add(new Vector2(pos.x, pos.z));
+        }
 
-            // THỰC XÓA các điểm cùng phòng đã gom
-            if (sameLoopToRemove.Count > 0)
+        if (!isDuplicate)
+        {
+            room.checkpoints = newCheckpoints;
+            room.center = GeoUtil.Centroid(room.checkpoints); // cập nhật tâm phòng sau khi kéo
+        }
+
+        if (!isDuplicate)
+        {
+            int wallLineIndex = 0;
+            int n = room.checkpoints.Count;
+            for (int i = 0; i < room.wallLines.Count; i++)
             {
-                foreach (var cp in sameLoopToRemove)
-                {
-                    // cắt tất cả liên kết weld của cp
-                    foreach (var nb in Neighbors(cp).ToList()) RemoveEdge(cp, nb);
-                    // bỏ khỏi đồ thị
-                    if (_weldAdj.ContainsKey(cp)) _weldAdj.Remove(cp);
-                    // bỏ khỏi loop và hủy GO
-                    loop.Remove(cp);
-                    if (cp != null) Destroy(cp);
-                }
+                var wl = room.wallLines[i];
+                if (!IsPerimeter(wl)) continue;
+
+                Vector2 p1 = room.checkpoints[wallLineIndex % n];
+                Vector2 p2 = room.checkpoints[(wallLineIndex + 1) % n];
+                room.wallLines[i].start = new Vector3(p1.x, 0, p1.y);
+                room.wallLines[i].end = new Vector3(p2.x, 0, p2.y);
+                wallLineIndex++;
             }
+        }
 
-            // Tính delta cho từng neighbor (sau khi đã cập nhật vị trí)
-            var neighborDelta = new Dictionary<GameObject, Vector3>(neighbors.Count);
-            foreach (var n in neighbors)
-                if (neighborOldPos.TryGetValue(n, out var o))
-                    neighborDelta[n] = n.transform.position - o;
+        foreach (var line in room.wallLines)
+        {
+            bool nearSelectedStart = XZDist(line.start, oldPos) < 0.15f;
+            bool nearSelectedEnd = XZDist(line.end, oldPos) < 0.15f;
 
-            bool isDuplicate = false;
+            Vector3 partnerStartDelta, partnerEndDelta;
+            bool nearPartnerStart = TryGetNearestNeighborDelta(line.start, neighborOldPos, neighborDelta, 0.15f, out partnerStartDelta);
+            bool nearPartnerEnd = TryGetNearestNeighborDelta(line.end, neighborOldPos, neighborDelta, 0.15f, out partnerEndDelta);
 
-            // Ghi checkpoints từ loop (chặn duplicate XZ)
-            List<Vector2> newCheckpoints = new();
-            for (int i = 0; i < loop.Count; i++)
+            bool movedStart = nearSelectedStart || nearPartnerStart;
+            bool movedEnd = nearSelectedEnd || nearPartnerEnd;
+
+            if (movedStart && movedEnd)
             {
-                Vector3 pos = loop[i].transform.position;
-                for (int j = 0; j < i; j++)
+                Vector3 dir = (line.end - line.start).normalized;
+                if (dir == Vector3.zero)
                 {
-                    Vector3 otherPos = loop[j].transform.position;
-                    if (XZDist(pos, otherPos) < 0.01f)
-                    {
-                        Debug.LogWarning($"[BỎ QUA] Điểm {i} trùng điểm {j} ➜ Không update checkpoint để tránh mesh lỗi.");
-                        isDuplicate = true; break;
-                    }
+                    int hash = oldPos.GetHashCode();
+                    dir = Quaternion.Euler(0, hash % 360, 0) * Vector3.forward;
                 }
-                if (isDuplicate) break;
-                newCheckpoints.Add(new Vector2(pos.x, pos.z));
+                line.start = selected.transform.position - dir * 0.001f;
+                line.end = selected.transform.position + dir * 0.001f;
             }
-            // if (!isDuplicate) room.checkpoints = newCheckpoints;
-            if (!isDuplicate)
+            else if (movedStart) line.start += nearPartnerStart ? partnerStartDelta : selectedDelta;
+            else if (movedEnd) line.end += nearPartnerEnd ? partnerEndDelta : selectedDelta;
+            else if (Vector3.Distance(line.start, line.end) < 0.001f)
             {
-                room.checkpoints = newCheckpoints;
-                // CẬP NHẬT CENTER CỦA ROOM
-                room.center = GeoUtil.Centroid(room.checkpoints);
+                Vector3 dir = Quaternion.Euler(0, 137f, 0) * Vector3.forward;
+                line.start = selected.transform.position - dir * 0.001f;
+                line.end = selected.transform.position + dir * 0.001f;
             }
+        }
 
-            // Update tường viền (KHÔNG đụng manual)
-            if (!isDuplicate)
+        foreach (var door in room.wallLines.Where(w => w.type != LineType.Wall))
+        {
+            WallLine parentWall = null; float minDist = float.MaxValue;
+            foreach (var wall in room.wallLines)
             {
-                int wallLineIndex = 0;
-                int n = room.checkpoints.Count;
-                for (int i = 0; i < room.wallLines.Count; i++)
-                {
-                    // if (room.wallLines[i].type != LineType.Wall) continue;
-                    var wl = room.wallLines[i];
-                    if (!IsPerimeter(wl)) continue;  // bỏ qua manual + door/window
-
-                    Vector2 p1 = room.checkpoints[wallLineIndex % n];
-                    Vector2 p2 = room.checkpoints[(wallLineIndex + 1) % n];
-                    room.wallLines[i].start = new Vector3(p1.x, 0, p1.y);
-                    room.wallLines[i].end = new Vector3(p2.x, 0, p2.y);
-                    wallLineIndex++;
-                }
+                if (wall.type != LineType.Wall) continue;
+                float dist = GetDistanceFromSegment(door.start, wall.start, wall.end)
+                           + GetDistanceFromSegment(door.end, wall.start, wall.end);
+                if (dist < minDist) { minDist = dist; parentWall = wall; }
             }
-
-            // Manual connections bám theo CẢ selected + NHIỀU partner 
-            foreach (var line in room.wallLines)
+            if (parentWall != null)
             {
-                bool nearSelectedStart = XZDist(line.start, oldPos) < 0.15f;
-                bool nearSelectedEnd = XZDist(line.end, oldPos) < 0.15f;
-
-                Vector3 partnerStartDelta, partnerEndDelta;
-                bool nearPartnerStart = TryGetNearestNeighborDelta(line.start, neighborOldPos, neighborDelta, 0.15f, out partnerStartDelta);
-                bool nearPartnerEnd = TryGetNearestNeighborDelta(line.end, neighborOldPos, neighborDelta, 0.15f, out partnerEndDelta);
-
-                bool movedStart = nearSelectedStart || nearPartnerStart;
-                bool movedEnd = nearSelectedEnd || nearPartnerEnd;
-
-                if (movedStart && movedEnd)
-                {
-                    Vector3 direction = (line.end - line.start).normalized;
-                    if (direction == Vector3.zero)
-                    {
-                        int hash = oldPos.GetHashCode();
-                        direction = Quaternion.Euler(0, hash % 360, 0) * Vector3.forward;
-                    }
-                    line.start = selected.transform.position - direction * 0.001f;
-                    line.end = selected.transform.position + direction * 0.001f;
-                }
-                else if (movedStart)
-                {
-                    line.start += nearPartnerStart ? partnerStartDelta : selectedDelta;
-                }
-                else if (movedEnd)
-                {
-                    line.end += nearPartnerEnd ? partnerEndDelta : selectedDelta;
-                }
-                else if (Vector3.Distance(line.start, line.end) < 0.001f)
-                {
-                    Vector3 direction = Quaternion.Euler(0, 137f, 0) * Vector3.forward;
-                    line.start = selected.transform.position - direction * 0.001f;
-                    line.end = selected.transform.position + direction * 0.001f;
-                    Debug.LogWarning($"[Auto-fix] Manual line degenerate (start==end). Cưỡng bức kéo rộng tại: {selected.transform.position}");
-                }
-            }
-
-            // Cập nhật cửa/cửa sổ bám tường gần nhất 
-            foreach (var door in room.wallLines.Where(w => w.type != LineType.Wall))
-            {
-                WallLine parentWall = null; float minDistance = float.MaxValue;
-                foreach (var wall in room.wallLines)
-                {
-                    if (wall.type != LineType.Wall) continue;
-                    float dist = GetDistanceFromSegment(door.start, wall.start, wall.end)
-                               + GetDistanceFromSegment(door.end, wall.start, wall.end);
-                    if (dist < minDistance) { minDistance = dist; parentWall = wall; }
-                }
-                if (parentWall == null) continue;
-
                 float r1 = Mathf.Clamp01(GetRatioAlongLine(door.start, parentWall.start, parentWall.end));
                 float r2 = Mathf.Clamp01(GetRatioAlongLine(door.end, parentWall.start, parentWall.end));
                 door.start = Vector3.Lerp(parentWall.start, parentWall.end, r1);
@@ -387,37 +451,33 @@ public class MovePointManager : MonoBehaviour
                     foreach (var (line, p1GO, p2GO) in doorsInRoom)
                     { p1GO.transform.position = line.start; p2GO.transform.position = line.end; }
             }
-
-            // Lưu & redraw (phòng của selected)
-            // RoomStorage.UpdateOrAddRoom(room);
-            var floorGO = GameObject.Find($"RoomFloor_{roomID}");
-            if (floorGO != null)
-                floorGO.GetComponent<RoomMeshController>()?.GenerateMesh(room.checkpoints);
-
-            // Rebuild các phòng chứa neighbor 
-            var rebuilt = new HashSet<string>();
-            foreach (var nGo in neighbors)
-            {
-                var nLoop = FindLoopContains(nGo);
-                if (nLoop == null) continue;
-                string nRoomID = checkPointManager.FindRoomIDForLoop(nLoop);
-                if (string.IsNullOrEmpty(nRoomID) || nRoomID == roomID || rebuilt.Contains(nRoomID)) continue;
-
-                // FastRebuildPerimeter(nRoomID, nLoop);
-                FastRebuildPerimeter(nRoomID, nLoop);
-
-                var nRoom = RoomStorage.GetRoomByID(nRoomID);
-                if (nRoom != null && nRoom.checkpoints != null && nRoom.checkpoints.Count >= 1)
-                    nRoom.center = GeoUtil.Centroid(nRoom.checkpoints);
-
-                rebuilt.Add(nRoomID);
-            }
-
-            checkPointManager.ClearAllLines();
-            checkPointManager.RedrawAllRooms();
-            break;
         }
+
+        var roomGO = GameObject.Find($"RoomFloor_{roomID}");
+        if (roomGO != null)
+            roomGO.GetComponent<RoomMeshController>()?.GenerateMesh(room.checkpoints);
+
+        var rebuilt = new HashSet<string>();
+        foreach (var nGo in neighbors)
+        {
+            var nLoop = FindLoopContains(nGo);
+            if (nLoop == null) continue;
+            string nRoomID = checkPointManager.FindRoomIDForLoop(nLoop);
+            if (string.IsNullOrEmpty(nRoomID) || nRoomID == roomID || rebuilt.Contains(nRoomID)) continue;
+
+            FastRebuildPerimeter(nRoomID, nLoop);
+
+            var nRoom = RoomStorage.GetRoomByID(nRoomID);
+            if (nRoom != null && nRoom.checkpoints != null && nRoom.checkpoints.Count >= 1)
+                nRoom.center = GeoUtil.Centroid(nRoom.checkpoints);
+
+            rebuilt.Add(nRoomID);
+        }
+
+        checkPointManager.ClearAllLines();
+        checkPointManager.RedrawAllRooms();
     }
+
     public bool MoveSelectedCheckpointExtra()
     {
         Vector3 newPosition = checkPointManager.GetWorldPositionFromScreen(Input.mousePosition);
@@ -1083,84 +1143,84 @@ public class MovePointManager : MonoBehaviour
     }
 
 
-private void FastRebuildPerimeter(string roomID, List<GameObject> loop)
-{
-    // ==== Layering để room luôn cao hơn floor ====
-    const int ROOM_INDEX    = 2;       // phòng ở index 2
-    const float LAYER_STEPY = 0.002f;  // mỗi index cách nhau ~2mm
-    const float WALL_LIFT   = 0.003f;  // line nhô lên khỏi mặt sàn phòng để tránh z-fighting
-
-    float baseY = ROOM_INDEX * LAYER_STEPY; // Y cho mesh phòng
-    float lineY = baseY + WALL_LIFT;        // Y cho line & checkpoint hiển thị
-
-    var room = RoomStorage.GetRoomByID(roomID);
-    if (room == null || loop == null || loop.Count == 0) return;
-
-    // 1) Cập nhật checkpoints (x,z) từ vị trí point (bỏ qua y)
-    room.checkpoints = loop.Select(go =>
+    private void FastRebuildPerimeter(string roomID, List<GameObject> loop)
     {
-        var p = go.transform.position;
-        return new Vector2(p.x, p.z);
-    }).ToList();
+        // ==== Layering để room luôn cao hơn floor ====
+        const int ROOM_INDEX = 2;       // phòng ở index 2
+        const float LAYER_STEPY = 0.002f;  // mỗi index cách nhau ~2mm
+        const float WALL_LIFT = 0.003f;  // line nhô lên khỏi mặt sàn phòng để tránh z-fighting
 
-    // 2) Tạo lại line tường chính từ checkpoints (đặt ở lineY)
-    int n = room.checkpoints.Count;
-    List<WallLine> newWalls = new List<WallLine>(n);
-    for (int i = 0; i < n; i++)
-    {
-        Vector2 a = room.checkpoints[i];
-        Vector2 b = room.checkpoints[(i + 1) % n];
+        float baseY = ROOM_INDEX * LAYER_STEPY; // Y cho mesh phòng
+        float lineY = baseY + WALL_LIFT;        // Y cho line & checkpoint hiển thị
 
-        newWalls.Add(new WallLine
+        var room = RoomStorage.GetRoomByID(roomID);
+        if (room == null || loop == null || loop.Count == 0) return;
+
+        // Cập nhật checkpoints (x,z) từ vị trí point (bỏ qua y)
+        room.checkpoints = loop.Select(go =>
         {
-            start = new Vector3(a.x, lineY, a.y),
-            end   = new Vector3(b.x, lineY, b.y),
-            type = LineType.Wall,
-            isManualConnection = false,
-            distanceHeight = 0f,
-            Height = 3f,
-            materialFront = "Default",
-            materialBack  = "Default"
-        });
-    }
+            var p = go.transform.position;
+            return new Vector2(p.x, p.z);
+        }).ToList();
 
-    // 3) Giữ lại line phụ & cửa/cửa sổ, nhưng chuẩn hoá Y = lineY để không bị chìm
-    var preserved = room.wallLines
-        .Where(w => w.isManualConnection || w.type != LineType.Wall)
-        .Select(w =>
+        // Tạo lại line tường chính từ checkpoints (đặt ở lineY)
+        int n = room.checkpoints.Count;
+        List<WallLine> newWalls = new List<WallLine>(n);
+        for (int i = 0; i < n; i++)
         {
-            var s = w.start; s.y = lineY;
-            var e = w.end;   e.y = lineY;
-            w.start = s; w.end = e;
-            return w;
-        })
-        .ToList();
+            Vector2 a = room.checkpoints[i];
+            Vector2 b = room.checkpoints[(i + 1) % n];
 
-    // 4) Gộp & lưu
-    room.wallLines = newWalls.Concat(preserved).ToList();
-    RoomStorage.UpdateOrAddRoom(room);
+            newWalls.Add(new WallLine
+            {
+                start = new Vector3(a.x, lineY, a.y),
+                end = new Vector3(b.x, lineY, b.y),
+                type = LineType.Wall,
+                isManualConnection = false,
+                distanceHeight = 0f,
+                Height = 3f,
+                materialFront = "Default",
+                materialBack = "Default"
+            });
+        }
 
-    // 5) Cập nhật mesh sàn phòng: đặt holder lên baseY rồi build lại
-    var floorGO = GameObject.Find($"RoomFloor_{roomID}");
-    if (floorGO != null)
-    {
-        var pos = floorGO.transform.position;
-        pos.y = baseY;
-        floorGO.transform.position = pos;
+        // Giữ lại line phụ & cửa/cửa sổ, nhưng chuẩn hoá Y = lineY để không bị chìm
+        var preserved = room.wallLines
+            .Where(w => w.isManualConnection || w.type != LineType.Wall)
+            .Select(w =>
+            {
+                var s = w.start; s.y = lineY;
+                var e = w.end; e.y = lineY;
+                w.start = s; w.end = e;
+                return w;
+            })
+            .ToList();
 
-        var meshCtrl = floorGO.GetComponent<RoomMeshController>();
-        if (meshCtrl != null)
-            meshCtrl.GenerateMesh(room.checkpoints);
+        // Gộp & lưu
+        room.wallLines = newWalls.Concat(preserved).ToList();
+        RoomStorage.UpdateOrAddRoom(room);
+
+        // Cập nhật mesh sàn phòng: đặt holder lên baseY rồi build lại
+        var floorGO = GameObject.Find($"RoomFloor_{roomID}");
+        if (floorGO != null)
+        {
+            var pos = floorGO.transform.position;
+            pos.y = baseY;
+            floorGO.transform.position = pos;
+
+            var meshCtrl = floorGO.GetComponent<RoomMeshController>();
+            if (meshCtrl != null)
+                meshCtrl.GenerateMesh(room.checkpoints);
+        }
+
+        // Nâng vị trí hiển thị của các checkpoint GO trong vòng lên lineY cho khớp trực quan
+        foreach (var go in loop)
+        {
+            if (!go) continue;
+            var p = go.transform.position;
+            p.y = lineY;
+            go.transform.position = p;
+        }
     }
-
-    // 6) Nâng vị trí hiển thị của các checkpoint GO trong vòng lên lineY cho khớp trực quan
-    foreach (var go in loop)
-    {
-        if (!go) continue;
-        var p = go.transform.position;
-        p.y = lineY;
-        go.transform.position = p;
-    }
-}
 
 }
