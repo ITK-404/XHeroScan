@@ -1127,7 +1127,7 @@ public class BtnController : MonoBehaviour
             room.heights.AddRange(heightList);
             Debug.Log("Done 3");
 
-            // RoomStorage.rooms.Add(room);
+            // RoomStorage.rooms.Add(room); 
             RoomStorage.UpdateOrAddRoomForAR(room);
 
             // Tính diện tích mặt đứng **phải làm ở đây**, trước khi clear
