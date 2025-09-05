@@ -50,7 +50,7 @@ public class FurnitureMergeToWall
         return furnitureItem.isUsingCenterPosToSnap ? furnitureItem.GetWorldPosition() : bottomPoint.transform.position;
     }
 
-    public void TryToMergeAndSnapInWall()
+    public void TryToMergeAndSnapInAllWall()
     {
         if (allowSnap == false) return;
         Debug.Log("bắt đầu check để snap wall line");
@@ -164,7 +164,7 @@ public class FurnitureMergeToWall
         }
     }
 
-    public void CheckWallLineValid()
+    public void CheckWallLineIsValidInRoom()
     {
         if (attachedWallLine != null)
         {
@@ -188,7 +188,7 @@ public class FurnitureMergeToWall
     {
         if (allowSnap)
         {
-            TryToMergeAndSnapInWall();
+            TryToMergeAndSnapInAllWall();
         }
 
         else

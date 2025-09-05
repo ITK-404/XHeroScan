@@ -169,7 +169,7 @@ public class DimensionOkHandler : MonoBehaviour
 
         // Redraw để line được vẽ lại theo wallLines mới
         checkpointManager.RedrawAllRooms();
-        FurnitureManager.Instance.RecheckValidWall();
+        FurnitureManager.Instance.CheckWallLineValidInRoom();
         FurnitureManager.Instance.TrySnapToNearestWall();
         Debug.Log($"[DimOK] UPDATED room {roomId}: points+lines+mesh (index=2) -> {L}x{W}, baseY={baseY}, lift={roomWallLift}");
     }

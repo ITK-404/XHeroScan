@@ -215,45 +215,45 @@ public class CheckpointManager : MonoBehaviour
                 room.wallLines.Where(w => (w.type == LineType.Door || w.type == LineType.Window) && w.isVisible)
             );
 
-            foreach (var wl in room.wallLines)
-            {
-                if (wl.type != LineType.Wall) continue;
-                if (!wl.isVisible) continue;
+            //foreach (var wl in room.wallLines)
+            //{
+            //    if (wl.type != LineType.Wall) continue;
+            //    if (!wl.isVisible) continue;
 
-                // --- dùng Y theo index 2 khi vẽ ---
-                Vector3 s = wl.start; s.y = yLine;
-                Vector3 e = wl.end; e.y = yLine;
+            //    // --- dùng Y theo index 2 khi vẽ ---
+            //    Vector3 s = wl.start; s.y = yLine;
+            //    Vector3 e = wl.end; e.y = yLine;
 
-                DrawingTool.currentLineType = wl.type;
-                DrawingTool.DrawLineAndDistance(s, e);
+            //    DrawingTool.currentLineType = wl.type;
+            //    DrawingTool.DrawLineAndDistance(s, e);
 
-                // chỉ sync handle cho cửa/cửa sổ
-                if (wl.type != LineType.Door && wl.type != LineType.Window) continue;
+            //    // chỉ sync handle cho cửa/cửa sổ
+            //    if (wl.type != LineType.Door && wl.type != LineType.Window) continue;
 
-                // tìm entry mapping cho wl
-                int idx = dwList.FindIndex(t => ReferenceEquals(t.Item1, wl));
-                if (idx >= 0)
-                {
-                    // đã có entry -> cập nhật vị trí & bù handle nếu thiếu
-                    var (lineRef, p1, p2) = dwList[idx];
+            //    // tìm entry mapping cho wl
+            //    int idx = dwList.FindIndex(t => ReferenceEquals(t.Item1, wl));
+            //    if (idx >= 0)
+            //    {
+            //        // đã có entry -> cập nhật vị trí & bù handle nếu thiếu
+            //        var (lineRef, p1, p2) = dwList[idx];
 
-                    if (p1 == null) p1 = Instantiate(checkpointPrefab, s, Quaternion.identity);
-                    else p1.transform.position = s;
+            //        if (p1 == null) p1 = Instantiate(checkpointPrefab, s, Quaternion.identity);
+            //        else p1.transform.position = s;
 
-                    if (p2 == null) p2 = Instantiate(checkpointPrefab, e, Quaternion.identity);
-                    else p2.transform.position = e;
+            //        if (p2 == null) p2 = Instantiate(checkpointPrefab, e, Quaternion.identity);
+            //        else p2.transform.position = e;
 
-                    // ghi lại entry đã được cập nhật
-                    dwList[idx] = (lineRef, p1, p2);
-                }
-                else
-                {
-                    // chưa có entry -> tạo mới 2 handle đúng dữ liệu đang lưu
-                    var p1GO = Instantiate(checkpointPrefab, s, Quaternion.identity);
-                    var p2GO = Instantiate(checkpointPrefab, e, Quaternion.identity);
-                    dwList.Add((wl, p1GO, p2GO));
-                }
-            }
+            //        // ghi lại entry đã được cập nhật
+            //        dwList[idx] = (lineRef, p1, p2);
+            //    }
+            //    else
+            //    {
+            //        // chưa có entry -> tạo mới 2 handle đúng dữ liệu đang lưu
+            //        var p1GO = Instantiate(checkpointPrefab, s, Quaternion.identity);
+            //        var p2GO = Instantiate(checkpointPrefab, e, Quaternion.identity);
+            //        dwList.Add((wl, p1GO, p2GO));
+            //    }
+            //}
 
             // Dọn các entry mồ côi (line đã bị xóa hoặc ẩn) + đảm bảo handle đúng Y lớp 2
             for (int i = dwList.Count - 1; i >= 0; i--)

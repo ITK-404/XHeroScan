@@ -268,11 +268,11 @@ public class FurnitureManager : MonoBehaviour
         return item != null;
     }
 
-    public void RecheckValidWall()
+    public void CheckWallLineValidInRoom()
     {
         foreach (var item in runtimeFurnitures)
         {
-            item.furnitureMergeToWall.CheckWallLineValid();
+            item.furnitureMergeToWall.CheckWallLineIsValidInRoom();
         }
     }
 
@@ -314,6 +314,14 @@ public class FurnitureManager : MonoBehaviour
             }
 
 
+        }
+    }
+
+    public void FindNearestRoom()
+    {
+        foreach (var item in runtimeFurnitures)
+        {
+            item.furnitureMergeToWall.TryToMergeAndSnapInAllWall();
         }
     }
 }
