@@ -116,7 +116,7 @@ public class FurnitureManager : MonoBehaviour
     {
         var furniture = InitItemByID(itemID);
         var worldPointFromViewPort = mainCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f));
-        var centerPosition = new Vector3(worldPointFromViewPort.x, 3, worldPointFromViewPort.z);
+        var centerPosition = new Vector3(worldPointFromViewPort.x, 5, worldPointFromViewPort.z);
 
         furniture.transform.position = centerPosition;
         furniture.InitLineAndText();
