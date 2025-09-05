@@ -4,6 +4,7 @@ public class FurnitureVisible : MonoBehaviour
 {
     private FurnitureItem furnitureItem;
     private bool currentState;
+    private Transform textContainer;
     private void Awake()
     {
         furnitureItem = GetComponent<FurnitureItem>();
@@ -22,22 +23,33 @@ public class FurnitureVisible : MonoBehaviour
 
     private void Update()
     {
-        if (furnitureItem.lineType == LineType.None)
+        if(currentState == false)
         {
-            if (currentState == false)
+            var room = RoomStorage.GetRoomByID(furnitureItem.data.roomID);
+            if (room == null)
             {
-                var room = RoomStorage.GetRoomByID(furnitureItem.data.roomID);
-                if (room == null) return;
+                ResetState();
+                return;
+            }
+            if (furnitureItem.lineType == LineType.None)
+            {
                 var worldPosition = new Vector2(furnitureItem.GetWorldPosition().x, furnitureItem.GetWorldPosition().z);
+
                 if (!CheckpointManager.IsPointInPolygon(worldPosition, room.checkpoints))
                 {
-                    Show(!currentState);
-                    furnitureItem.data.roomID = "";
+                    ResetState();
                 }
+
             }
         }
 
+        textContainer.gameObject.SetActive(currentState);
     }
 
+    private void ResetState()
+    {
+        Show(!currentState);
+        furnitureItem.data.roomID = "";
+    }
 }
 
