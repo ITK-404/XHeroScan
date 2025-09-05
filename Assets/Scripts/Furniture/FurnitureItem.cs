@@ -52,7 +52,6 @@ public partial class FurnitureItem : MonoBehaviour
 
     [Header("Point")]
     [SerializeField] private GameObject checkPointParent;
-
     [SerializeField] private FurniturePoint leftPoint;
     [SerializeField] private FurniturePoint rightPoint;
     [SerializeField] private FurniturePoint topPoint;
@@ -74,6 +73,7 @@ public partial class FurnitureItem : MonoBehaviour
     [SerializeField] private TextMeshPro textMeshProPrefab;
 
     public FurnitureMergeToWall furnitureMergeToWall;
+    public GameObject textContainer;
 
     private Quaternion currentRotation
     {
@@ -191,7 +191,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     private TextMeshPro CreateTextMeshPro()
     {
-        var text = Instantiate(textMeshProPrefab, transform);
+        var text = Instantiate(textMeshProPrefab, textContainer.transform);
         return text;
     }
 

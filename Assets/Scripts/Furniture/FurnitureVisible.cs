@@ -3,11 +3,12 @@
 public class FurnitureVisible : MonoBehaviour
 {
     private FurnitureItem furnitureItem;
+    private GameObject textContainer;
     private bool currentState;
-    private Transform textContainer;
     private void Awake()
     {
         furnitureItem = GetComponent<FurnitureItem>();
+        textContainer = furnitureItem.textContainer;
     }
 
     public void Show(bool state)
@@ -42,6 +43,8 @@ public class FurnitureVisible : MonoBehaviour
 
             }
         }
+
+        if (textContainer == null) return;
 
         textContainer.gameObject.SetActive(currentState);
     }
