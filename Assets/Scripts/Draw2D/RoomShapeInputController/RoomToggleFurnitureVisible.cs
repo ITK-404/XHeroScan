@@ -25,15 +25,16 @@ public class RoomToggleFurnitureVisible : MonoBehaviour
     public void SelectRoom(string roomID)
     {
         var room = RoomStorage.GetRoomByID(roomID);
-
+        this.roomID = "";
         toggleSwitch.ToggleWithoutAnimation(room.isShowFurniture);
-
         this.roomID = roomID;
+        toggleSwitch.gameObject.SetActive(true);
     }
 
     public void DeSelectect()
     {
         this.roomID = "";
+        toggleSwitch.gameObject.SetActive(false);
     }
 
 }
