@@ -379,7 +379,7 @@ public class HandleCheckpointManger : MonoBehaviour
             {
                 StartCoroutine(WaitAndSplitRooms(roomsToSplit.Distinct().ToList()));
             }
-
+            FurnitureManager.Instance.TrySnapToNearestRoom();
             checkPointManager.RedrawAllRooms();
         }
 

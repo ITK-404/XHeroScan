@@ -284,6 +284,14 @@ public class FurnitureManager : MonoBehaviour
         }
     }
 
+    public void TrySnapToNearestRoom()
+    {
+        foreach (var item in runtimeFurnitures)
+        {
+            item.furnitureMergeToWall.TryToMergeAndSnapInAllWall();
+        }
+    }
+
     public void SetVisibleObjects(string roomID, bool state)
     {
         Debug.Log("Set visible objects");
@@ -317,11 +325,5 @@ public class FurnitureManager : MonoBehaviour
         }
     }
 
-    public void FindNearestRoom()
-    {
-        foreach (var item in runtimeFurnitures)
-        {
-            item.furnitureMergeToWall.TryToMergeAndSnapInAllWall();
-        }
-    }
+    
 }
