@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
+using Org.BouncyCastle.Security;
+using System;
 
 public class RoomInfoDisplay : MonoBehaviour
 {
@@ -58,6 +60,9 @@ public class RoomInfoDisplay : MonoBehaviour
 
     // Fallback world-space (nếu không có ActionSpace)
     private GameObject popupWS;
+
+    // hide furniture feature
+    [SerializeField] RoomToggleFurnitureVisible roomToggle;
 
     void Start()
     {
@@ -126,6 +131,7 @@ public class RoomInfoDisplay : MonoBehaviour
             selectedRoomID = "";
             selectedFloorID = "";
             selectionKind = SelectionKind.None;
+            roomToggle.DeSelectect();
 
             suppressAutoPick = false;
             forceSelectFirstRoom = false;
@@ -171,6 +177,8 @@ public class RoomInfoDisplay : MonoBehaviour
 
                 selectedRoomID = "";
                 selectionKind = SelectionKind.None;
+                roomToggle.DeSelectect();
+
                 if (popupUI) popupUI.SetActive(false);
                 if (popupWS) popupWS.SetActive(false);
                 return;
@@ -309,10 +317,7 @@ public class RoomInfoDisplay : MonoBehaviour
     }
 
     // ===================== SELECTION =====================
-    private void SelectFurniture()
-    {
 
-    }
 
     private void SelectRoom(string roomId)
     {
@@ -338,6 +343,8 @@ public class RoomInfoDisplay : MonoBehaviour
 
         forceSelectFirstRoom = false;
         suppressAutoPick = false;
+
+        roomToggle.SelectRoom(roomId);
     }
 
     private void SelectFloor(string floorId)
@@ -346,6 +353,7 @@ public class RoomInfoDisplay : MonoBehaviour
         {
             HideRoomLabel(selectedRoomID);
             selectedRoomID = "";
+            roomToggle.DeSelectect();
         }
         if (!string.IsNullOrEmpty(highlightedID) && highlightedID != floorId)
             SetFloorColor(highlightedID, floorDefaultColor);
@@ -375,6 +383,7 @@ public class RoomInfoDisplay : MonoBehaviour
         selectedRoomID = "";
         selectedFloorID = "";
         selectionKind = SelectionKind.None;
+        roomToggle.DeSelectect();
 
         HideAllLabels();
         if (popupUI) popupUI.SetActive(false);
@@ -391,6 +400,7 @@ public class RoomInfoDisplay : MonoBehaviour
         selectedRoomID = "";
         selectedFloorID = "";
         selectionKind = SelectionKind.None;
+        roomToggle.DeSelectect();
 
         forceSelectFirstRoom = true;
         suppressAutoPick = false;
@@ -408,6 +418,7 @@ public class RoomInfoDisplay : MonoBehaviour
         }
         selectedRoomID = "";
         selectedFloorID = "";
+        roomToggle.DeSelectect();
         selectionKind = SelectionKind.None;
 
         forceSelectFirstRoom = false;

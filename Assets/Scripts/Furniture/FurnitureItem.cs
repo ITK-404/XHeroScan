@@ -274,16 +274,10 @@ public partial class FurnitureItem : MonoBehaviour
             item.UpdateWhenCameraZoom();
         }
 
-
-        if (Input.GetKeyDown(KeyCode.B))
+        if (allowEditWhenSnapToWall)
         {
-            if (allowSnapToWall)
-            {
-                furnitureMergeToWall.TryToMergeAndSnapInWall();
-            }
+            furnitureMergeToWall.Update();
         }
-
-        furnitureMergeToWall.Update();
     }
     /// <summary>
     /// Hàm này được gọi khi người dùng muốn điều chỉnh kích thước bằng tay

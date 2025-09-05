@@ -155,7 +155,7 @@ public class CheckpointManager : MonoBehaviour
     }
 
     // Hàm kiểm tra điểm có nằm trong polygon (ray casting algorithm)
-    public bool IsPointInPolygon(Vector2 point, List<Vector2> polygon)
+    public static bool IsPointInPolygon(Vector2 point, List<Vector2> polygon)
     {
         int j = polygon.Count - 1;
         bool inside = false;
