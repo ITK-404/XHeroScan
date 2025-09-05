@@ -432,22 +432,119 @@ public class CheckpointManager : MonoBehaviour
     void LoadPointsFromStorage()
     {
         const float layerStepY = 0.002f;
-        const float floorIndexY = 1 * layerStepY;
+        const int   floorIndex = 1;
+        const float floorIndexY = floorIndex  * layerStepY;
         const float roomIndexY = 2 * layerStepY;
         const float lineLift = 0.0005f;
+        const float lineWidth   = 0.03f;
 
-        // FLOOR
-        foreach (var floor in FloorStorage.floors)
+        // ====== FLOOR ======
+foreach (var floor in FloorStorage.floors)
+{
+    if (floor == null || floor.checkpoints == null || floor.checkpoints.Count < 3) continue;
+
+    var cps = floor.checkpoints;
+
+    // Parent visual
+    var floorVis = new GameObject($"FloorVis_{floor.ID}");
+    floorVis.tag = "RoomFloor";
+    floorVis.transform.position = new Vector3(0f, floorIndexY, 0f);
+
+    // ----- LineRenderer (viền) -----
+    var lr = floorVis.AddComponent<LineRenderer>();
+    lr.positionCount = cps.Count + 1;
+    lr.loop = false;
+    lr.widthMultiplier = lineWidth;
+    lr.useWorldSpace = true;
+    lr.numCornerVertices = 4;
+    lr.sortingOrder = floorIndex;
+
+    var unlit = Shader.Find("Unlit/Color");
+    if (unlit == null) unlit = Shader.Find("Sprites/Default");
+    lr.material = new Material(unlit);
+    if (unlit != null && unlit.name == "Unlit/Color")
+        lr.material.SetColor("_Color", new Color(0.1f, 0.1f, 0.1f, 1f));
+
+    for (int i = 0; i < cps.Count; i++)
+        lr.SetPosition(i, new Vector3(cps[i].x, floorIndexY + lineLift, cps[i].y));
+    lr.SetPosition(cps.Count, new Vector3(cps[0].x, floorIndexY + lineLift, cps[0].y));
+
+    // ----- Mesh (mặt sàn) -----
+    var mf = floorVis.AddComponent<MeshFilter>();
+    var mr = floorVis.AddComponent<MeshRenderer>();
+    var mesh = new Mesh { name = $"FloorMesh_{floor.ID}" };
+
+    var verts = new List<Vector3>(cps.Count);
+    for (int i = 0; i < cps.Count; i++)
+        verts.Add(new Vector3(cps[i].x, floorIndexY, cps[i].y));
+
+    var tris = new List<int>();
+    for (int i = 1; i < cps.Count - 1; i++)
+    {
+        tris.Add(0);
+        tris.Add(i);
+        tris.Add(i + 1);
+    }
+
+    mesh.SetVertices(verts);
+    mesh.SetTriangles(tris, 0);
+
+    Vector2 min = cps[0], max = cps[0];
+    for (int i = 1; i < cps.Count; i++) { min = Vector2.Min(min, cps[i]); max = Vector2.Max(max, cps[i]); }
+    var size = max - min; if (size.x == 0) size.x = 1; if (size.y == 0) size.y = 1;
+    var uvs = new Vector2[cps.Count];
+    for (int i = 0; i < cps.Count; i++)
+        uvs[i] = new Vector2((cps[i].x - min.x) / size.x, (cps[i].y - min.y) / size.y);
+
+    mesh.SetUVs(0, new List<Vector2>(uvs));
+    mesh.RecalculateNormals();
+    mesh.RecalculateBounds();
+    mf.sharedMesh = mesh;
+
+    var fill = new Material(Shader.Find("Standard"));
+    fill.SetFloat("_Mode", 3);
+    fill.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+    fill.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+    fill.SetInt("_ZWrite", 0);
+    fill.DisableKeyword("_ALPHATEST_ON");
+    fill.EnableKeyword("_ALPHABLEND_ON");
+    fill.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+    fill.renderQueue = 3000;
+    fill.color = new Color(0.2f, 0.6f, 1f, 0.15f);
+    mr.sharedMaterial = fill;
+    mr.sortingOrder = floorIndex;
+
+    // ====== TẠO POINT MARKERS TỪ CHECKPOINTS ======
+    for (int i = 0; i < cps.Count; i++)
+    {
+        var wp = new Vector3(cps[i].x, floorIndexY + lineLift, cps[i].y);
+        GameObject marker;
+
+        if (checkpointPrefab != null)
         {
-            if (floor == null || floor.checkpoints == null || floor.checkpoints.Count < 3) continue;
-
-            var floorGO = new GameObject($"Floor_{floor.ID}");
-            floorGO.transform.position = new Vector3(0, floorIndexY, 0);
-            floorGO.tag = "RoomFloor";
-            var fmc = floorGO.AddComponent<FloorMeshController>();
-            fmc.floorID = floor.ID;
-            fmc.doubleSided = true;
+            marker = Instantiate(checkpointPrefab, wp, Quaternion.identity, floorVis.transform);
+            marker.SetActive(true);
+            if (marker.GetComponent<Collider>() == null)
+            {
+                var sc = marker.AddComponent<SphereCollider>();
+                sc.isTrigger = false;
+                sc.radius = 0.15f;
+            }
         }
+        else
+        {
+            marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            marker.transform.SetParent(floorVis.transform, true);
+            marker.transform.position = wp;
+            marker.transform.localScale = Vector3.one * 0.2f;
+            var sc = marker.GetComponent<SphereCollider>();
+            if (sc != null) sc.isTrigger = false;
+        }
+
+        marker.name = $"FloorPoint_{i}";
+    }
+}
+
 
         // ROOMS
         foreach (var room in RoomStorage.rooms)

@@ -55,6 +55,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     private GameObject[] cornerHandles = new GameObject[4]; // A,B,D,E
     private GameObject[] edgeHandles = new GameObject[4]; // AB,BD,DE,EA
 
+    private string currentFloorId;
+
     // đánh dấu handle
     private class HandleTag : MonoBehaviour
     {
@@ -343,6 +345,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
             floor.center = GeoUtil.Centroid(floor.checkpoints);
             FloorStorage.floors.Add(floor);
+            FloorStorage.UpdateOrAddFloor(floor);
+            currentFloorId = floor.ID;   
 
     string id = floor.ID; // read-only, đã được Floor tự gán từ constructor / storage
 
@@ -520,7 +524,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         floor.floorLine.Add(new FloorLine(floor.checkpoints[1], floor.checkpoints[2]));
         floor.floorLine.Add(new FloorLine(floor.checkpoints[2], floor.checkpoints[3]));
         floor.floorLine.Add(new FloorLine(floor.checkpoints[3], floor.checkpoints[0]));
-        
+
         floor.center = GeoUtil.Centroid(floor.checkpoints);
 
         if (floor.heights.Count != 4)
@@ -528,6 +532,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             floor.heights.Clear();
             for (int i = 0; i < 4; i++) floor.heights.Add(0.1f);
         }
+        
+        FloorStorage.UpdateOrAddFloor(floor);
     }
 
     private void SpawnHandles(Vector3 a, Vector3 b, Vector3 d, Vector3 e, Transform parent)
@@ -696,6 +702,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     // === NẠP STATE THEO ID (set hasRect, tạo preview/handles, vẽ, và GHI ĐÈ floor theo ID) ===
     public void LoadStateFromFloorId(string id)
     {
+        currentFloorId = id;
         // 1) Tìm đúng floor theo ID
         Floor f = null;
         if (FloorStorage.floors != null)
@@ -712,12 +719,12 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             return;
         }
 
-    if (s_floorVisuals.TryGetValue(f.ID, out var oldGo) && oldGo)
-    {
-        Destroy(oldGo);                     // CHỈ xoá visual
-        s_floorVisuals.Remove(f.ID);
-    }
-    lastFloorGO = new GameObject($"FloorVis_{f.ID}");
+        if (s_floorVisuals.TryGetValue(f.ID, out var oldGo) && oldGo)
+        {
+            Destroy(oldGo);                     // CHỈ xoá visual
+            s_floorVisuals.Remove(f.ID);
+        }
+        lastFloorGO = new GameObject($"FloorVis_{f.ID}");
 
         // Tính state từ 4 điểm (A,B,D,E) trong XZ
         Vector2 a2 = f.checkpoints[0];
@@ -738,19 +745,19 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         previewGO.transform.SetParent(lastFloorGO.transform, true);
 
         // Set state đầy đủ
-        hasRect    = true;
+        hasRect = true;
         rectCenter = new Vector3(center2.x, BaseY(floorIndex), center2.y);
-        rectYaw    = yawDeg;
-        rectHalfW  = halfW;
-        rectHalfD  = halfD;
+        rectYaw = yawDeg;
+        rectHalfW = halfW;
+        rectHalfD = halfD;
 
         // Tính 4 góc để spawn đủ 8 handle
         Quaternion rot = Quaternion.Euler(0f, rectYaw, 0f);
         Vector3 c3 = rectCenter;
         Vector3 a3 = c3 + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
-        Vector3 b3 = c3 + rot * new Vector3( rectHalfW, 0, -rectHalfD);
-        Vector3 d3 = c3 + rot * new Vector3( rectHalfW, 0,  rectHalfD);
-        Vector3 e3 = c3 + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
+        Vector3 b3 = c3 + rot * new Vector3(rectHalfW, 0, -rectHalfD);
+        Vector3 d3 = c3 + rot * new Vector3(rectHalfW, 0, rectHalfD);
+        Vector3 e3 = c3 + rot * new Vector3(-rectHalfW, 0, rectHalfD);
 
         ClearHandles();
         SpawnHandles(a3, b3, d3, e3, lastFloorGO.transform);
@@ -760,6 +767,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         // Ghi đè SẠCH dữ liệu của floor f theo state hiện tại
         SyncFloorDataByState(f);
+        FloorStorage.UpdateOrAddFloor(f);
     }
     private void SyncFloorDataByState(Floor f)
     {

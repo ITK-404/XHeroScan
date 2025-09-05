@@ -877,8 +877,7 @@ public class BtnController : MonoBehaviour
                     // === Cập nhật lại wallLines: chia đoạn ban đầu thành 3 ===
                     WallLine lineToRemove = targetRoom.wallLines.FirstOrDefault(
                             l => (Vector3.Distance(l.start, targetWall.start) < 0.001f && Vector3.Distance(l.end, targetWall.end) < 0.001f) ||
-                                (Vector3.Distance(l.start, targetWall.end) < 0.001f && Vector3.Distance(l.end, targetWall.start) < 0.001f)
-);
+                                (Vector3.Distance(l.start, targetWall.end) < 0.001f && Vector3.Distance(l.end, targetWall.start) < 0.001f));
                     if (lineToRemove != null)
                     {
 
@@ -1128,13 +1127,13 @@ public class BtnController : MonoBehaviour
             room.heights.AddRange(heightList);
             Debug.Log("Done 3");
 
-            // RoomStorage.rooms.Add(room);
+            // RoomStorage.rooms.Add(room); 
             RoomStorage.UpdateOrAddRoomForAR(room);
 
             // Tính diện tích mặt đứng **phải làm ở đây**, trước khi clear
             for (int i = 0; i < count; i++)
             {
-                Vector3 basePoint = baseCopy[i].transform.position;
+                Vector3 basePoint = baseCopy[i].transform.position; 
                 Vector3 heightPoint = heightCopy[i].transform.position;
                 Vector3 nextBasePoint = baseCopy[(i + 1) % count].transform.position;
                 Vector3 nextHeightPoint = heightCopy[(i + 1) % count].transform.position;

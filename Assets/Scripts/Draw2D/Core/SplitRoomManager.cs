@@ -48,6 +48,7 @@ public class SplitRoomManager: MonoBehaviour
                         new Vector2(w.start.x, w.start.z),
                         new Vector2(w.end.x, w.end.z)))
             .ToList();
+        originalRoom.center = GeoUtil.Centroid(originalRoom.checkpoints);
         RoomStorage.UpdateOrAddRoom(originalRoom);
 
         var floorGO = GameObject.Find($"RoomFloor_{originalRoom.ID}");
@@ -65,6 +66,7 @@ public class SplitRoomManager: MonoBehaviour
                             new Vector2(w.start.x, w.start.z),
                             new Vector2(w.end.x, w.end.z)))
                 .ToList();
+            r.center= GeoUtil.Centroid(r.checkpoints);
             RoomStorage.UpdateOrAddRoom(r);
         }
 
@@ -124,18 +126,18 @@ public class SplitRoomManager: MonoBehaviour
                 checkPointManager.DrawingTool.currentLineType = wl.type;
                 checkPointManager.DrawLineAndDistance(wl.start, wl.end);
 
-                if (wl.type == LineType.Door || wl.type == LineType.Window)
-                {
-                    Vector3 s = wl.start; if (s.y < 0.02f) s.y = 0.02f;
-                    Vector3 e = wl.end; if (e.y < 0.02f) e.y = 0.02f;
-                    var p1 = Instantiate(checkPointManager.checkpointPrefab, s, Quaternion.identity);
-                    var p2 = Instantiate(checkPointManager.checkpointPrefab, e, Quaternion.identity);
+                // if (wl.type == LineType.Door || wl.type == LineType.Window)
+                // {
+                //     Vector3 s = wl.start; if (s.y < 0.02f) s.y = 0.02f;
+                //     Vector3 e = wl.end; if (e.y < 0.02f) e.y = 0.02f;
+                //     var p1 = Instantiate(checkPointManager.checkpointPrefab, s, Quaternion.identity);
+                //     var p2 = Instantiate(checkPointManager.checkpointPrefab, e, Quaternion.identity);
 
-                    checkPointManager.tempDoorWindowPoints ??= new Dictionary<string, List<(WallLine, GameObject, GameObject)>>();
-                    if (!checkPointManager.tempDoorWindowPoints.ContainsKey(room.ID))
-                        checkPointManager.tempDoorWindowPoints[room.ID] = new List<(WallLine, GameObject, GameObject)>();
-                    checkPointManager.tempDoorWindowPoints[room.ID].Add((wl, p1, p2));
-                }
+                //     checkPointManager.tempDoorWindowPoints ??= new Dictionary<string, List<(WallLine, GameObject, GameObject)>>();
+                //     if (!checkPointManager.tempDoorWindowPoints.ContainsKey(room.ID))
+                //         checkPointManager.tempDoorWindowPoints[room.ID] = new List<(WallLine, GameObject, GameObject)>();
+                //     checkPointManager.tempDoorWindowPoints[room.ID].Add((wl, p1, p2));
+                // }
             }
         }
 
@@ -180,19 +182,19 @@ public class SplitRoomManager: MonoBehaviour
                 checkPointManager.DrawingTool.currentLineType = w.type;
                 checkPointManager.DrawLineAndDistance(w.start, w.end);
 
-                if (w.type == LineType.Door || w.type == LineType.Window)
-                {
-                    Vector3 sH = sNew; if (sH.y < 0.02f) sH.y = 0.02f;
-                    Vector3 eH = eNew; if (eH.y < 0.02f) eH.y = 0.02f;
+                // if (w.type == LineType.Door || w.type == LineType.Window)
+                // {
+                //     Vector3 sH = sNew; if (sH.y < 0.02f) sH.y = 0.02f;
+                //     Vector3 eH = eNew; if (eH.y < 0.02f) eH.y = 0.02f;
 
-                    var p1 = Instantiate(checkPointManager.checkpointPrefab, sH, Quaternion.identity);
-                    var p2 = Instantiate(checkPointManager.checkpointPrefab, eH, Quaternion.identity);
+                //     var p1 = Instantiate(checkPointManager.checkpointPrefab, sH, Quaternion.identity);
+                //     var p2 = Instantiate(checkPointManager.checkpointPrefab, eH, Quaternion.identity);
 
-                    checkPointManager.tempDoorWindowPoints ??= new Dictionary<string, List<(WallLine, GameObject, GameObject)>>();
-                    if (!checkPointManager.tempDoorWindowPoints.ContainsKey(bestRoom.ID))
-                        checkPointManager.tempDoorWindowPoints[bestRoom.ID] = new List<(WallLine, GameObject, GameObject)>();
-                    checkPointManager.tempDoorWindowPoints[bestRoom.ID].Add((w, p1, p2));
-                }
+                //     checkPointManager.tempDoorWindowPoints ??= new Dictionary<string, List<(WallLine, GameObject, GameObject)>>();
+                //     if (!checkPointManager.tempDoorWindowPoints.ContainsKey(bestRoom.ID))
+                //         checkPointManager.tempDoorWindowPoints[bestRoom.ID] = new List<(WallLine, GameObject, GameObject)>();
+                //     checkPointManager.tempDoorWindowPoints[bestRoom.ID].Add((w, p1, p2));
+                // }
             }
         }
 
@@ -234,6 +236,16 @@ public class SplitRoomManager: MonoBehaviour
             {
                 Destroy(oldGO);
                 checkPointManager.RoomFloorMap.Remove(room.ID);
+            }
+            // 4. Xóa cửa / cửa sổ
+            if (checkPointManager.tempDoorWindowPoints.ContainsKey(room.ID))
+            {
+                foreach (var (_, p1, p2) in checkPointManager.tempDoorWindowPoints[room.ID])
+                {
+                    if (p1 != null) Destroy(p1);
+                    if (p2 != null) Destroy(p2);
+                }
+                checkPointManager.tempDoorWindowPoints.Remove(room.ID);
             }
         }
     }
