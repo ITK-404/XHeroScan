@@ -14,5 +14,10 @@ public class FurnitureVisible : MonoBehaviour
         furnitureItem.modelContainer.gameObject.SetActive(state);
     }
 
+    public string GetRoomID()
+    {
+        return furnitureItem.data.roomID;
+    }
+
 }
 

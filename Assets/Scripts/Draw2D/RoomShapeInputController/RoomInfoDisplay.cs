@@ -71,12 +71,13 @@ public class RoomInfoDisplay : MonoBehaviour
             uiCanvas = actionSpaceRect ? actionSpaceRect.GetComponentInParent<Canvas>() : null;
         }
     }
-
+    private bool isShow = false;
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            FurnitureManager.Instance.SetVisibleObjects(selectedRoomID, true);
+            FurnitureManager.Instance.SetVisibleObjects(selectedRoomID, isShow);
+            isShow = !isShow;
         }
         // Click chọn
         if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())

@@ -210,7 +210,17 @@ public class FurnitureMergeToWall
         }
 
         UpdateOwnWallLine();
-        
+        UpdateRoomAttaced();
+    }
+
+    private void UpdateRoomAttaced()
+    {
+        if (attachedRoom == null)
+        {
+            furnitureItem.data.roomID = "";
+            return;
+        }
+        furnitureItem.data.roomID = attachedRoom.ID;
     }
 
     private void RotationToWallLine()
@@ -244,6 +254,5 @@ public class FurnitureMergeToWall
         }
 
     }
-
 }
 

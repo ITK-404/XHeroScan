@@ -286,28 +286,29 @@ public class FurnitureManager : MonoBehaviour
 
     public void SetVisibleObjects(string roomID, bool state)
     {
-        if (string.IsNullOrEmpty(roomID)) return;
-
+        Debug.Log("Set visible objects");
         var room = RoomStorage.GetRoomByID(roomID);
-
-        if (room == null) return;
 
         foreach (var item in runtimeFurnitures)
         {
             //if (item.data.roomID != roomID) continue;
 
+            Debug.Log("Find and check valid furniture");
             Vector3 worldPosition = item.GetWorldPosition();
             Vector2 worldPosition2D = new Vector2(worldPosition.x, worldPosition.z);
+            bool isInPolygon = CheckpointManager.Instance.IsPointInPolygon(worldPosition2D, room.checkpoints);
+            bool isAttachedToRoom = item.TryGetComponent(out FurnitureVisible value) && value.GetRoomID() == roomID;
 
-            if(CheckpointManager.Instance.IsPointInPolygon(worldPosition2D, room.checkpoints))
+            Debug.Log("Is In Polygon: " + isInPolygon);
+            Debug.Log("Is attachef to room: " + isAttachedToRoom);
+
+            if (isInPolygon || isAttachedToRoom)
             {
                 Debug.Log($"{item.gameObject.name} này nằm trong room", item.gameObject);
-            }else if (item.furnitureMergeToWall.IsInWall())
-            {
-               
+                value.Show(state);
             }
 
-            //item.GetComponent<FurnitureVisible>().Show(state);
+            
         }
     }
 }
