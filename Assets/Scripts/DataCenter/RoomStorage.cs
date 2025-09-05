@@ -92,7 +92,7 @@ using System.Collections.Generic;
                 // rooms[i].area = updatedRoom.area;
                 // rooms[i].ceilingArea = updatedRoom.ceilingArea;
                 // rooms[i].perimeter = updatedRoom.perimeter;
-                // Debug.Log($"[RoomStorage] Room {updatedRoom.ID} đã được cập nhật.");
+                // Debug.Log($"[RoomStorage] Room {updatedRoom.ID} đã được cập nhật."); 
                 return;
             }
         }
