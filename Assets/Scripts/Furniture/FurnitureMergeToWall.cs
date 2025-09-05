@@ -138,7 +138,7 @@ public class FurnitureMergeToWall
         // Need refactor
         if (attachedWallLine != null)
         {
-            if (attachedRoom.wallLines.Contains(attachedWallLine) && attachedRoom.wallLines.Contains(typedWallLine))
+            if (attachedRoom.wallLines.Contains(typedWallLine))
             {
                 attachedRoom.wallLines.Remove(typedWallLine);
             }
@@ -157,7 +157,7 @@ public class FurnitureMergeToWall
             attachedWallLine = null;
             return;
         }
-        if (room.wallLines.Contains(attachedWallLine))
+        if (room.wallLines.Contains(attachedWallLine) && room.wallLines.Contains(typedWallLine) == false) 
         {
             room.wallLines.Add(typedWallLine);
             attachedRoom = room;
