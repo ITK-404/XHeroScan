@@ -296,19 +296,24 @@ public class FurnitureManager : MonoBehaviour
             Debug.Log("Find and check valid furniture");
             Vector3 worldPosition = item.GetWorldPosition();
             Vector2 worldPosition2D = new Vector2(worldPosition.x, worldPosition.z);
-            bool isInPolygon = CheckpointManager.Instance.IsPointInPolygon(worldPosition2D, room.checkpoints);
+            bool isInPolygon = CheckpointManager.IsPointInPolygon(worldPosition2D, room.checkpoints);
             bool isAttachedToRoom = item.TryGetComponent(out FurnitureVisible value) && value.GetRoomID() == roomID;
 
             Debug.Log("Is In Polygon: " + isInPolygon);
             Debug.Log("Is attachef to room: " + isAttachedToRoom);
 
-            if (isInPolygon || isAttachedToRoom)
+            if (isInPolygon || isAttachedToRoom && item.lineType != LineType.None)
             {
                 Debug.Log($"{item.gameObject.name} này nằm trong room", item.gameObject);
                 value.Show(state);
             }
 
-            
+            if (isInPolygon)
+            {
+                item.data.roomID = roomID;
+            }
+
+
         }
     }
 }

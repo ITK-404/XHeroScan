@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
 {
-    [Range(0f, 1f)] [SerializeField] private float currentValue = 0f;
+    [Range(0f, 1f)][SerializeField] private float currentValue = 0f;
 
     public bool CurrentValue;
     private Slider slider;
@@ -24,7 +24,7 @@ public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
     private bool previousValue;
     private Coroutine animatedCoroutine;
 
-    public Image ToggleIcon => toggleIcon;    
+    public Image ToggleIcon => toggleIcon;
     private void OnValidate()
     {
         SetupComponents();
@@ -79,10 +79,22 @@ public class ToggleSwitch : MonoBehaviour, IPointerClickHandler
         {
             StopCoroutine(animatedCoroutine);
         }
-        
+
         animatedCoroutine = StartCoroutine(DisableCoroutine());
     }
-    
+
+    public void ToggleWithoutAnimation(bool state)
+    {
+        CurrentValue = state;
+
+        float endValue = state ? 1f : 0f;
+
+        slider.value = endValue;
+
+        previousValue = CurrentValue;
+        OnToggleChanged?.Invoke(CurrentValue);
+    }
+
     private IEnumerator DisableCoroutine()
     {
         float startValue = slider.value;

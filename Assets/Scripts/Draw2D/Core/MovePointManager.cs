@@ -500,7 +500,7 @@ public class MovePointManager : MonoBehaviour
         Vector2 local2D = new2D - new Vector2(floorGO.transform.position.x, floorGO.transform.position.z);
         Vector2 oldLocal2D = new Vector2(oldWorldPos.x, oldWorldPos.z) - new Vector2(floorGO.transform.position.x, floorGO.transform.position.z);
 
-        if (!checkPointManager.IsPointInPolygon(new2D, room.checkpoints))
+        if (!CheckpointManager.IsPointInPolygon(new2D, room.checkpoints))
         {
             Debug.LogWarning("Không cho phép kéo CheckpointExtra ra ngoài room.");
             return false;

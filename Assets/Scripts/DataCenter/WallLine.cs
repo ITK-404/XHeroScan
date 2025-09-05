@@ -82,7 +82,7 @@ public class Room
 
     // Thêm: vật liệu sàn
     public string floorMaterial = "Default";
-
+    public bool isShowFurniture = true;
     public Room()
     {
         ID = GenerateID(); // Tự tạo ID khi khởi tạo
