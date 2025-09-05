@@ -169,7 +169,7 @@ public class HandleCheckpointManger : MonoBehaviour
                 checkPointManager.AllCheckpoints.Add(map.CheckpointsGO);
             }
 
-            // 1) Lấy A–B hợp lệ cho room này
+            // Lấy A–B hợp lệ cho room này
             Vector2 A, B;
             bool insideInsideCase, A_fromHit, B_fromHit, haveValidPair;
             DetermineSegmentForRoom(room, aOrig, bOrig,
@@ -307,7 +307,7 @@ public class HandleCheckpointManger : MonoBehaviour
                 checkPointManager.DrawingTool.wallLines.Add(newline);
 
                 // Lưu lại room
-                RoomStorage.UpdateOrAddRoom(room); // (tuỳ code của bạn, có thể bỏ lần này – vì ta đã merge rồi)
+                RoomStorage.UpdateOrAddRoom(room);
                 anyRoomUpdated = true;
                 continue;
             }

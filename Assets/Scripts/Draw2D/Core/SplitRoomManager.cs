@@ -72,8 +72,7 @@ public class SplitRoomManager: MonoBehaviour
 
         // Xoá visual cũ
         ClearAllRoomVisuals(gid);
-
-        // (nếu bạn có tag RoomFloor, giữ lại phần này)
+        
         var oldFloors = GameObject.FindGameObjectsWithTag("RoomFloor");
         foreach (var floor in oldFloors)
         {
@@ -236,17 +235,6 @@ public class SplitRoomManager: MonoBehaviour
                 Destroy(oldGO);
                 checkPointManager.RoomFloorMap.Remove(room.ID);
             }
-
-            // 4. Xóa cửa / cửa sổ
-            // if (checkPointManager.tempDoorWindowPoints.ContainsKey(room.ID))
-            // {
-            //     foreach (var (_, p1, p2) in checkPointManager.tempDoorWindowPoints[room.ID])
-            //     {
-            //         if (p1 != null) Destroy(p1);
-            //         if (p2 != null) Destroy(p2);
-            //     }
-            //     checkPointManager.tempDoorWindowPoints.Remove(room.ID);
-            // }
         }
     }
 }

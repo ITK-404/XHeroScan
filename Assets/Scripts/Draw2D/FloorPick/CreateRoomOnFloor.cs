@@ -173,7 +173,7 @@ public class CreateRoomOnFloor : MonoBehaviour
         if (!Physics.Raycast(ray, out var hit, 5000f, floorMask))
             return false;
 
-        // leo lên parent để tìm object có tag "RoomFloor" 
+        // leo lên parent để tìm object có tag "RoomFloor"
         Transform t = hit.collider ? hit.collider.transform : null;
         while (t != null && !t.CompareTag("RoomFloor")) t = t.parent;
         if (t == null) return false;

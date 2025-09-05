@@ -18368,7 +18368,7 @@ PrefabInstance:
     - target: {fileID: 169655642038115101, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -4.3309937
+      value: -4.3310547
       objectReference: {fileID: 0}
     - target: {fileID: 291514146417803792, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
@@ -19215,6 +19215,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: -33.000366
       objectReference: {fileID: 0}
+    - target: {fileID: 4673331322588943684, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4700956401446743384, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -19605,6 +19610,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6736452305859043714, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6736452305859043714, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6943439551855547025, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_SizeDelta.x
@@ -19800,6 +19815,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8425323095510945780, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8439586057307478142, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -19959,6 +19979,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: GUI Canvas - New Design
+      objectReference: {fileID: 0}
+    - target: {fileID: 9176482097401264095, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9217698570320688281, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
