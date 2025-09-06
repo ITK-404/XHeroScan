@@ -379,13 +379,13 @@ public class HandleCheckpointManger : MonoBehaviour
             {
                 StartCoroutine(WaitAndSplitRooms(roomsToSplit.Distinct().ToList()));
             }
-            FurnitureManager.Instance.TrySnapToNearestRoom();
             checkPointManager.RedrawAllRooms();
         }
 
         if (!reusedFirstPoint && checkPointManager.firstPoint)
             Destroy(checkPointManager.firstPoint);
         checkPointManager.firstPoint = null;
+         //FurnitureManager.Instance.TrySnapToNearestRoom();
     }
 
     private float DistPointSeg2(Vector2 p, Vector2 a, Vector2 b)
@@ -631,6 +631,9 @@ public class HandleCheckpointManger : MonoBehaviour
             splitRoomManager.DetectAndSplitRoomIfNecessary(r);
 
         checkPointManager.RedrawAllRooms();
+
+        FurnitureManager.Instance.TrySnapToNearestRoom();
+
     }
     private bool PointInPolygon(Vector2 point, List<Vector2> polygon)
     {

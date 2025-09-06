@@ -49,7 +49,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     public Transform modelContainer;
     public SpriteRenderer model2D;
-
+    public Vector2 resizeRatio = Vector2.one;
     [Header("Point")]
     [SerializeField] private GameObject checkPointParent;
     [SerializeField] private FurniturePoint leftPoint;
@@ -257,7 +257,7 @@ public partial class FurnitureItem : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         // giới hạn dựa theo data
         width = Mathf.Clamp(width, minSizeX / 2, 100);
@@ -293,6 +293,7 @@ public partial class FurnitureItem : MonoBehaviour
         ResizeAxis resizeAxis = dragPoint.GetReSizeAxis();
         Quaternion rotation = Quaternion.Euler(0f, currentRotation.y, 0f);
         Vector3 originalCenter = bounds.center;
+
         // Chuyển vị trí drag và anchor về "local chưa xoay" (unrotated local space)
         Vector3 dragLocalUnrot = Quaternion.Inverse(rotation) * (localPoint - originalCenter);
         Vector3 anchorLocalUnrot = Quaternion.Inverse(rotation) * (anchorPoint.localPosition - originalCenter);
@@ -305,14 +306,28 @@ public partial class FurnitureItem : MonoBehaviour
 
         // --- Clamp trong không gian unrotated (giữ nguyên logic theo checkpoint type) ---
         CheckpointType type = dragPoint.checkpointType;
-
         dragLocalUnrot = furnitureVisuals.ClampPointToBounds(
             dragLocalUnrot, type);
 
         // --- Tính center và size trong không gian unrotated ---
-        Vector3 centerLocalUnrot = (anchorLocalUnrot + dragLocalUnrot) / 2f;
-        Vector3 sizeLocal = bounds.size; // giữ cấu trúc: size.x -> width, size.z -> height
+        Vector3 centerLocalUnrot;
 
+        // THAY ĐỔI CHÍNH: Tắt center balance khi alwayMakeSquare = true
+        if (alwayMakeSquare)
+        {
+            // Không center balance - giữ anchor cố định, chỉ di chuyển drag side
+            centerLocalUnrot = Vector3.zero; // Giữ center ban đầu
+
+            // Hoặc nếu muốn anchor cố định hoàn toàn:
+            // centerLocalUnrot = anchorLocalUnrot - (dragLocalUnrot - anchorLocalUnrot) / 2f;
+        }
+        else
+        {
+            // Center balance bình thường - mở rộng đều 2 bên
+            centerLocalUnrot = (anchorLocalUnrot + dragLocalUnrot) / 2f;
+        }
+
+        Vector3 sizeLocal = bounds.size; // giữ cấu trúc: size.x -> width, size.z -> height
         sizeLocal = furnitureVisuals.ClampSizeToBounds(
             sizeLocal, resizeAxis, dragLocalUnrot, anchorLocalUnrot, alwayMakeSquare);
 
@@ -584,7 +599,6 @@ public partial class FurnitureItem : MonoBehaviour
     public void Destroy()
     {
         Debug.Log("Destroy furniture");
-        furnitureMergeToWall.TryRemoveWallLine();
         FurnitureManager.Instance.RemoveFromRuntime(this);
         FurnitureManager.Instance.SelectFurniture(null);
         Destroy(gameObject);

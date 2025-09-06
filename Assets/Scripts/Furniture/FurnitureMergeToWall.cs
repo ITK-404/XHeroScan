@@ -19,7 +19,7 @@ public class FurnitureMergeToWall
     private Room attachedRoom;
 
     private WallLine typedWallLine;
-
+    public WallLine TypedWallLine => typedWallLine;
     public FurnitureMergeToWall(FurnitureItem furnitureItem)
     {
         this.furnitureItem = furnitureItem;
@@ -52,15 +52,21 @@ public class FurnitureMergeToWall
 
     public void TryToMergeAndSnapInAllWall()
     {
+        SnapTemp(allowSnap);
+    }
+
+    public void SnapTemp(bool allowSnap)
+    {
         if (allowSnap == false) return;
-        Debug.Log("bắt đầu check để snap wall line");
+
+        //Debug.Log("bắt đầu check để snap wall line");
 
         SnapToNearestWallLine(RoomStorage.rooms, 0.2f, out var wallLine, out var firstDoorPoint);
         SetAttachedWallLine(wallLine);
 
         if (wallLine == null)
         {
-            Debug.Log("không kiếm được wallline để snap vào");
+            //Debug.Log("không kiếm được wallline để snap vào");
             ratio = 0;
             return;
         }
@@ -72,7 +78,7 @@ public class FurnitureMergeToWall
         ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
     }
     
-    public void SnapToCurrentRoom()
+    public void SnapToNearestWallOfCurrentRoom()
     {
         if (attachedRoom == null) return;
 
@@ -136,13 +142,6 @@ public class FurnitureMergeToWall
         if (attachedWallLine == wallLine) return;
 
         // Need refactor
-        if (attachedWallLine != null)
-        {
-            if (attachedRoom.wallLines.Contains(typedWallLine))
-            {
-                attachedRoom.wallLines.Remove(typedWallLine);
-            }
-        }
 
         attachedWallLine = wallLine;
 
@@ -156,11 +155,6 @@ public class FurnitureMergeToWall
         {
             attachedWallLine = null;
             return;
-        }
-        if (room.wallLines.Contains(attachedWallLine) && room.wallLines.Contains(typedWallLine) == false) 
-        {
-            room.wallLines.Add(typedWallLine);
-            attachedRoom = room;
         }
     }
 
@@ -241,18 +235,6 @@ public class FurnitureMergeToWall
     public bool IsInWall()
     {
         return attachedWallLine != null;
-    }
-
-    public void TryRemoveWallLine()
-    {
-        if (attachedWallLine != null && attachedRoom != null)
-        {
-            if (attachedRoom.wallLines.Contains(typedWallLine))
-            {
-                attachedRoom.wallLines.Remove(typedWallLine);
-            }
-        }
-
     }
 }
 

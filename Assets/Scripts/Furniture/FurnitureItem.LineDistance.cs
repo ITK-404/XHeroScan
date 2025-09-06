@@ -78,7 +78,7 @@ public partial class FurnitureItem
 
         private FurnitureItem furnitureItem;
         private float currentRotation => furnitureItem.currentRotation.y;
-        
+
         /// <summary>
         /// Tính toán vị trí của bounds và vị trí của mới point
         /// </summary>
@@ -137,7 +137,7 @@ public partial class FurnitureItem
             float maxX = furnitureItem.minSizeX;
             float minZ = -furnitureItem.minSizeZ;
             float maxZ = furnitureItem.minSizeZ;
-            
+
             if (type == CheckpointType.Left || type == CheckpointType.TopLeft || type == CheckpointType.BottomLeft)
             {
                 if (dragLocalUnrot.x > minX) dragLocalUnrot.x = minX;
@@ -179,34 +179,42 @@ public partial class FurnitureItem
             // Nếu kích thước nhỏ hơn LIMIT_SIZE, đặt lại về LIMIT_SIZE
             // dragLocalUnrot là vị trí hiện tại của điểm kéo, anchorLocalUnrot là vị trí neo (anchor) của điểm kéo
             // sizeLocal là kích thước hiện tại của đối tượng
+            Vector2 resizeRatio = furnitureItem.resizeRatio;
+
             switch (type)
             {
                 case ResizeAxis.X:
-                    sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
-                    if (isMakeSquare) sizeLocal.z = sizeLocal.x;
+                    if (isMakeSquare)
+                    {
+                        sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
+                        sizeLocal.z = sizeLocal.x * resizeRatio.y / resizeRatio.x;
+                    }
+                    else
+                    {
+                        sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
+
+                    }
                     break;
                 case ResizeAxis.Z:
-                    sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
-                    if (isMakeSquare) sizeLocal.x = sizeLocal.z;
+                    if (isMakeSquare)
+                    {
+                        sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
+                        sizeLocal.x = sizeLocal.z * resizeRatio.x / resizeRatio.y;
+                    }
+                    else
+                    {
+                        sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
+                    }
                     break;
                 case ResizeAxis.XZ:
                     if (isMakeSquare)
                     {
                         float dx = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
                         float dz = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
+                        sizeLocal.x = dx * resizeRatio.x;
+                        sizeLocal.z = dz * resizeRatio.y;
 
-                        float side;
-                        if (dx > dz)
-                        {
-                            side = dx;
-                        }
-                        else
-                        {
-                            side = dz;
-                        }
-
-                        sizeLocal.x = side;
-                        sizeLocal.z = side;
+                        Debug.Log("Resize ratio: " + sizeLocal);
                     }
                     else
                     {

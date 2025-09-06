@@ -280,15 +280,16 @@ public class FurnitureManager : MonoBehaviour
     {
         foreach (var item in runtimeFurnitures)
         {
-            item.furnitureMergeToWall.SnapToCurrentRoom();
+            item.furnitureMergeToWall.SnapToNearestWallOfCurrentRoom();
         }
     }
 
     public void TrySnapToNearestRoom()
     {
+        Debug.Log("try snap to nearest room");
         foreach (var item in runtimeFurnitures)
         {
-            item.furnitureMergeToWall.TryToMergeAndSnapInAllWall();
+            item.furnitureMergeToWall.SnapTemp(true);
         }
     }
 
@@ -325,5 +326,17 @@ public class FurnitureManager : MonoBehaviour
         }
     }
 
-    
+    public List<WallLine> GetPdfWallLine()
+    {
+        List<WallLine> exportList = new();
+
+        foreach(FurnitureItem item in runtimeFurnitures)
+        {
+            if(item.lineType == LineType.Door || item.lineType == LineType.Window)
+            {
+                exportList.Add(item.furnitureMergeToWall.TypedWallLine);
+            }
+        }
+        return exportList;
+    }
 }
