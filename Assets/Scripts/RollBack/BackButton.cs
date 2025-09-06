@@ -46,6 +46,7 @@ public class BackButton : MonoBehaviour
     public static void OnClickYes()
     {
         RoomStorage.rooms.Clear();
+        FloorStorage.floors.Clear();
         FurnitureManager.tempSaveDataFurnitureDatas.Clear();
         SceneHistoryManager.LoadPreviousScene();
     }

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 6447085774176705639}
   - component: {fileID: 6567203990392283915}
   - component: {fileID: 1797357889568239072}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Square
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -110,7 +110,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1.0000002, z: 0.20000005}
+  m_Size: {x: 1, y: 1.0000002, z: 0.19}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1797357889568239072
 MonoBehaviour:
@@ -136,7 +136,7 @@ GameObject:
   - component: {fileID: 5824219951104008082}
   - component: {fileID: 3354348105385316814}
   - component: {fileID: 4057246774921060612}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Square
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -202,7 +202,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 61299f3b716b8354dab605586dec8a1c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 466d79cc5ae8fda4a98d54cc7dbb8fa2, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -237,7 +237,8 @@ GameObject:
   - component: {fileID: 7234985322380843007}
   - component: {fileID: 5451159717796942090}
   - component: {fileID: 7209895080006037711}
-  m_Layer: 0
+  - component: {fileID: 2054235385232684237}
+  m_Layer: 9
   m_Name: Bed 2D
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -259,6 +260,8 @@ Transform:
   m_Children:
   - {fileID: 5386840937885300725}
   - {fileID: 4046321613941195839}
+  - {fileID: 7796672705331992801}
+  - {fileID: 3041475809832970216}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7234985322380843007
@@ -276,7 +279,10 @@ MonoBehaviour:
   allowSnapToWall: 0
   allowShowAllCheckPoint: 1
   allowRotationByCheckPoint: 1
+  allowEditWhenSnapToWall: 0
   isUsingCenterPosToSnap: 0
+  alwayMakeSquare: 0
+  lineType: 3
   data:
     roomID: 
     instanceID: 
@@ -289,9 +295,9 @@ MonoBehaviour:
       height: 1
       length: 0.5
       rotation: {x: 0, y: 0.8870109, z: 0, w: 0.4617486}
-      widthMinMax: {x: 0.1, y: 5000}
+      widthMinMax: {x: 0.5, y: 5000}
       heightMinMax: {x: 1, y: 5000}
-      lengthMinMax: {x: 0.1, y: 5000}
+      lengthMinMax: {x: 0.5, y: 5000}
       offsetY: 0
   modelContainer: {fileID: 5386840937885300725}
   model2D: {fileID: 3354348105385316814}
@@ -313,8 +319,8 @@ MonoBehaviour:
   textMeshProPrefab: {fileID: 4512470224821213514, guid: 3af0173042a2bfd468e70f9011b7fdb0,
     type: 3}
   furnitureMergeToWall:
-    ratio: 0
     offset: 0
+    ratio: 0
 --- !u!114 &5451159717796942090
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -351,6 +357,80 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   renderer: {fileID: 3354348105385316814}
+--- !u!114 &2054235385232684237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4657399046887679853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1af84269caabbe4bb958384c2a4f598, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &6090733598302484570
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7796672705331992801}
+  m_Layer: 9
+  m_Name: Line Container
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7796672705331992801
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6090733598302484570}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5406030576398905754}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6759521723316974626
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3041475809832970216}
+  m_Layer: 9
+  m_Name: TextContainer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3041475809832970216
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6759521723316974626}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5406030576398905754}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &9142053234481993226
 GameObject:
   m_ObjectHideFlags: 0
@@ -360,7 +440,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4046321613941195839}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Parent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -403,6 +483,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Left Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -507,6 +592,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
+      propertyPath: resizeAxis
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
       propertyPath: checkpointType
       value: 5
       objectReference: {fileID: 0}
@@ -514,6 +604,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Top Right Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -621,6 +716,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Right Point
       objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -719,6 +819,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
+      propertyPath: resizeAxis
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
       propertyPath: checkpointType
       value: 7
       objectReference: {fileID: 0}
@@ -726,6 +831,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Bottom Right Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -825,6 +935,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
+      propertyPath: resizeAxis
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
       propertyPath: checkpointType
       value: 6
       objectReference: {fileID: 0}
@@ -832,6 +947,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Bottom Left Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -936,6 +1056,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
+      propertyPath: resizeAxis
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
       propertyPath: checkpointType
       value: 4
       objectReference: {fileID: 0}
@@ -943,6 +1068,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Top Left Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -1047,6 +1177,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
+      propertyPath: resizeAxis
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
       propertyPath: checkpointType
       value: 3
       objectReference: {fileID: 0}
@@ -1054,6 +1189,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Bottom Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -1160,6 +1300,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Rotate Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
@@ -1271,6 +1416,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}
+      propertyPath: resizeAxis
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2684334698480987951, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
       propertyPath: checkpointType
       value: 2
       objectReference: {fileID: 0}
@@ -1278,6 +1428,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Top Point
+      objectReference: {fileID: 0}
+    - target: {fileID: 3625136613539826176, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7321413080798855611, guid: c1c2b6ca3ad17a940ac7fef20b347ad9,
         type: 3}

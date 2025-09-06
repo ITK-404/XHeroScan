@@ -253,7 +253,8 @@ public class PdfExporter
                 }
 
                 // Vẽ cửa và cửa sổ
-                foreach (var wall in room.wallLines)
+                List<WallLine> doorAndWindowList = FurnitureManager.Instance.GetPdfWallLine();
+                foreach (var wall in doorAndWindowList)
                 {
                     if (wall.type == LineType.Door || wall.type == LineType.Window)
                     {

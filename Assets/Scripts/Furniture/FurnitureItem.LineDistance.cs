@@ -34,7 +34,7 @@ public partial class FurnitureItem
 
             lineRenderer.SetPosition(0, startPosition);
             lineRenderer.SetPosition(1, endPosition);
-            
+
             // Debug.Log($"Start Position {startPosition} End Position {endPosition}");
         }
 
@@ -50,7 +50,7 @@ public partial class FurnitureItem
         private Outline outline;
         private TextMeshPro tmp;
 
-        public TextDistance(TextMeshPro tmp,Outline outline)
+        public TextDistance(TextMeshPro tmp, Outline outline)
         {
             this.tmp = tmp;
             this.outline = outline;
@@ -75,10 +75,17 @@ public partial class FurnitureItem
         {
             this.furnitureItem = _furnitureItem;
         }
-        
+
         private FurnitureItem furnitureItem;
         private float currentRotation => furnitureItem.currentRotation.y;
-        
+
+        /// <summary>
+        /// Tính toán vị trí của bounds và vị trí của mới point
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="type"></param>
+        /// <param name="bounds"></param>
+        /// <param name="offset"></param>
         public void Recalculator(Transform point, CheckpointType type, Bounds bounds, Vector3 offset)
         {
             // tính toán tỉ lệ của bound dựa trên vị trí mới của point tương ứng
@@ -114,6 +121,12 @@ public partial class FurnitureItem
             point.transform.localPosition = newPosition;
         }
 
+        /// <summary>
+        /// Tránh vị trí kéo không vượt quá kích thước tối thiểu của Furniture tương ứng với trục
+        /// </summary>
+        /// <param name="dragLocalUnrot"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
         public Vector3 ClampPointToBounds(Vector3 dragLocalUnrot, CheckpointType type)
         {
             // Giới hạn vị trí kéo điểm đến các giới hạn của đối tượng
@@ -124,7 +137,7 @@ public partial class FurnitureItem
             float maxX = furnitureItem.minSizeX;
             float minZ = -furnitureItem.minSizeZ;
             float maxZ = furnitureItem.minSizeZ;
-            float LIMIT_SIZE = 0.5f;
+
             if (type == CheckpointType.Left || type == CheckpointType.TopLeft || type == CheckpointType.BottomLeft)
             {
                 if (dragLocalUnrot.x > minX) dragLocalUnrot.x = minX;
@@ -151,23 +164,63 @@ public partial class FurnitureItem
             return dragLocalUnrot;
         }
 
-        public Vector3 ClampSizeToBounds(Vector3 sizeLocal,ResizeAxis type, Vector3 dragLocalUnrot, Vector3 anchorLocalUnrot)
+        /// <summary>
+        /// Giới hạn và điều chỉnh kích thước của bound
+        /// </summary>
+        /// <param name="sizeLocal"></param>
+        /// <param name="type"></param>
+        /// <param name="dragLocalUnrot"></param>
+        /// <param name="anchorLocalUnrot"></param>
+        /// <param name="isMakeSquare"></param>
+        /// <returns></returns>
+        public Vector3 ClampSizeToBounds(Vector3 sizeLocal, ResizeAxis type, Vector3 dragLocalUnrot, Vector3 anchorLocalUnrot, bool isMakeSquare)
         {
             // Giới hạn kích thước tối thiểu
             // Nếu kích thước nhỏ hơn LIMIT_SIZE, đặt lại về LIMIT_SIZE
             // dragLocalUnrot là vị trí hiện tại của điểm kéo, anchorLocalUnrot là vị trí neo (anchor) của điểm kéo
             // sizeLocal là kích thước hiện tại của đối tượng
+            Vector2 resizeRatio = furnitureItem.resizeRatio;
+
             switch (type)
             {
                 case ResizeAxis.X:
-                    sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
+                    if (isMakeSquare)
+                    {
+                        sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
+                        sizeLocal.z = sizeLocal.x * resizeRatio.y / resizeRatio.x;
+                    }
+                    else
+                    {
+                        sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
+
+                    }
                     break;
                 case ResizeAxis.Z:
-                    sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
+                    if (isMakeSquare)
+                    {
+                        sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
+                        sizeLocal.x = sizeLocal.z * resizeRatio.x / resizeRatio.y;
+                    }
+                    else
+                    {
+                        sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
+                    }
                     break;
                 case ResizeAxis.XZ:
-                    sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
-                    sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
+                    if (isMakeSquare)
+                    {
+                        float dx = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
+                        float dz = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
+                        sizeLocal.x = dx * resizeRatio.x;
+                        sizeLocal.z = dz * resizeRatio.y;
+
+                        Debug.Log("Resize ratio: " + sizeLocal);
+                    }
+                    else
+                    {
+                        sizeLocal.x = Mathf.Abs(dragLocalUnrot.x - anchorLocalUnrot.x);
+                        sizeLocal.z = Mathf.Abs(dragLocalUnrot.z - anchorLocalUnrot.z);
+                    }
                     break;
             }
 

@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
+using Org.BouncyCastle.Security;
+using System;
 
 public class RoomInfoDisplay : MonoBehaviour
 {
@@ -36,7 +38,7 @@ public class RoomInfoDisplay : MonoBehaviour
     [SerializeField] private float popupZ = 0.2f;
 
     // ===== State =====
-    private enum SelectionKind { None, Room, Floor }
+    private enum SelectionKind { None, Room, Floor, Furniture }
     private SelectionKind selectionKind = SelectionKind.None;
     private string selectedRoomID = "";
     private string selectedFloorID = "";
@@ -59,6 +61,9 @@ public class RoomInfoDisplay : MonoBehaviour
     // Fallback world-space (nếu không có ActionSpace)
     private GameObject popupWS;
 
+    // hide furniture feature
+    [SerializeField] RoomToggleFurnitureVisible roomToggle;
+
     void Start()
     {
         checkpointManager = FindFirstObjectByType<CheckpointManager>();
@@ -76,6 +81,14 @@ public class RoomInfoDisplay : MonoBehaviour
         // Click chọn
         if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
         {
+            if (FurnitureManager.Instance.TryPickFurniture())
+            {
+                DeselectAll();
+                ResetState();
+                selectionKind = SelectionKind.Furniture;
+                return;
+            }
+
             if (TryPickRoomUnderPointer(out var roomId))
             {
                 SelectRoom(roomId);
@@ -118,6 +131,7 @@ public class RoomInfoDisplay : MonoBehaviour
             selectedRoomID = "";
             selectedFloorID = "";
             selectionKind = SelectionKind.None;
+            roomToggle.DeSelectect();
 
             suppressAutoPick = false;
             forceSelectFirstRoom = false;
@@ -127,7 +141,7 @@ public class RoomInfoDisplay : MonoBehaviour
             if (popupWS) popupWS.SetActive(false);
             return;
         }
-
+        if (selectionKind == SelectionKind.Furniture) return;
         // Cập nhật label realtime
         if (selectionKind != SelectionKind.Floor)
         {
@@ -163,6 +177,8 @@ public class RoomInfoDisplay : MonoBehaviour
 
                 selectedRoomID = "";
                 selectionKind = SelectionKind.None;
+                roomToggle.DeSelectect();
+
                 if (popupUI) popupUI.SetActive(false);
                 if (popupWS) popupWS.SetActive(false);
                 return;
@@ -301,6 +317,8 @@ public class RoomInfoDisplay : MonoBehaviour
     }
 
     // ===================== SELECTION =====================
+
+
     private void SelectRoom(string roomId)
     {
         if (selectionKind == SelectionKind.Floor && !string.IsNullOrEmpty(selectedFloorID))
@@ -325,6 +343,8 @@ public class RoomInfoDisplay : MonoBehaviour
 
         forceSelectFirstRoom = false;
         suppressAutoPick = false;
+
+        roomToggle.SelectRoom(roomId);
     }
 
     private void SelectFloor(string floorId)
@@ -333,6 +353,7 @@ public class RoomInfoDisplay : MonoBehaviour
         {
             HideRoomLabel(selectedRoomID);
             selectedRoomID = "";
+            roomToggle.DeSelectect();
         }
         if (!string.IsNullOrEmpty(highlightedID) && highlightedID != floorId)
             SetFloorColor(highlightedID, floorDefaultColor);
@@ -362,6 +383,7 @@ public class RoomInfoDisplay : MonoBehaviour
         selectedRoomID = "";
         selectedFloorID = "";
         selectionKind = SelectionKind.None;
+        roomToggle.DeSelectect();
 
         HideAllLabels();
         if (popupUI) popupUI.SetActive(false);
@@ -378,6 +400,7 @@ public class RoomInfoDisplay : MonoBehaviour
         selectedRoomID = "";
         selectedFloorID = "";
         selectionKind = SelectionKind.None;
+        roomToggle.DeSelectect();
 
         forceSelectFirstRoom = true;
         suppressAutoPick = false;
@@ -395,6 +418,7 @@ public class RoomInfoDisplay : MonoBehaviour
         }
         selectedRoomID = "";
         selectedFloorID = "";
+        roomToggle.DeSelectect();
         selectionKind = SelectionKind.None;
 
         forceSelectFirstRoom = false;
