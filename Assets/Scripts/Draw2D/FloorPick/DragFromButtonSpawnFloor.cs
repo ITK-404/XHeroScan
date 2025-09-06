@@ -140,7 +140,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     {
         CleanupAllVisuals();
         PlacementManager.Instance?.DestroyAllFloors();
-        FloorStorage.floors.Clear();
+        // FloorStorage.floors.Clear();
         InteractionFlags.IsFloorHandleDragging = false;
     }
 
