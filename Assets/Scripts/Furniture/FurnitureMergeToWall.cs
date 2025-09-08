@@ -141,21 +141,8 @@ public class FurnitureMergeToWall
         // Thoát sớm nếu không có thay đổi
         if (attachedWallLine == wallLine) return;
 
-        // Need refactor
-
         attachedWallLine = wallLine;
-
-        if (attachedWallLine == null)
-        {
-            attachedRoom = null;
-        }
-
-        var room = RoomStorage.GetRoomByWall(attachedWallLine);
-        if (room == null)
-        {
-            attachedWallLine = null;
-            return;
-        }
+        attachedRoom = wallLine != null ? RoomStorage.GetRoomByWall(attachedWallLine) : null;
     }
 
     public void CheckWallLineIsValidInRoom()
