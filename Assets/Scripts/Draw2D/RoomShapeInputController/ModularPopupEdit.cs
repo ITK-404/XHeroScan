@@ -9,6 +9,7 @@ public class ModularPopupEdit : MonoBehaviour
     public Button editBtn;
     public Button splitBtn;
     public Button doubleBtn;
+    public Button flipBtn;
     public Button deleteBtn;
 
     [Header("Contents (chỉ 1 hiển thị tại 1 thời điểm)")]
@@ -35,6 +36,7 @@ public class ModularPopupEdit : MonoBehaviour
             es.AddComponent<StandaloneInputModule>();
         }
         splitBtn.gameObject.SetActive(isShowSplit);
+        flipBtn.gameObject.SetActive(!isShowSplit);
     }
 
     private void ShowOnly(GameObject target)
