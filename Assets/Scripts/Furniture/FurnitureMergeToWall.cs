@@ -6,9 +6,9 @@ using UnityEngine;
 [Serializable]
 public class FurnitureMergeToWall
 {
-    public float offset;
+    private float offset;
     public float ratio;
-
+    public bool isFlip = false;
     private FurnitureItem furnitureItem;
 
     private FurniturePoint leftPoint;
@@ -179,7 +179,6 @@ public class FurnitureMergeToWall
                 // moving but using center of wall line
                 // Debug.Log("Wall line is not null, try to align with them");
                 Vector3 centerPosition = Vector3.Lerp(attachedWallLine.start, attachedWallLine.end, ratio);
-                FurnitureManager.Instance.debugPoint.transform.position = centerPosition;
                 // sync y position from model 2D
                 centerPosition.y = furnitureItem.GetWorldPosition().y;
 
@@ -206,6 +205,7 @@ public class FurnitureMergeToWall
 
     private void RotationToWallLine()
     {
+        offset = isFlip ? 180 : 0;
         Vector3 dir = attachedWallLine.end - attachedWallLine.start;
         dir.y = 0;
         float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;

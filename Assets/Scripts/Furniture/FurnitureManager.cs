@@ -16,19 +16,17 @@ public class FurnitureManager : MonoBehaviour
     [SerializeField] private List<FurnitureItem> furnitureItems = new List<FurnitureItem>();
     public bool IsSnapRotation;
 
+    [Header("Drag")]
     private FurnitureItem tempDragItem;
     private FurnitureItem currentFurniture;
-
+    [Header("Rotate")]
     private static List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
     private List<float> snapAngles = new List<float> { -90, 90f, 180f, 0 };
 
     private Camera mainCam;
-
-    public GameObject debugPoint;
-
     public FurnitureItem CurrentFurnitureItem() => currentFurniture;
-
     public const float SpawnHeight = 5;
+
 
     private void Awake()
     {
@@ -120,7 +118,7 @@ public class FurnitureManager : MonoBehaviour
         SpawnFurniture(itemID, centerPosition);
     }
 
-    public FurnitureItem SpawnFurniture(string itemID,Vector3 position)
+    public FurnitureItem SpawnFurniture(string itemID, Vector3 position)
     {
         var furniture = InitItemByID(itemID);
         furniture.transform.position = position;
@@ -208,7 +206,7 @@ public class FurnitureManager : MonoBehaviour
             currentFurniture = furniture;
             currentFurniture?.EnableCheckPoint();
         }
-
+  
     }
 
     private Vector3 GetWorldMousePosition()
@@ -335,9 +333,9 @@ public class FurnitureManager : MonoBehaviour
     {
         List<WallLine> exportList = new();
 
-        foreach(FurnitureItem item in runtimeFurnitures)
+        foreach (FurnitureItem item in runtimeFurnitures)
         {
-            if(item.lineType == LineType.Door || item.lineType == LineType.Window)
+            if (item.lineType == LineType.Door || item.lineType == LineType.Window)
             {
                 exportList.Add(item.furnitureMergeToWall.TypedWallLine);
             }

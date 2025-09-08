@@ -565,7 +565,6 @@ public partial class FurnitureItem : MonoBehaviour
         Vector3 newCenterLocal = transform.InverseTransformPoint(newCenterWorld);
 
         var localPosition = newCenterLocal;
-        var debugPoint = FurnitureManager.Instance.debugPoint;
         localPosition.y = modelContainer.transform.localPosition.y;
 
         if (isUsingCenterPosToSnap)

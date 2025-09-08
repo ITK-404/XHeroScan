@@ -6,6 +6,9 @@ using UnityEngine.UI;
 
 public class FurnitureEditFunction : MonoBehaviour
 {
+    public ToggleFlipWindowDoor flipToggle;
+
+
     [SerializeField] private GameObject currentPopup;
     [SerializeField] private BottomSheetUI bottomSheetUI;
     [SerializeField] private float offsetX;
@@ -100,7 +103,7 @@ public class FurnitureEditFunction : MonoBehaviour
         if (currentFurniture)
         {
             // show on it
-            FurnitureItem item = furnitureManager.CurrentFurnitureItem();
+            FurnitureItem item = currentFurniture;
             Vector3 worldPositon = item.GetWorldPosition();
 
             float heightOffsetZ = item.GetHeightOffset() / 2;
@@ -110,6 +113,19 @@ public class FurnitureEditFunction : MonoBehaviour
             currentPopup.transform.position = standPosition;
             // maybe create world space canvas
         }
-        currentPopup.gameObject.SetActive(furnitureManager.CurrentFurnitureItem());
+        currentPopup.gameObject.SetActive(currentFurniture);
+
+        if (currentFurniture != null)
+        {
+            var lineType = currentFurniture.lineType;
+            if (lineType == LineType.Window || lineType == LineType.Door)
+            {
+                flipToggle.SelectFurniture();
+            }
+        }
+        else
+        {
+            flipToggle.DeSelectect();
+        }
     }
 }
