@@ -8,7 +8,6 @@ public class FurnitureMergeToWall
 {
     private float offset;
     public float ratio;
-    public bool isFlip = false;
     private FurnitureItem furnitureItem;
 
     private FurniturePoint leftPoint;
@@ -205,7 +204,7 @@ public class FurnitureMergeToWall
 
     private void RotationToWallLine()
     {
-        offset = isFlip ? 180 : 0;
+        offset = furnitureItem.data.isFlip ? 180 : 0;
         Vector3 dir = attachedWallLine.end - attachedWallLine.start;
         dir.y = 0;
         float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;

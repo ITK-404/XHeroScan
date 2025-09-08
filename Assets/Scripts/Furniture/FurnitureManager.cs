@@ -303,6 +303,7 @@ public class FurnitureManager : MonoBehaviour
 
         foreach (var item in runtimeFurnitures)
         {
+            if (item.lineType == LineType.Door || item.lineType == LineType.Window) continue;
             //if (item.data.roomID != roomID) continue;
 
             Debug.Log("Find and check valid furniture");
@@ -314,7 +315,7 @@ public class FurnitureManager : MonoBehaviour
             Debug.Log("Is In Polygon: " + isInPolygon);
             Debug.Log("Is attachef to room: " + isAttachedToRoom);
 
-            if (isInPolygon || isAttachedToRoom && item.lineType != LineType.None)
+            if (isInPolygon || isAttachedToRoom)
             {
                 Debug.Log($"{item.gameObject.name} này nằm trong room", item.gameObject);
                 value.Show(state);
