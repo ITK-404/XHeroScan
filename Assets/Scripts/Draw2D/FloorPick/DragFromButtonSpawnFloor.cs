@@ -113,7 +113,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         {
             var tpl = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             tpl.name = "CheckpointPrefab(AutoTemplate)";
-            tpl.transform.localScale = Vector3.one * 0.2f;
+            tpl.transform.localScale = Vector3.one * 0.2f; 
             tpl.SetActive(false);
             tpl.hideFlags = HideFlags.HideAndDontSave;
             checkpointPrefab = tpl;
