@@ -473,7 +473,7 @@ public class RoomInfoDisplay : MonoBehaviour
         var cps = room.checkpoints;
         if (cps == null || cps.Count < 3) { tmp.text = ""; return; }
 
-        float area = Mathf.Abs(SignedArea(cps)) * 0.5f;
+        float area = Mathf.Abs(SignedArea(cps));
         Vector2 centroid2 = PolygonCentroid(cps);
         var floorGO = GetFloorGO(room.ID);
         float baseY = floorGO ? floorGO.transform.position.y : 0f;
@@ -544,7 +544,7 @@ public class RoomInfoDisplay : MonoBehaviour
         var cps = floor.checkpoints;
         if (cps == null || cps.Count < 3) { tmp.text = ""; return; }
 
-        float area = Mathf.Abs(SignedArea(cps)) * 0.5f;
+        float area = Mathf.Abs(SignedArea(cps));
         Vector2 centroid2 = PolygonCentroid(cps);
         var floorGO = GetFloorGO(floor.ID);
         float baseY = floorGO ? floorGO.transform.position.y : 0f;
