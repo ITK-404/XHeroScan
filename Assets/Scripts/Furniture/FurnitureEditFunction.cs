@@ -124,17 +124,17 @@ public class FurnitureEditFunction : MonoBehaviour
         }
         currentPopup.gameObject.SetActive(currentFurniture);
 
-        if (currentFurniture != null)
-        {
-            var lineType = currentFurniture.lineType;
-            if (lineType == LineType.Window || lineType == LineType.Door)
-            {
-                flipToggle.SelectFurniture();
-            }
-        }
-        else
-        {
-            flipToggle.DeSelectect();
-        }
+        //if (currentFurniture != null)
+        //{
+        //    var lineType = currentFurniture.lineType;
+        //    if (lineType == LineType.Window || lineType == LineType.Door)
+        //    {
+        //        flipToggle.SelectFurniture();
+        //    }
+        //}
+        //else
+        //{
+        //    flipToggle.DeSelectect();
+        //}
     }
 }
