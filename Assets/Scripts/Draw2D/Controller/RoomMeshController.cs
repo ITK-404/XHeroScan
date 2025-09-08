@@ -166,7 +166,7 @@ public class RoomMeshController : MonoBehaviour
                     }
                 }
             }
-        }
+        } 
     }
 
     public void Initialize(string roomID, Color color = default)

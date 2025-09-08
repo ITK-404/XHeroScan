@@ -127,7 +127,7 @@ public class DrawingTool : MonoBehaviour
         Vector3 aux1End = start + perpendicular * auxiliaryLineLength / 2;
         Vector3 aux2End = end + perpendicular * auxiliaryLineLength / 2;
 
-        tmp.text = $"{distanceInM:F2}";
+        tmp.text = $"{distanceInM:F2} m";
 
         Vector3 textPosition = (aux1End + aux2End) / 2;
 
@@ -170,11 +170,11 @@ public class DrawingTool : MonoBehaviour
         switch (lineType)
         {
             case LineType.Wall:
-                return Color.black;
-            case LineType.Door:
                 return Color.red;
-            case LineType.Window:
+            case LineType.Door:
                 return Color.blue;
+            case LineType.Window:
+                return Color.green;
             default:
                 throw new ArgumentOutOfRangeException(nameof(lineType), lineType, null);
         }
@@ -241,7 +241,7 @@ public class DrawingTool : MonoBehaviour
 
         // Hiển thị text
         previewText.gameObject.SetActive(true);
-        previewText.text = $"{distanceInM:F2}";
+        previewText.text = $"{distanceInM:F2} m";
 
         Vector3 textPos = (start + end) / 2 + new Vector3(0, 0.05f, 0); // Đẩy lên cao một chút
         previewText.transform.position = textPos + previewText.transform.up * wallTextOffset;
