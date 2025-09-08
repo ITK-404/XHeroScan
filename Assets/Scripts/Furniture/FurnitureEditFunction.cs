@@ -36,6 +36,15 @@ public class FurnitureEditFunction : MonoBehaviour
         var popupEdit = currentPopup.GetComponent<ModularPopupEdit>();
         popupEdit.deleteBtn.onClick.AddListener(DeleteFurniture);
         popupEdit.doubleBtn.onClick.AddListener(DoubleFurniture);
+        popupEdit.flipBtn.onClick.AddListener(FlipToggle);
+    }
+
+    private void FlipToggle()
+    {
+        if(currentFurniture != null)
+        {
+            currentFurniture.data.isFlip = !currentFurniture.data.isFlip;
+        }
     }
 
     private void DoubleFurniture()
@@ -115,17 +124,17 @@ public class FurnitureEditFunction : MonoBehaviour
         }
         currentPopup.gameObject.SetActive(currentFurniture);
 
-        if (currentFurniture != null)
-        {
-            var lineType = currentFurniture.lineType;
-            if (lineType == LineType.Window || lineType == LineType.Door)
-            {
-                flipToggle.SelectFurniture();
-            }
-        }
-        else
-        {
-            flipToggle.DeSelectect();
-        }
+        //if (currentFurniture != null)
+        //{
+        //    var lineType = currentFurniture.lineType;
+        //    if (lineType == LineType.Window || lineType == LineType.Door)
+        //    {
+        //        flipToggle.SelectFurniture();
+        //    }
+        //}
+        //else
+        //{
+        //    flipToggle.DeSelectect();
+        //}
     }
 }
