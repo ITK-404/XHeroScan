@@ -463,7 +463,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        TryPickHandleUnderMouse();
+        // TryPickHandleUnderMouse();
     }
 
     private void TryPickHandleUnderMouse()
