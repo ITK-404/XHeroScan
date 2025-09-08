@@ -17,6 +17,8 @@ public class ToggleGroupUI : MonoBehaviour
     {
         foreach (ToggleButtonLineType item in list)
         {
+            if (item == null) continue;
+            if (item.btn == null) continue;
             item.btn.onClick.AddListener(() =>
             {
                 OnSelectThis(item);

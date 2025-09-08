@@ -28,6 +28,7 @@ public class FurnitureManager : MonoBehaviour
 
     public FurnitureItem CurrentFurnitureItem() => currentFurniture;
 
+    public const float SpawnHeight = 5;
 
     private void Awake()
     {
@@ -114,15 +115,19 @@ public class FurnitureManager : MonoBehaviour
 
     public void SpawnFurnitureCenterScreen(string itemID)
     {
-        var furniture = InitItemByID(itemID);
         var worldPointFromViewPort = mainCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f));
-        var centerPosition = new Vector3(worldPointFromViewPort.x, 5, worldPointFromViewPort.z);
+        var centerPosition = new Vector3(worldPointFromViewPort.x, SpawnHeight, worldPointFromViewPort.z);
+        SpawnFurniture(itemID, centerPosition);
+    }
 
-        furniture.transform.position = centerPosition;
+    public FurnitureItem SpawnFurniture(string itemID,Vector3 position)
+    {
+        var furniture = InitItemByID(itemID);
+        furniture.transform.position = position;
         furniture.InitLineAndText();
         runtimeFurnitures.Add(furniture);
-        Debug.Log("Spawn Position: " + centerPosition);
-
+        Debug.Log("Spawn Position: " + position);
+        return furniture;
     }
 
     private void Update()

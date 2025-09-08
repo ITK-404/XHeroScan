@@ -1,4 +1,6 @@
-﻿using TMPro;
+﻿using System;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,8 +32,16 @@ public class FurnitureEditFunction : MonoBehaviour
 
         var popupEdit = currentPopup.GetComponent<ModularPopupEdit>();
         popupEdit.deleteBtn.onClick.AddListener(DeleteFurniture);
+        popupEdit.doubleBtn.onClick.AddListener(DoubleFurniture);
     }
 
+    private void DoubleFurniture()
+    {
+        if(currentFurniture != null)
+        {
+            currentFurniture.InitClone();
+        }
+    }
 
     private void OnDestroy()
     {

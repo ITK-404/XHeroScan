@@ -596,6 +596,15 @@ public partial class FurnitureItem : MonoBehaviour
         bounds.size = size;
     }
 
+    public void InitClone()
+    {
+        FurnitureManager.Instance.RemoveFromRuntime(this);
+        FurnitureManager.Instance.SelectFurniture(null);
+        Vector3 position = transform.position + new Vector3(length, 0, width);
+        var furniture = FurnitureManager.Instance.SpawnFurniture(this.data.itemTemplateID, position);
+        furniture.FetchData(this.data);
+    }
+
     public void Destroy()
     {
         Debug.Log("Destroy furniture");
@@ -603,4 +612,5 @@ public partial class FurnitureItem : MonoBehaviour
         FurnitureManager.Instance.SelectFurniture(null);
         Destroy(gameObject);
     }
+
 }
