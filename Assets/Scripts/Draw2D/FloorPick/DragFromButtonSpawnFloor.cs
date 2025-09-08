@@ -149,7 +149,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         // bắt chọn handle
         if (!isMovingHandle && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
         {
-            TryPickHandleUnderMouse();
+            // TryPickHandleUnderMouse();
         }
 
         if (!isMovingHandle || !hasRect) return;
@@ -412,7 +412,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             var (p0, p1) = edges[i];
 
             // Midpoint trên cạnh
-            Vector3 mid = (p0 + p1) * 0.5f;
+            Vector3 mid = (p0 + p1) * 0.53f;
 
             // Vector "vào tâm"
             Vector3 inward = center - mid;
@@ -432,13 +432,13 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             edgeLabels.Add(label);
 
             float len = Vector3.Distance(p0, p1);
-            string text = $"{len:0.##}";
+            string text = $"{len:0.##} m";
 
             var tmp = label.GetComponent<TMPro.TMP_Text>();
             if (tmp != null)
             {
                 tmp.text = text;
-                tmp.color = Color.black;
+                tmp.color = Color.red;
                 tmp.fontSize = 5f;
                 tmp.alignment = TMPro.TextAlignmentOptions.Center;
             }
@@ -448,7 +448,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
                 if (uiText != null)
                 {
                     uiText.text = text;
-                    uiText.color = Color.black;
+                    uiText.color = Color.black; 
                 }
             }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using Org.BouncyCastle.Security;
 using System;
+using NUnit.Framework.Internal.Filters;
 
 public class RoomInfoDisplay : MonoBehaviour
 {
@@ -452,7 +453,7 @@ public class RoomInfoDisplay : MonoBehaviour
         text.alignment = TextAlignmentOptions.Center;
         text.enableAutoSizing = false;
         text.fontSize = labelFontSize;
-        text.color = labelColor;
+        text.color = Color.red;
         text.outlineWidth = 0.15f;
         text.outlineColor = labelOutlineColor;
         if (labelFont) text.font = labelFont;
@@ -523,7 +524,7 @@ public class RoomInfoDisplay : MonoBehaviour
         text.alignment = TextAlignmentOptions.Center;
         text.enableAutoSizing = false;
         text.fontSize = labelFontSize;
-        text.color = labelColor;
+        text.color = Color.red;
         text.outlineWidth = 0.15f;
         text.outlineColor = labelOutlineColor;
         if (labelFont) text.font = labelFont;
@@ -535,6 +536,8 @@ public class RoomInfoDisplay : MonoBehaviour
 
     private void UpdateFloorLabel(Floor floor)
     {
+        string Fname = string.IsNullOrWhiteSpace(floor.floorName) ? floor.ID : floor.floorName;
+
         if (floor == null) return;
         if (!floorLabels.TryGetValue(floor.ID, out var tmp) || tmp == null)
         {
@@ -550,7 +553,7 @@ public class RoomInfoDisplay : MonoBehaviour
         float baseY = floorGO ? floorGO.transform.position.y : 0f;
 
         tmp.transform.position = new Vector3(centroid2.x, baseY + labelYLift, centroid2.y);
-        tmp.text = $"Floor {floor.ID}\n{area:F2} m²";
+        tmp.text = $"Floor {Fname}\n{area:F2} m²";
 
         if (billboardToCamera && Camera.main)
         {
