@@ -374,6 +374,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
             // Vẽ lại từ state (sẽ cập nhật mesh/line/label vị trí)
             RedrawRectangleFromState();
+
+            Camera.main.GetComponent<CameraResizeByFloor>().Resize(floor.center, floor.checkpoints);
+
         }
 
         isDragging = false;
@@ -388,6 +391,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         {
             if (previewGO) previewGO.SetActive(true);
         }
+
     }
 
     // ==== Hiển thị độ dài cạnh ====

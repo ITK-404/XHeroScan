@@ -19,6 +19,7 @@ public class DimensionOkHandler : MonoBehaviour
     [Header("Rebuild Settings")]
     [Tooltip("Độ nhô của line/marker so với nền phòng khi rebuild (fallback nếu không tìm thấy CreateRoomOnFloor).")]
     [SerializeField] private float fallbackRoomWallLift = 0.003f;
+    [SerializeField] private CameraResizeByFloor cameraResizeByFloor;
 
     private void Awake()
     {
@@ -258,8 +259,8 @@ public class DimensionOkHandler : MonoBehaviour
         {
             Debug.LogWarning("[DimOK] spawnFloor NULL — không thể vẽ lại points/line. Hãy đảm bảo DragFromButtonSpawnFloor có trong scene.");
         }
-
-        Debug.Log($"[DimOK] UPDATED FLOOR {floorId}: points + line + mesh -> {L}x{W}, area={L*W}");
+        Debug.Log($"[DimOK] UPDATED FLOOR {floorId}: points + line + mesh -> {L}x{W}, area={L * W}");
+        cameraResizeByFloor.Resize(target.center, target.checkpoints);
     }
 
     private static string TryReadStringId(object obj)
