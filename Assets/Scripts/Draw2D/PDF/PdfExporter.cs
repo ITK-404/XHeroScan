@@ -43,50 +43,43 @@ public class PdfExporter
             float pageCenterX = PageSize.A4.Width / 2f;
             float pageCenterY = PageSize.A4.Height / 2f;
 
-            // === Example for N ===
+            // --- N (trên)
             cb.BeginText();
-            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "N", pageCenterX, 20, 0);
+            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "N", pageCenterX, PageSize.A4.Height - 40, 0);
             cb.EndText();
 
-            // Arc cho N
             float radiusN = 40f;
             float arcXN = pageCenterX - radiusN;
-            float arcYN = 20 - radiusN;
-            cb.Arc(arcXN, arcYN, arcXN + radiusN * 2, arcYN + radiusN * 2, 0, 180);
+            float arcYN = PageSize.A4.Height - 20 - radiusN;
+            // nửa dưới (mở vào trong trang)
+            cb.Arc(arcXN, arcYN, arcXN + radiusN * 2, arcYN + radiusN * 2, 180, 180);
             cb.Stroke();
 
-            // === Example for S ===
+            // --- S (dưới)
             cb.BeginText();
-            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "S", pageCenterX, PageSize.A4.Height - 40, 0);
+            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "S", pageCenterX, 20, 0);
             cb.EndText();
 
             float radiusS = 40f;
             float arcXS = pageCenterX - radiusS;
-            float arcYS = PageSize.A4.Height - 20 - radiusS;
-            // nửa dưới vòng cung
-            cb.Arc(arcXS, arcYS, arcXS + radiusS * 2, arcYS + radiusS * 2, 180, 180);
+            float arcYS = 20 - radiusS;
+            cb.Arc(arcXS, arcYS, arcXS + radiusS * 2, arcYS + radiusS * 2, 0, 180);
             cb.Stroke();
 
-            // === Tương tự cho E (trái)
+            // --- E (trái) 
             cb.BeginText();
-            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "E", 40, pageCenterY, 90);
+            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "W", 40, pageCenterY, 90); // trái
             cb.EndText();
-
-            float radiusE = 40f;
-            float arcXE = 20 - radiusE;
-            float arcYE = pageCenterY - radiusE;
-            cb.Arc(arcXE, arcYE, arcXE + radiusE * 2, arcYE + radiusE * 2, 270, 180);
+            float rL = 40f, xL = 20 - rL, yL = pageCenterY - rL;
+            cb.Arc(xL, yL, xL + rL * 2, yL + rL * 2, 270, 180);
             cb.Stroke();
 
-            // === W (phải)
+            // --- W (phải)
             cb.BeginText();
-            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "W", PageSize.A4.Width - 40, pageCenterY, 270);
+            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "E", PageSize.A4.Width - 40, pageCenterY, 270); // phải
             cb.EndText();
-
-            float radiusW = 40f;
-            float arcXW = PageSize.A4.Width - 20 - radiusW;
-            float arcYW = pageCenterY - radiusW;
-            cb.Arc(arcXW, arcYW, arcXW + radiusW * 2, arcYW + radiusW * 2, 90, 180);
+            float rR = 40f, xR = PageSize.A4.Width - 20 - rR, yR = pageCenterY - rR;
+            cb.Arc(xR, yR, xR + rR * 2, yR + rR * 2, 90, 180);
             cb.Stroke();
 
             // === Tính global bounding box ===
@@ -354,20 +347,20 @@ public class PdfExporter
     }
 
     static Vector2 Round(Vector2 v, int decimals = 3)
-{
-    return new Vector2((float)Math.Round(v.x, decimals), (float)Math.Round(v.y, decimals));
-}
+    {
+        return new Vector2((float)Math.Round(v.x, decimals), (float)Math.Round(v.y, decimals));
+    }
 
-static bool IsAlreadyDrawn(Vector2 a, Vector2 b, HashSet<string> drawnSet)
-{
-    Vector2 ra = Round(a);
-    Vector2 rb = Round(b);
-    string k1 = $"{ra.x}_{ra.y}_{rb.x}_{rb.y}";
-    string k2 = $"{rb.x}_{rb.y}_{ra.x}_{ra.y}";
-    if (drawnSet.Contains(k1) || drawnSet.Contains(k2)) return true;
-    drawnSet.Add(k1);
-    return false;
-}
+    static bool IsAlreadyDrawn(Vector2 a, Vector2 b, HashSet<string> drawnSet)
+    {
+        Vector2 ra = Round(a);
+        Vector2 rb = Round(b);
+        string k1 = $"{ra.x}_{ra.y}_{rb.x}_{rb.y}";
+        string k2 = $"{rb.x}_{rb.y}_{ra.x}_{ra.y}";
+        if (drawnSet.Contains(k1) || drawnSet.Contains(k2)) return true;
+        drawnSet.Add(k1);
+        return false;
+    }
     
     static bool LineSegmentsIntersect(Vector2 p1, Vector2 p2, Vector2 q1, Vector2 q2, out Vector2 intersection)
     {

@@ -23,6 +23,8 @@ public class WallLine
 
     public bool isManualConnection = false;// line phụ 
 
+    public float headingCompass; // hướng thực địa của tường (tự động tính hoặc mặc định ở Draw2D)
+
     // Dùng cho toàn bộ Line
     public float distanceHeight = 0f;   // độ cao bắt đầu từ mặt đất = 0.5m
     public float Height = 0f; // Chiều cao tường = 2m, chiều cao của cửa / cửa sổ = 1m
