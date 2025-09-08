@@ -16,8 +16,8 @@ public class ModularPopupEdit : MonoBehaviour
     [SerializeField] private GameObject objectSplit;
     [SerializeField] private GameObject objectDouble;
     [SerializeField] private GameObject objectDelete;
-
     [Header("Open behavior")]
+    [SerializeField] private bool isShowSplit = true;
     [SerializeField] private bool deferOpenOneFrame = true;
 
     void Awake()
@@ -34,6 +34,7 @@ public class ModularPopupEdit : MonoBehaviour
             es.AddComponent<EventSystem>();
             es.AddComponent<StandaloneInputModule>();
         }
+        splitBtn.gameObject.SetActive(isShowSplit);
     }
 
     private void ShowOnly(GameObject target)
