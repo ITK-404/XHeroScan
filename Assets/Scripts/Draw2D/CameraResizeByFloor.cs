@@ -23,7 +23,7 @@ public class CameraResizeByFloor : MonoBehaviour
         float size = Mathf.Max(bounds.size.x, bounds.size.y);
 
         //mainCamera.transform.position = newCenter;
-        moveTween = DOVirtual.Float(mainCamera.orthographicSize, size + size * 0.35f, 0.4f, (x) =>
+        moveTween = DOVirtual.Float(mainCamera.orthographicSize, size + size * 0.15f, 0.4f, (x) =>
         {
             mainCamera.orthographicSize = x;
         });

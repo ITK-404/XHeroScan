@@ -1,3 +1,4 @@
+using DG.Tweening.Core.Easing;
 using iTextSharp.text.pdf;
 using System;
 using System.Collections.Generic;
@@ -293,7 +294,7 @@ public partial class FurnitureItem : MonoBehaviour
         ResizeAxis resizeAxis = dragPoint.GetReSizeAxis();
         Quaternion rotation = Quaternion.Euler(0f, currentRotation.y, 0f);
         Vector3 originalCenter = bounds.center;
-
+        originalCenter.y = 5;
         // Chuyển vị trí drag và anchor về "local chưa xoay" (unrotated local space)
         Vector3 dragLocalUnrot = Quaternion.Inverse(rotation) * (localPoint - originalCenter);
         Vector3 anchorLocalUnrot = Quaternion.Inverse(rotation) * (anchorPoint.localPosition - originalCenter);
@@ -334,7 +335,6 @@ public partial class FurnitureItem : MonoBehaviour
         // --- Chuyển center trở về không gian local (có xoay) và cập nhật bounds ---
         bounds.center = originalCenter + rotation * centerLocalUnrot;
         bounds.size = sizeLocal;
-
         // cập nhật width/height nếu dùng chúng trực tiếp
         UpdateWorldSizeFromLocal();
 
@@ -549,7 +549,6 @@ public partial class FurnitureItem : MonoBehaviour
     /// <param name="worldPosition"></param>
     public void MoveAnchorToPositionWithoutChangeShape(CheckpointType type, Vector3 worldPosition)
     {
-        float fixedY = modelContainer.transform.localPosition.y;
 
         var targetAnchor = GetFurniturePoint(type);
         var furnitureWorldPosition = GetWorldPosition();
@@ -565,14 +564,13 @@ public partial class FurnitureItem : MonoBehaviour
         Vector3 newCenterLocal = transform.InverseTransformPoint(newCenterWorld);
 
         var localPosition = newCenterLocal;
-        localPosition = new Vector3(localPosition.x, fixedY, localPosition.z);
 
         if (isUsingCenterPosToSnap)
         {
-            localPosition = transform.InverseTransformPoint(worldPosition);
-            localPosition = new Vector3(localPosition.x, transform.position.y, localPosition.z);
+            var convertPositon = transform.InverseTransformPoint(worldPosition);
+            localPosition = convertPositon;
         }
-
+        localPosition.y = 0;
         // debugPoint.transform.SetParent(modelContainer.transform.parent);
         // debugPoint.transform.localPosition = actualPosition;
 
