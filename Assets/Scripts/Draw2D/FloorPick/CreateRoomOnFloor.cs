@@ -104,26 +104,47 @@ private TextMesh     lenText, widText;
         {
             if (TryGetMouseWorldOnFloor(out var pos, out var col, out var root))
             {
+                // Trúng floor: clamp nhẹ P1 cho chắc (nằm trong/biên)
+                float yPlane = pos.y;
+                var p1Clamped = ClampPointToFloor(pos, root, yPlane);
+
                 isDragging = true;
                 IsCreateRooom = true;
 
-                dragStartWorld = pos;
+                dragStartWorld = p1Clamped;
                 dragFloorRoot = root;
                 dragFloorCol = col;
 
-                // Marker P1
                 if (checkPointManager != null && checkPointManager.checkpointPrefab != null)
                 {
-                    firstMarker = Instantiate(checkPointManager.checkpointPrefab, pos + Vector3.up * 0.01f, Quaternion.identity);
+                    firstMarker = Instantiate(checkPointManager.checkpointPrefab, p1Clamped + Vector3.up * 0.01f, Quaternion.identity);
                     firstMarker.name = "RoomP1_Preview";
                 }
 
-                // Khởi tạo preview
-                UpdatePreview(dragStartWorld, pos, dragFloorRoot);
+                UpdatePreview(dragStartWorld, pos, dragFloorRoot); // p2 sẽ được clamp trong UpdatePreview
+            }
+            else if (TryGetMouseOnAnyFloorClamped(out var p1Snap, out var root2))
+            {
+                // KHÔNG trúng collider floor, nhưng vẫn khởi tạo kéo: coi như P1 nằm trên mép/biên floor gần nhất
+                isDragging = true;
+                IsCreateRooom = true;
+
+                dragStartWorld = p1Snap;
+                dragFloorRoot = root2;
+                dragFloorCol = root2.GetComponent<Collider>() ?? root2.GetComponentInChildren<Collider>();
+
+                if (checkPointManager != null && checkPointManager.checkpointPrefab != null)
+                {
+                    firstMarker = Instantiate(checkPointManager.checkpointPrefab, p1Snap + Vector3.up * 0.01f, Quaternion.identity);
+                    firstMarker.name = "RoomP1_Preview";
+                }
+
+                // Khởi tạo preview với p2 = p1Snap (ngay tại mép); khi kéo tiếp, code MouseDrag đã xử lý clamp
+                UpdatePreview(dragStartWorld, p1Snap, dragFloorRoot);
             }
             else
             {
-                // Không trúng RoomFloor → không cho kéo
+                // Không có floor nào trong scene/tag → không khởi tạo
                 isDragging = false;
                 IsCreateRooom = false;
             }
@@ -205,7 +226,7 @@ private TextMesh     lenText, widText;
     }
 
     // ===== Preview =====
-    private void EnsurePreviewObjects(Transform parentForPreview)
+private void EnsurePreviewObjects(Transform parentForPreview)
 {
     // Root
     if (previewRootGO == null)
@@ -214,15 +235,15 @@ private TextMesh     lenText, widText;
         previewRootGO.transform.SetParent(null, worldPositionStays: true);
     }
 
-    // Materials (phòng khi domain reload)
+    // Materials
     if (previewLineMat == null || previewFillMat == null)
     {
         var unlit = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
-        previewLineMat ??= new Material(unlit);
-        previewFillMat ??= new Material(unlit);
+        if (previewLineMat == null) previewLineMat = new Material(unlit);
+        if (previewFillMat == null) previewFillMat = new Material(unlit);
     }
 
-    // -------- Outline line --------
+    // Outline line
     if (previewLine == null)
     {
         var lineGO = new GameObject("Line");
@@ -238,36 +259,36 @@ private TextMesh     lenText, widText;
         previewLine.sortingOrder = 5;
     }
 
-    // -------- Fill mesh --------
+    // Fill mesh
     if (previewFillGO == null)
     {
         previewFillGO = new GameObject("Fill");
         previewFillGO.transform.SetParent(previewRootGO.transform, false);
     }
-    previewFillMF ??= previewFillGO.AddComponent<MeshFilter>();
-    previewFillMR ??= previewFillGO.AddComponent<MeshRenderer>();
+    if (previewFillMF == null) previewFillMF = previewFillGO.AddComponent<MeshFilter>();
+    if (previewFillMR == null) previewFillMR = previewFillGO.AddComponent<MeshRenderer>();
     previewFillMR.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     previewFillMR.receiveShadows = false;
     if (previewFillMR.sharedMaterial == null) previewFillMR.sharedMaterial = previewFillMat;
-    previewFillMesh ??= new Mesh { name = "RoomPreviewFill" };
+    if (previewFillMesh == null) previewFillMesh = new Mesh { name = "RoomPreviewFill" };
     previewFillMF.sharedMesh = previewFillMesh;
 
-    // ===== Dimension elements (tạo một lần, tái sử dụng) =====
+    // Helpers
     LineRenderer CreateLR(string name)
     {
         var go = new GameObject(name);
         go.transform.SetParent(previewRootGO.transform, false);
         var lr = go.AddComponent<LineRenderer>();
-        lr.useWorldSpace   = true;
-        lr.loop            = false;
+        lr.useWorldSpace = true;
+        lr.loop = false;
         lr.widthMultiplier = lineWidth * dimLineMul;
         lr.numCornerVertices = 2;
-        lr.alignment       = LineAlignment.View;
+        lr.alignment = LineAlignment.View;
         lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        lr.receiveShadows  = false;
-        lr.material        = previewLineMat;
-        lr.positionCount   = 2;
-        lr.sortingOrder    = 10;
+        lr.receiveShadows = false;
+        lr.material = previewLineMat;
+        lr.positionCount = 2;
+        lr.sortingOrder = 10;
         return lr;
     }
     TextMesh CreateText(string name)
@@ -275,46 +296,51 @@ private TextMesh     lenText, widText;
         var go = new GameObject(name);
         go.transform.SetParent(previewRootGO.transform, false);
         var tm = go.AddComponent<TextMesh>();
-        tm.text          = "";
-        tm.anchor        = TextAnchor.MiddleCenter;
-        tm.fontSize      = dimFontSize;
+        tm.text = "";
+        tm.anchor = TextAnchor.MiddleCenter;
+        tm.fontSize = dimFontSize;
         tm.characterSize = dimCharSize;
-        tm.color         = Color.black;
+        tm.color = Color.black;
         var mr = go.GetComponent<MeshRenderer>(); if (mr) mr.sortingOrder = 11;
         return tm;
     }
 
-    // — chiều dài (trên)
-    lenLR    ??= CreateLR("DimLen");
-    lenHeadL ??= CreateLR("DimLenHeadL");
-    lenHeadR ??= CreateLR("DimLenHeadR");
-    lenText  ??= CreateText("DimLenText");
+    // Dimensions — dùng if (x == null) thay vì ??=
+    if (lenLR == null)    lenLR    = CreateLR("DimLen");
+    if (lenHeadL == null) lenHeadL = CreateLR("DimLenHeadL");
+    if (lenHeadR == null) lenHeadR = CreateLR("DimLenHeadR");
+    if (lenText == null)  lenText  = CreateText("DimLenText");
 
-    // — chiều rộng (trái)
-    widLR    ??= CreateLR("DimWid");
-    widHeadB ??= CreateLR("DimWidHeadB");
-    widHeadT ??= CreateLR("DimWidHeadT");
-    widText  ??= CreateText("DimWidText");
+    if (widLR == null)    widLR    = CreateLR("DimWid");
+    if (widHeadB == null) widHeadB = CreateLR("DimWidHeadB");
+    if (widHeadT == null) widHeadT = CreateLR("DimWidHeadT");
+    if (widText == null)  widText  = CreateText("DimWidText");
 
     previewRootGO.SetActive(true);
 }
-
 
     private void HidePreview()
     {
         if (previewRootGO != null) previewRootGO.SetActive(false);
     }
 
-    private void DestroyPreviewImmediate()
-    {
-        if (previewRootGO != null) Destroy(previewRootGO);
-        previewRootGO = null;
-        previewLine = null;
-        previewFillGO = null;
-        previewFillMF = null;
-        previewFillMR = null;
-        previewFillMesh = null;
-    }
+private void DestroyPreviewImmediate()
+{
+    if (previewRootGO != null) Destroy(previewRootGO);
+    previewRootGO = null;
+
+    previewLine = null;
+    previewFillGO = null;
+    previewFillMF = null;
+    previewFillMR = null;
+    previewFillMesh = null;
+    
+    lenLR = lenHeadL = lenHeadR = null;
+    widLR = widHeadB = widHeadT = null;
+    lenText = null;
+    widText = null;
+}
+
 
     private void UpdatePreview(Vector3 p1, Vector3 p2, Transform floorRoot)
     {
@@ -698,5 +724,127 @@ for (int i = 0; i < room.wallLines.Count; i++)
 //     if (angle < 0f) angle += 360f;
 //     return angle;                         // [0,360)
 // }
+// Tìm 1 floor ứng viên gần chuột nhất và trả về P1 đã clamp vào mép sàn.
+// Dùng khi bắt đầu bấm mà không raycast trúng floor nào.
+    private bool TryGetMouseOnAnyFloorClamped(out Vector3 pClamped, out Transform floorRoot)
+    {
+        pClamped = default;
+        floorRoot = null;
+
+        var cam = Camera.main; 
+        if (cam == null) return false;
+
+        // Lấy giao điểm với mặt phẳng ngang (y = 0) làm mốc XZ
+        if (!MouseToPlaneY(0f, out var onPlane)) return false;
+
+        // Lấy tất cả floor theo tag "RoomFloor"
+        var candidates = GameObject.FindGameObjectsWithTag("RoomFloor");
+        if (candidates == null || candidates.Length == 0) return false;
+
+        float bestScore = float.PositiveInfinity;
+        Transform bestRoot = null;
+        Vector3 bestP = default;
+
+        foreach (var go in candidates)
+        {
+            var root = go.transform;
+            // Ưu tiên dùng y của root (hoặc 0 nếu bạn muốn cố định)
+            float y = root.position.y;
+
+            // Snap vào polygon/collider của floor này
+            var snapped = ClampPointToFloor(new Vector3(onPlane.x, y, onPlane.z), root, y);
+
+            // Độ “hợp lý” = khoảng cách 2D giữa onPlane và điểm snap (càng gần càng tốt)
+            float score = (new Vector2(onPlane.x, onPlane.z) - new Vector2(snapped.x, snapped.z)).sqrMagnitude;
+
+            if (score < bestScore)
+            {
+                bestScore = score;
+                bestRoot = root;
+                bestP = snapped;
+            }
+        }
+
+        if (bestRoot != null)
+        {
+            floorRoot = bestRoot;
+            pClamped = bestP;
+            return true;
+        }
+        return false;
+    }
+    // Trả về điểm world đã được "kéo" vào bên trong polygon sàn (hoặc sát mép nếu ở ngoài)
+    private Vector3 ClampPointToFloor(Vector3 worldPoint, Transform floorRoot, float defaultY)
+    {
+        // Nếu có dữ liệu polygon của Floor → snap theo 2D (XZ)
+        if (TryGetFloorFromRoot(floorRoot, out var floor) &&
+            floor.checkpoints != null && floor.checkpoints.Count >= 3)
+        {
+            Vector2 p = new Vector2(worldPoint.x, worldPoint.z);
+
+            // Nếu đã ở trong/biên → giữ nguyên (chỉ chuẩn hóa Y)
+            if (PointInPolygon2D(p, floor.checkpoints) || OnBoundary2D(p, floor.checkpoints, 1e-4f))
+                return new Vector3(worldPoint.x, defaultY, worldPoint.z);
+
+            // Tìm điểm gần nhất trên mọi cạnh
+            float bestDist2 = float.PositiveInfinity;
+            Vector2 best = p;
+
+            for (int i = 0, n = floor.checkpoints.Count; i < n; i++)
+            {
+                var a = floor.checkpoints[i];
+                var b = (i + 1 < n) ? floor.checkpoints[i + 1] : floor.checkpoints[0];
+
+                // project p lên đoạn ab
+                Vector2 ab = b - a;
+                float ab2 = Vector2.Dot(ab, ab);
+                Vector2 cand;
+                if (ab2 < 1e-10f)
+                {
+                    cand = a; // đoạn quá ngắn
+                }
+                else
+                {
+                    float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab2);
+                    cand = a + t * ab;
+                }
+
+                float d2 = (p - cand).sqrMagnitude;
+                if (d2 < bestDist2)
+                {
+                    bestDist2 = d2;
+                    best = cand;
+                }
+            }
+
+            return new Vector3(best.x, defaultY, best.y);
+        }
+
+        // Fallback: dùng collider gần nhất (nếu có)
+        var col = floorRoot ? (floorRoot.GetComponent<Collider>() ?? floorRoot.GetComponentInChildren<Collider>()) : null;
+        if (col != null)
+        {
+            var cp = col.ClosestPoint(worldPoint);
+            return new Vector3(cp.x, defaultY, cp.z);
+        }
+
+        // Không có gì → giữ nguyên XZ, khóa Y
+        return new Vector3(worldPoint.x, defaultY, worldPoint.z);
+    }
+
+    // Tính giao điểm ray chuột với mặt phẳng ngang tại y = planeY
+    private bool MouseToPlaneY(float planeY, out Vector3 hit)
+    {
+        hit = default;
+        var cam = Camera.main; if (cam == null) return false;
+        var ray = cam.ScreenPointToRay(Input.mousePosition);
+        var plane = new Plane(Vector3.up, new Vector3(0f, planeY, 0f));
+        if (plane.Raycast(ray, out float t))
+        {
+            hit = ray.GetPoint(t);
+            return true;
+        }
+        return false;
+    }
 
 }
