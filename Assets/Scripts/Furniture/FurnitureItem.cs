@@ -339,7 +339,7 @@ public partial class FurnitureItem : MonoBehaviour
         UpdateWorldSizeFromLocal();
 
         // Sau khi resize xong, cập nhật hiển thị / điểm:
-        modelContainer.transform.localPosition = bounds.center;
+        modelContainer.transform.localPosition = new Vector3(bounds.center.x, 0, bounds.center.z);
         SetRotation(currentRotation.y);
     }
 

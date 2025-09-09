@@ -238,6 +238,7 @@ GameObject:
   - component: {fileID: 5451159717796942090}
   - component: {fileID: 7209895080006037711}
   - component: {fileID: 2054235385232684237}
+  - component: {fileID: 186900789909442595}
   m_Layer: 9
   m_Name: Furniture Original
   m_TagString: Untagged
@@ -299,8 +300,10 @@ MonoBehaviour:
       heightMinMax: {x: 1, y: 5000}
       lengthMinMax: {x: 0.5, y: 5000}
       offsetY: 0
+    isFlip: 0
   modelContainer: {fileID: 5386840937885300725}
   model2D: {fileID: 3354348105385316814}
+  resizeRatio: {x: 1, y: 1}
   checkPointParent: {fileID: 9142053234481993226}
   leftPoint: {fileID: 3946280342027712294}
   rightPoint: {fileID: 4280884400013859840}
@@ -319,7 +322,6 @@ MonoBehaviour:
   textMeshProPrefab: {fileID: 4512470224821213514, guid: 3af0173042a2bfd468e70f9011b7fdb0,
     type: 3}
   furnitureMergeToWall:
-    offset: 0
     ratio: 0
   textContainer: {fileID: 6759521723316974626}
 --- !u!114 &5451159717796942090
@@ -370,6 +372,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1af84269caabbe4bb958384c2a4f598, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &186900789909442595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4657399046887679853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 129a8f7b1bbbefa4d80638d7ef44b56a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  renderers: []
 --- !u!1 &6090733598302484570
 GameObject:
   m_ObjectHideFlags: 0

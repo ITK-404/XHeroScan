@@ -87,6 +87,10 @@ public class RoomInfoDisplay : MonoBehaviour
                 DeselectAll();
                 ResetState();
                 selectionKind = SelectionKind.Furniture;
+                //var furniture = FurnitureManager.Instance.CurrentFurnitureItem();
+                //var highlightTarget = furniture ? furniture.GetComponent<FurnitureHighlight>() : null;
+
+                //HighlightHandler.Instance.Select(highlightTarget);
                 return;
             }
 
