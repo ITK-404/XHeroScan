@@ -241,13 +241,13 @@ public partial class FurnitureItem : MonoBehaviour
         // tính toán vị trí của check point dựa theo bound
         foreach (var item in pointsArray)
         {
-            furnitureVisuals.Recalculator(item.transform, item.checkpointType, bounds, new Vector3(0, 0.1f, 0));
+            furnitureVisuals.Recalculator(item.transform, item.checkpointType, bounds, new Vector3(0, 0, 0));
         }
 
         // Cập nhật point dùng để xoay object 
         float z = bounds.size.y * 3 * FurnitureManager.Instance.ScaleByCameraZoom.Offset;
         z = Mathf.Clamp(z, 0.25f, float.MaxValue);
-        Vector3 offset = new Vector3(0, 0.1f, -z);
+        Vector3 offset = new Vector3(0, 0, -z);
         furnitureVisuals.Recalculator(rotatePoint.transform, CheckpointType.Bottom, bounds, offset);
 
         // update line
@@ -339,7 +339,7 @@ public partial class FurnitureItem : MonoBehaviour
         UpdateWorldSizeFromLocal();
 
         // Sau khi resize xong, cập nhật hiển thị / điểm:
-        modelContainer.transform.localPosition = new Vector3(bounds.center.x, 0, bounds.center.z);
+        modelContainer.transform.localPosition = new Vector3(bounds.center.x, modelContainer.transform.localPosition.y, bounds.center.z);
         SetRotation(currentRotation.y);
     }
 

@@ -110,8 +110,8 @@ public class BackgroundUI : MonoBehaviour
             backgroundRect.anchorMax = Vector2.one;
             backgroundRect.sizeDelta = Vector2.zero;
 
-            backgroundRect.offsetMax = new Vector2(500, 500);
-            backgroundRect.offsetMin = new Vector2(-500, -500);
+            backgroundRect.offsetMax = new Vector2(3500, 3500);
+            backgroundRect.offsetMin = new Vector2(-3500, -3500);
 
             var entry = new EventTrigger.Entry();
             entry.eventID = EventTriggerType.PointerClick;
