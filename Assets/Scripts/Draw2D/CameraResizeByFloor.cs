@@ -1,4 +1,4 @@
-using DG.Tweening;
+﻿using DG.Tweening;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,7 +12,6 @@ public class CameraResizeByFloor : MonoBehaviour
     {
         moveTween?.Kill();
         sizeTween?.Kill();
-        Debug.Log("Resize camera here");
 
         Vector3 newCenter = new Vector3(center.x, mainCamera.transform.position.y, center.y);
         Bounds bounds = new Bounds();
@@ -20,10 +19,22 @@ public class CameraResizeByFloor : MonoBehaviour
         {
             bounds.Encapsulate(item);
         }
-        float size = Mathf.Max(bounds.size.x, bounds.size.y);
 
-        //mainCamera.transform.position = newCenter;
-        moveTween = DOVirtual.Float(mainCamera.orthographicSize, size + size * 0.15f, 0.4f, (x) =>
+        float aspect = (float)Screen.width / (float)Screen.height;
+
+        // cần cover theo chiều cao
+        float sizeByHeight = bounds.size.y * 0.5f;
+
+        // cần cover theo chiều ngang
+        float sizeByWidth = (bounds.size.x * 0.5f) / aspect;
+
+        // chọn size lớn hơn để đảm bảo cover đủ
+        float targetSize = Mathf.Max(sizeByHeight, sizeByWidth);
+
+        // thêm padding 15%
+        targetSize *= 1.15f;
+
+        moveTween = DOVirtual.Float(mainCamera.orthographicSize, targetSize, 0.4f, (x) =>
         {
             mainCamera.orthographicSize = x;
         });
