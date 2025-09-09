@@ -14,8 +14,8 @@ public class RoomInfoDisplay : MonoBehaviour
     [SerializeField] private LayerMask floorRaycastMask = ~0;
 
     [Header("Floor Highlight")]
-    [SerializeField] private Color floorDefaultColor = Color.white;
-    [SerializeField] private Color floorSelectedColor = Color.yellow;
+    private Color floorDefaultColor = Color.white; // default
+    private Color floorSelectedColor = new Color(0.9608f, 0.9608f, 0.9608f, 1f); // selected
 
     [Header("World Label")]
     [SerializeField] private TMP_FontAsset labelFont; // optional
