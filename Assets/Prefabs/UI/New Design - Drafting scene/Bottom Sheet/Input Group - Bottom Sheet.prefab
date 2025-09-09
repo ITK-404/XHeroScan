@@ -277,6 +277,7 @@ GameObject:
   - component: {fileID: 2197583267113020974}
   - component: {fileID: 322238102885520301}
   - component: {fileID: 7634956322481271603}
+  - component: {fileID: 2329678586985063563}
   m_Layer: 5
   m_Name: Name Input Text
   m_TagString: Untagged
@@ -458,6 +459,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 5
   ID: length
+--- !u!114 &2329678586985063563
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4611726590485312028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3457befc48d5e4d44845cadb0d9d7aa6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tmpInputField: {fileID: 322238102885520301}
 --- !u!1 &5059327886281693841
 GameObject:
   m_ObjectHideFlags: 0
@@ -523,7 +537,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<u>0</u>\u200B"
+  m_text: "\u200B"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a5876c43ec90ae746a3531989c24ffe5, type: 2}
   m_sharedMaterial: {fileID: -1889743222866648285, guid: a5876c43ec90ae746a3531989c24ffe5,
@@ -712,7 +726,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6567681655281677722}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 

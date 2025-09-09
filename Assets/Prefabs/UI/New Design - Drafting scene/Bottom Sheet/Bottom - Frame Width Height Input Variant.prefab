@@ -1030,6 +1030,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 8446132837346711929}
+    - targetCorrespondingSourceObject: {fileID: 6475555967478126574, guid: cfc2debd6c0ac98449ce3a2c405f0e98,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2193621228452819661}
     - targetCorrespondingSourceObject: {fileID: 7285819170624817696, guid: cfc2debd6c0ac98449ce3a2c405f0e98,
         type: 3}
       insertIndex: -1
@@ -1260,6 +1264,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 5
   ID: thickness
+--- !u!114 &2193621228452819661
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9155986745526350282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3457befc48d5e4d44845cadb0d9d7aa6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tmpInputField: {fileID: 172070648310210707}
 --- !u!1001 &3261217780606880584
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -133,6 +133,13 @@ public class FurnitureManager : MonoBehaviour
 
     private void Update()
     {
+        if(currentFurniture != null)
+        {
+            Debug.Log("[Furniture] World Position: " + currentFurniture.transform.position);
+            Debug.Log(("[Furniture] world model positioon: " + currentFurniture.modelContainer.transform.position));
+        }
+
+
         if (tempDragItem)
         {
             tempDragItem.transform.position = GetWorldMousePosition();
