@@ -121,6 +121,9 @@ public class FurnitureManager : MonoBehaviour
     public FurnitureItem SpawnFurniture(string itemID, Vector3 position)
     {
         var furniture = InitItemByID(itemID);
+        
+        if (!furniture) return null;
+
         furniture.transform.position = position;
         furniture.InitLineAndText();
         runtimeFurnitures.Add(furniture);

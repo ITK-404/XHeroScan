@@ -1078,10 +1078,30 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7339981664523599482, guid: d606d0606c87d1648a21e76d461b5529,
+        type: 3}
+      propertyPath: m_TagString
+      value: UI
+      objectReference: {fileID: 0}
+    - target: {fileID: 7823888632797656283, guid: d606d0606c87d1648a21e76d461b5529,
+        type: 3}
+      propertyPath: hideEase
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 7823888632797656283, guid: d606d0606c87d1648a21e76d461b5529,
         type: 3}
       propertyPath: pageType
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7823888632797656283, guid: d606d0606c87d1648a21e76d461b5529,
+        type: 3}
+      propertyPath: showEase
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7823888632797656283, guid: d606d0606c87d1648a21e76d461b5529,
+        type: 3}
+      propertyPath: openDuration
+      value: 0.15
       objectReference: {fileID: 0}
     - target: {fileID: 8283623759916562060, guid: d606d0606c87d1648a21e76d461b5529,
         type: 3}

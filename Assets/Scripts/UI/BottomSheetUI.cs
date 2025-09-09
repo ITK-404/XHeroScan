@@ -39,6 +39,8 @@ public class BottomSheetUI : BaseAnimUI
             isTweenDone = true;
         });
         OnStartShowAnim?.Invoke();
+
+        Debug.Log("Bottom Sheet Open "+gameObject.name);
     }
 
     public override void Close()
@@ -52,6 +54,7 @@ public class BottomSheetUI : BaseAnimUI
             OnEndHideAnim?.Invoke();
             isTweenDone = true;
         });
+        Debug.Log("Bottom Sheet Close " + gameObject.name);
     }
 
     protected void PlayAnim(Vector2 targetPos, float animDuration, Ease animEase, Action endCallback = null)

@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public partial class BottomSheetPageManager : MonoBehaviour
 {
     private BottomSheetPage[] bottomSheetPages;
+    [SerializeField] private Button closeAllBtn;
     public enum PageType
     {
         None,
@@ -21,30 +23,33 @@ public partial class BottomSheetPageManager : MonoBehaviour
             closePageBtn.hideButton.onClick.AddListener(OpenMenu);
             closePageBtn.closeAllBtn.onClick.AddListener(CloseAll);
         }
+        closeAllBtn.onClick.AddListener(CloseAll);
     }
 
     private void CloseAll()
     {
         Debug.Log("Close All");
-        foreach(var page in GetComponentsInChildren<BaseAnimUI>())
+        foreach (var page in GetComponentsInChildren<BaseAnimUI>())
         {
             page.Close();
         }
+        closeAllBtn.gameObject.SetActive(false);
     }
 
     public void Open(PageType pageType)
     {
-        if(pageType == PageType.None)
+        if (pageType == PageType.None)
         {
             CloseAll();
             return;
         }
 
         int highestOrder = transform.childCount;
-        foreach(var page in bottomSheetPages)
+        foreach (var page in bottomSheetPages)
         {
-            if(page.pageType == pageType)
+            if (page.pageType == pageType)
             {
+                Debug.Log("Open Page: " + pageType);
                 page.transform.SetSiblingIndex(highestOrder);
                 page.Open();
                 break;
@@ -54,9 +59,10 @@ public partial class BottomSheetPageManager : MonoBehaviour
 
     public void OpenMenu()
     {
-        foreach(var page in bottomSheetPages)
+        Debug.Log("Open Menu");
+        foreach (var page in bottomSheetPages)
         {
-            if(page.transform != transform)
+            if (page.pageType != PageType.Menu)
             {
                 page.Close();
             }

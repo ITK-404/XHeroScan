@@ -549,7 +549,7 @@ public partial class FurnitureItem : MonoBehaviour
     /// <param name="worldPosition"></param>
     public void MoveAnchorToPositionWithoutChangeShape(CheckpointType type, Vector3 worldPosition)
     {
-
+        float fixedY = modelContainer.transform.localPosition.y;
 
         var targetAnchor = GetFurniturePoint(type);
         var furnitureWorldPosition = GetWorldPosition();
@@ -565,11 +565,12 @@ public partial class FurnitureItem : MonoBehaviour
         Vector3 newCenterLocal = transform.InverseTransformPoint(newCenterWorld);
 
         var localPosition = newCenterLocal;
-        localPosition.y = modelContainer.transform.localPosition.y;
+        localPosition = new Vector3(localPosition.x, fixedY, localPosition.z);
 
         if (isUsingCenterPosToSnap)
         {
             localPosition = transform.InverseTransformPoint(worldPosition);
+            localPosition = new Vector3(localPosition.x, transform.position.y, localPosition.z);
         }
 
         // debugPoint.transform.SetParent(modelContainer.transform.parent);

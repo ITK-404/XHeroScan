@@ -167,18 +167,19 @@ public class PenManager : MonoBehaviour
         if (plane.Raycast(ray, out float enter)) return ray.GetPoint(enter);
         return Vector3.zero;
     }
-
+    [SerializeField] private RectTransform bottomSheet;
     private bool IsPointerInActionSpace(Vector2 screenPosition)
     {
         if (ActionSpace == null) return false;
 
         RectTransform rt = ActionSpace.GetComponent<RectTransform>();
-
         // Nếu canvas là Overlay, camera nên là null
         Canvas canvas = ActionSpace.GetComponentInParent<Canvas>();
         Camera cam = (canvas != null && canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : mainCamera;
 
-        return RectTransformUtility.RectangleContainsScreenPoint(rt, screenPosition, cam);
+        bool isInActionSpace = RectTransformUtility.RectangleContainsScreenPoint(rt, screenPosition, cam);
+        //bool isInBoottomSpace = RectTransformUtility.RectangleContainsScreenPoint(rt, screenPosition, cam);
+        return isInActionSpace;
     }
 
     private bool IsClickingOnBackgroundBlackUI(Vector2 screenPosition)
@@ -193,7 +194,7 @@ public class PenManager : MonoBehaviour
 
         foreach (var result in results)
         {
-            if (result.gameObject.name == "Background Black")
+            if (result.gameObject.name == "Background Black" || result.gameObject.CompareTag("UI"))
             {
                 Debug.Log("Click UI trên Background Black ➜ Không cho pan/zoom");
                 return true;
