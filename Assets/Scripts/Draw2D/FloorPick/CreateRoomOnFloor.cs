@@ -185,41 +185,119 @@ public class CreateRoomOnFloor : MonoBehaviour
         pos = hit.point; // giữ nguyên cao độ thực tế
         return true;
     }
+// ===== Dimension config (preview thước đo) =====
+[Header("Dimension Preview")]
+[Tooltip("Tỉ lệ độ dày line so với line viền")]
+public float dimLineMul = 0.6f;
+[Tooltip("Độ lệch thước so với cạnh (m)")]
+public float dimOffset = 0.10f;
+[Tooltip("Độ dài cánh mũi tên (m)")]
+public float dimHeadSize = 0.10f;
+[Tooltip("Font size cho TextMesh")]
+public int dimFontSize = 900;
+[Tooltip("Kích cỡ ký tự trong world")]
+public float dimCharSize = 0.03f;
+
+// Reusable dimension elements
+private LineRenderer lenLR, lenHeadL, lenHeadR; // top (length)
+private LineRenderer widLR, widHeadB, widHeadT; // left (width)
+private TextMesh     lenText, widText;
 
     // ===== Preview =====
     private void EnsurePreviewObjects(Transform parentForPreview)
+{
+    // Root
+    if (previewRootGO == null)
     {
-        if (previewRootGO == null)
-        {
-            previewRootGO = new GameObject("[Room Preview]");
-            previewRootGO.transform.SetParent(null, worldPositionStays: true);
-
-            // Line
-            var lineGO = new GameObject("Line");
-            lineGO.transform.SetParent(previewRootGO.transform, false);
-            previewLine = lineGO.AddComponent<LineRenderer>();
-            previewLine.loop = true;
-            previewLine.widthMultiplier = lineWidth;
-            previewLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            previewLine.receiveShadows = false;
-            previewLine.alignment = LineAlignment.View;
-            previewLine.material = previewLineMat;
-            previewLine.positionCount = 4;
-
-            // Fill
-            previewFillGO = new GameObject("Fill");
-            previewFillGO.transform.SetParent(previewRootGO.transform, false);
-            previewFillMF = previewFillGO.AddComponent<MeshFilter>();
-            previewFillMR = previewFillGO.AddComponent<MeshRenderer>();
-            previewFillMR.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            previewFillMR.receiveShadows = false;
-            previewFillMR.sharedMaterial = previewFillMat;
-            previewFillMesh = new Mesh { name = "RoomPreviewFill" };
-            previewFillMF.sharedMesh = previewFillMesh;
-        }
-
-        previewRootGO.SetActive(true);
+        previewRootGO = new GameObject("[Room Preview]");
+        previewRootGO.transform.SetParent(null, worldPositionStays: true);
     }
+
+    // Materials (phòng khi domain reload)
+    if (previewLineMat == null || previewFillMat == null)
+    {
+        var unlit = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
+        previewLineMat ??= new Material(unlit);
+        previewFillMat ??= new Material(unlit);
+    }
+
+    // -------- Outline line --------
+    if (previewLine == null)
+    {
+        var lineGO = new GameObject("Line");
+        lineGO.transform.SetParent(previewRootGO.transform, false);
+        previewLine = lineGO.AddComponent<LineRenderer>();
+        previewLine.loop = true;
+        previewLine.widthMultiplier = lineWidth;
+        previewLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        previewLine.receiveShadows = false;
+        previewLine.alignment = LineAlignment.View;
+        previewLine.material = previewLineMat;
+        previewLine.positionCount = 4;
+        previewLine.sortingOrder = 5;
+    }
+
+    // -------- Fill mesh --------
+    if (previewFillGO == null)
+    {
+        previewFillGO = new GameObject("Fill");
+        previewFillGO.transform.SetParent(previewRootGO.transform, false);
+    }
+    previewFillMF ??= previewFillGO.AddComponent<MeshFilter>();
+    previewFillMR ??= previewFillGO.AddComponent<MeshRenderer>();
+    previewFillMR.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    previewFillMR.receiveShadows = false;
+    if (previewFillMR.sharedMaterial == null) previewFillMR.sharedMaterial = previewFillMat;
+    previewFillMesh ??= new Mesh { name = "RoomPreviewFill" };
+    previewFillMF.sharedMesh = previewFillMesh;
+
+    // ===== Dimension elements (tạo một lần, tái sử dụng) =====
+    LineRenderer CreateLR(string name)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(previewRootGO.transform, false);
+        var lr = go.AddComponent<LineRenderer>();
+        lr.useWorldSpace   = true;
+        lr.loop            = false;
+        lr.widthMultiplier = lineWidth * dimLineMul;
+        lr.numCornerVertices = 2;
+        lr.alignment       = LineAlignment.View;
+        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        lr.receiveShadows  = false;
+        lr.material        = previewLineMat;
+        lr.positionCount   = 2;
+        lr.sortingOrder    = 10;
+        return lr;
+    }
+    TextMesh CreateText(string name)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(previewRootGO.transform, false);
+        var tm = go.AddComponent<TextMesh>();
+        tm.text          = "";
+        tm.anchor        = TextAnchor.MiddleCenter;
+        tm.fontSize      = dimFontSize;
+        tm.characterSize = dimCharSize;
+        tm.color         = Color.black;
+        var mr = go.GetComponent<MeshRenderer>(); if (mr) mr.sortingOrder = 11;
+        return tm;
+    }
+
+    // — chiều dài (trên)
+    lenLR    ??= CreateLR("DimLen");
+    lenHeadL ??= CreateLR("DimLenHeadL");
+    lenHeadR ??= CreateLR("DimLenHeadR");
+    lenText  ??= CreateText("DimLenText");
+
+    // — chiều rộng (trái)
+    widLR    ??= CreateLR("DimWid");
+    widHeadB ??= CreateLR("DimWidHeadB");
+    widHeadT ??= CreateLR("DimWidHeadT");
+    widText  ??= CreateText("DimWidText");
+
+    previewRootGO.SetActive(true);
+}
+
 
     private void HidePreview()
     {
@@ -284,6 +362,80 @@ public class CreateRoomOnFloor : MonoBehaviour
         if (previewFillMR.sharedMaterial == null) previewFillMR.sharedMaterial = previewFillMat;
         if (previewFillMR.sharedMaterial.HasProperty("_Color"))
             previewFillMR.sharedMaterial.color = ok ? previewOKFill : previewBadFill;
+        // ===== Dimensions (thước và text) =====
+        float yDim = v0.y + 0.012f;
+        Color dimCol = ok ? previewOKLine : previewBadLine;
+
+        void SetLRColor(LineRenderer lr)
+        {
+            if (lr == null) return;
+            lr.startColor = dimCol; lr.endColor = dimCol;
+            lr.widthMultiplier = lineWidth * dimLineMul;
+        }
+
+        // Vẽ một dimension (thân + 2 đầu + text) — KHÔNG xoay theo camera
+        void DrawDim(LineRenderer body, LineRenderer headA, LineRenderer headB, TextMesh text,
+             Vector3 a, Vector3 b, bool offsetToOuter, Vector3 textAxis /* hướng chữ */)
+        {
+            if (body == null || headA == null || headB == null || text == null) return;
+
+            Vector3 dir = b - a; dir.y = 0f;
+            if (dir.sqrMagnitude < 1e-6f) return;
+
+            Vector3 perp = Vector3.Cross(Vector3.up, dir).normalized;
+            Vector3 off = (offsetToOuter ? perp : -perp) * dimOffset;
+
+            Vector3 A = new Vector3(a.x, yDim, a.z) + off;
+            Vector3 B = new Vector3(b.x, yDim, b.z) + off;
+
+            // thân
+            body.positionCount = 2;
+            body.SetPosition(0, A);
+            body.SetPosition(1, B);
+            SetLRColor(body);
+
+            // đầu A
+            Vector3 back = (-dir).normalized;
+            Vector3 wingL = (Quaternion.Euler(0f, +25f, 0f) * back).normalized;
+            Vector3 wingR = (Quaternion.Euler(0f, -25f, 0f) * back).normalized;
+            headA.positionCount = 3;
+            headA.SetPosition(0, A);
+            headA.SetPosition(1, A + wingL * dimHeadSize);
+            headA.SetPosition(2, A + wingR * dimHeadSize);
+            SetLRColor(headA);
+
+            // đầu B
+            Vector3 fwrd = dir.normalized;
+            wingL = (Quaternion.Euler(0f, +25f, 0f) * fwrd).normalized;
+            wingR = (Quaternion.Euler(0f, -25f, 0f) * fwrd).normalized;
+            headB.positionCount = 3;
+            headB.SetPosition(0, B);
+            headB.SetPosition(1, B + wingL * dimHeadSize);
+            headB.SetPosition(2, B + wingR * dimHeadSize);
+            SetLRColor(headB);
+
+
+            float dist = Vector3.Distance(a, b);
+            text.text = $"{dist:0.##} m";
+            text.transform.position = (A + B) * 0.5f + Vector3.up * 0.001f;
+
+
+            Vector3 axis = Vector3.ProjectOnPlane(textAxis, Vector3.up);
+            if (axis.sqrMagnitude < 1e-6f) axis = Vector3.right;
+
+            bool alongX = Mathf.Abs(axis.x) >= Mathf.Abs(axis.z);
+            axis = alongX ? Vector3.right : Vector3.forward;
+
+            Quaternion baseFlatDown = Quaternion.AngleAxis(90f, Vector3.right);
+            float yaw = alongX ? -90f : 0f;                                      
+            text.transform.rotation = Quaternion.AngleAxis(yaw, Vector3.up) * baseFlatDown;
+        }
+
+        DrawDim(lenLR, lenHeadL, lenHeadR, lenText, vv1, vv2, true, Vector3.forward);
+
+        DrawDim(widLR, widHeadB, widHeadT, widText, vv0, vv1, false, Vector3.right);
+
+
     }
 
     // ===== Tạo room khi thả chuột =====
