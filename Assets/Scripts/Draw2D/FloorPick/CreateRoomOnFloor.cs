@@ -34,7 +34,7 @@ public class CreateRoomOnFloor : MonoBehaviour
     private bool isDragging = false;
     private Vector3 dragStartWorld;             // P1 (khi MouseDown)
     private Transform dragFloorRoot;            // RoomFloor root tại P1
-    private Collider  dragFloorCol;             // collider tại P1 (thông tin phụ)
+    private Collider dragFloorCol;             // collider tại P1 (thông tin phụ)
 
     // Marker P1
     private GameObject firstMarker = null;
@@ -152,11 +152,11 @@ public class CreateRoomOnFloor : MonoBehaviour
         }
 
         if (CreateRoomButton != null)
-            {
-                var colors = CreateRoomButton.colors;
-                colors.normalColor = placingActive ? new Color(0.8f, 1f, 0.8f) : Color.white;
-                CreateRoomButton.colors = colors;
-            }
+        {
+            var colors = CreateRoomButton.colors;
+            colors.normalColor = placingActive ? new Color(0.8f, 1f, 0.8f) : Color.white;
+            CreateRoomButton.colors = colors;
+        }
     }
 
     // ===== Raycast chuột -> world pos + collider + RoomFloor root =====
@@ -266,14 +266,14 @@ public class CreateRoomOnFloor : MonoBehaviour
 
         // Line
         previewLine.startColor = ok ? previewOKLine : previewBadLine;
-        previewLine.endColor   = ok ? previewOKLine : previewBadLine;
+        previewLine.endColor = ok ? previewOKLine : previewBadLine;
         previewLine.widthMultiplier = lineWidth;
         previewLine.positionCount = 4;
         previewLine.SetPositions(new[] { vv0, vv1, vv2, vv3 });
 
         // Fill
         var verts = new Vector3[] { vv0, vv1, vv2, vv3 };
-        var tris  = new int[] { 0, 1, 2, 0, 2, 3 };
+        var tris = new int[] { 0, 1, 2, 0, 2, 3 };
 
         previewFillMesh.Clear();
         previewFillMesh.vertices = verts;
@@ -355,12 +355,24 @@ public class CreateRoomOnFloor : MonoBehaviour
             new WallLine(v3_show, v0_show, LineType.Wall),
         }
         };
+        // === HƯỚNG MẶC ĐỊNH CHO ROOM: Bắc ===
+// Bắc = Z+ => heading = 0°, compass = (0,1)
+room.headingCompass = 0f;
+room.Compass = new Vector2(0f, 1f);
+
+// === Gán heading cho từng đoạn tường theo chuẩn Bắc = 0° ===
+for (int i = 0; i < room.wallLines.Count; i++)
+{
+    var wl = room.wallLines[i];
+    wl.headingCompass = HeadingManager.HeadingDeg(wl.start, wl.end);
+    room.wallLines[i] = wl; // struct-like assign (vì WallLine là class thì không cần thiết, nhưng cứ giữ an toàn)
+}
 
         room.center = GeoUtil.Centroid(room.checkpoints);
         // Lưu storage
         RoomStorage.UpdateOrAddRoom(room);
         floor.RegisterRoom(room); // gắn room.ID vào floor.roomIDs
-        
+
         GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
         floorGO.transform.SetPositionAndRotation(new Vector3(0f, baseRoomY, 0f), Quaternion.identity);
         var meshCtrl = floorGO.AddComponent<RoomMeshController>();
@@ -520,4 +532,18 @@ public class CreateRoomOnFloor : MonoBehaviour
         }
         return false;
     }
+    
+    // 0° = Bắc (Z+), 90° = Đông (X+), 180° = Nam (Z-), 270° = Tây (X-)
+// private static float HeadingDeg(Vector3 from, Vector3 to)
+// {
+//     Vector3 dir = to - from;
+//     dir.y = 0f;                           // chỉ xét mặt phẳng XZ
+//     if (dir.sqrMagnitude < 1e-8f) return 0f;
+
+//     // Atan2(x, z) để ra 0° khi trỏ thẳng lên Z+
+//     float angle = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+//     if (angle < 0f) angle += 360f;
+//     return angle;                         // [0,360)
+// }
+
 }

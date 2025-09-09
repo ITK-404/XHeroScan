@@ -63,6 +63,7 @@ public static class SaveLoadManager
                     distanceHeight = w.distanceHeight,
                     Height = w.Height,
                     isManualConnection = w.isManualConnection,
+                    headingCompass=w.headingCompass,
                     materialFront = w.materialFront,
                     materialBack = w.materialBack
                 }),
@@ -140,6 +141,7 @@ public static class SaveLoadManager
             {
                 var line = new WallLine(w.start, w.end, w.type, w.distanceHeight, w.Height, w.materialFront, w.materialBack);
                 line.isManualConnection = w.isManualConnection;
+                line.headingCompass = w.headingCompass;
                 line.isVisible = w.isVisible;
                 return line;
             });

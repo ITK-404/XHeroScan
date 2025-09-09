@@ -568,13 +568,81 @@ public class CheckpointManager : MonoBehaviour
             mesh.GenerateMesh(room.checkpoints); // truyền world points
 
             // Wall lines (world + nâng y)
-            foreach (var wl in room.wallLines)
-            {
-                var s = new Vector3(wl.start.x, roomIndexY + lineLift, wl.start.z);
-                var e = new Vector3(wl.end.x, roomIndexY + lineLift, wl.end.z);
-                DrawingTool.currentLineType = wl.type;
-                DrawingTool.DrawLineAndDistance(s, e);
-            }
+// Wall lines (world + nâng y)
+foreach (var wl in room.wallLines)
+{
+    var s = new Vector3(wl.start.x, roomIndexY + lineLift, wl.start.z);
+    var e = new Vector3(wl.end.x,   roomIndexY + lineLift, wl.end.z);
+
+    // Vẽ đoạn tường gốc như cũ
+    DrawingTool.currentLineType = wl.type;
+    DrawingTool.DrawLineAndDistance(s, e);
+
+    // >>> ADDED: draw wall heading arrow (Bắc = Z+)
+    // Lấy heading từ data; nếu =0 và đoạn không song song Z+, tự tính từ vector start->end
+    float compass = wl.headingCompass;
+    Vector3 dirSE = (e - s); dirSE.y = 0f;
+
+    if (compass == 0f && dirSE.sqrMagnitude > 1e-8f)
+    {
+        // 0° khi trỏ thẳng Z+; 90° khi trỏ X+
+        float ang = Mathf.Atan2(dirSE.x, dirSE.z) * Mathf.Rad2Deg;
+        if (ang < 0f) ang += 360f;
+        compass = ang;
+        wl.headingCompass = ang; // lưu ngược lại nếu bạn muốn
+    }
+
+    // Mũi tên ở giữa đoạn, chỉ theo compass
+    Vector3 mid = (s + e) * 0.5f;
+    Quaternion rot = Quaternion.Euler(0f, compass, 0f);
+    Vector3 fwd = rot * Vector3.forward; // Bắc = Z+ => 0°
+
+    float arrowLen  = 0.6f;   // chiều dài mũi tên
+    float headSize  = 0.18f;  // kích thước đầu mũi tên
+
+    Vector3 tip     = mid + fwd.normalized * arrowLen;
+    Vector3 basePt  = mid;
+
+    // Tạo GO vẽ mũi tên (line mảnh)
+    var arrowGO = new GameObject($"Heading_{room.ID}");
+    arrowGO.transform.position = Vector3.zero;
+    var lr = arrowGO.AddComponent<LineRenderer>();
+    lr.useWorldSpace = true;
+    lr.loop = false;
+    lr.widthMultiplier = 0.02f;
+    lr.numCornerVertices = 2;
+
+    var unlit = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
+    lr.material = new Material(unlit);
+    if (lr.material.HasProperty("_Color")) lr.material.SetColor("_Color", new Color(0.9f, 0.7f, 0.2f, 1f));
+
+    // Thân mũi tên
+    lr.positionCount = 2;
+    lr.SetPosition(0, basePt);
+    lr.SetPosition(1, tip);
+
+    // Hai gạch đầu mũi tên (tạo thêm 2 LineRenderer nhỏ)
+    Vector3 headLeftDir  = (Quaternion.Euler(0f, 150f, 0f) * fwd).normalized;
+    Vector3 headRightDir = (Quaternion.Euler(0f, -150f, 0f) * fwd).normalized;
+
+    void DrawHead(Vector3 from, Vector3 dir)
+    {
+        var h = new GameObject("Head");
+        h.transform.SetParent(arrowGO.transform, false);
+        var l = h.AddComponent<LineRenderer>();
+        l.useWorldSpace = true;
+        l.loop = false;
+        l.widthMultiplier = 0.02f;
+        l.material = lr.material;
+        l.positionCount = 2;
+        l.SetPosition(0, from);
+        l.SetPosition(1, from + dir * headSize);
+    }
+    DrawHead(tip, headLeftDir);
+    DrawHead(tip, headRightDir);
+    // <<< ADDED
+}
+
         }
     }
 

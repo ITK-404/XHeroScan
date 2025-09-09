@@ -20,6 +20,7 @@ public class SavedWallLine
     public bool isVisible;
     public float distanceHeight;
     public float Height;
+    public float headingCompass;
     public bool isManualConnection;
     public string materialFront;
     public string materialBack;
