@@ -21,6 +21,8 @@ public class FurnitureEditFunction : MonoBehaviour
     private TMP_InputField widthInputField;
     private TMP_InputField lengthInputField;
     private Button buttonOk;
+
+    private ModularPopupEdit popupEdit;
     private void Start()
     {
         furnitureManager = FurnitureManager.Instance;
@@ -33,7 +35,7 @@ public class FurnitureEditFunction : MonoBehaviour
         
         buttonOk.onClick.AddListener(OnChangeSize);
 
-        var popupEdit = currentPopup.GetComponent<ModularPopupEdit>();
+        popupEdit = currentPopup.GetComponent<ModularPopupEdit>();
         popupEdit.deleteBtn.onClick.AddListener(DeleteFurniture);
         popupEdit.doubleBtn.onClick.AddListener(DoubleFurniture);
         popupEdit.flipBtn.onClick.AddListener(FlipToggle);
@@ -120,6 +122,8 @@ public class FurnitureEditFunction : MonoBehaviour
             
             Vector3 standPosition = new Vector3(worldPositon.x + offsetX, currentPopup.transform.position.y, finalZPosition);
             currentPopup.transform.position = standPosition;
+            
+            popupEdit.flipBtn.gameObject.SetActive(currentFurniture.lineType == LineType.Wall);
             // maybe create world space canvas
         }
         currentPopup.gameObject.SetActive(currentFurniture);
