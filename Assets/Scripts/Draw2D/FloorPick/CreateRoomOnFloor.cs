@@ -51,6 +51,24 @@ public class CreateRoomOnFloor : MonoBehaviour
 
     public static bool IsCreateRooom = false;
 
+// ===== Dimension config (preview thước đo) =====
+[Header("Dimension Preview")]
+[Tooltip("Tỉ lệ độ dày line so với line viền")]
+public float dimLineMul = 0.6f;
+[Tooltip("Độ lệch thước so với cạnh (m)")]
+public float dimOffset = 0.10f;
+[Tooltip("Độ dài cánh mũi tên (m)")]
+public float dimHeadSize = 0.10f;
+[Tooltip("Font size cho TextMesh")]
+public int dimFontSize = 100;
+[Tooltip("Kích cỡ ký tự trong world")]
+public float dimCharSize = 0.03f;
+
+// Reusable dimension elements
+private LineRenderer lenLR, lenHeadL, lenHeadR; // top (length)
+private LineRenderer widLR, widHeadB, widHeadT; // left (width)
+private TextMesh     lenText, widText;
+
     void Start()
     {
         checkPointManager = FindFirstObjectByType<CheckpointManager>();
@@ -185,23 +203,6 @@ public class CreateRoomOnFloor : MonoBehaviour
         pos = hit.point; // giữ nguyên cao độ thực tế
         return true;
     }
-// ===== Dimension config (preview thước đo) =====
-[Header("Dimension Preview")]
-[Tooltip("Tỉ lệ độ dày line so với line viền")]
-public float dimLineMul = 0.6f;
-[Tooltip("Độ lệch thước so với cạnh (m)")]
-public float dimOffset = 0.10f;
-[Tooltip("Độ dài cánh mũi tên (m)")]
-public float dimHeadSize = 0.10f;
-[Tooltip("Font size cho TextMesh")]
-public int dimFontSize = 900;
-[Tooltip("Kích cỡ ký tự trong world")]
-public float dimCharSize = 0.03f;
-
-// Reusable dimension elements
-private LineRenderer lenLR, lenHeadL, lenHeadR; // top (length)
-private LineRenderer widLR, widHeadB, widHeadT; // left (width)
-private TextMesh     lenText, widText;
 
     // ===== Preview =====
     private void EnsurePreviewObjects(Transform parentForPreview)

@@ -16075,6 +16075,11 @@ MonoBehaviour:
   roomIndex: 2
   layerStepY: 0.002
   roomWallLift: 0.003
+  dimLineMul: 0.6
+  dimOffset: 0.1
+  dimHeadSize: 0.1
+  dimFontSize: 100
+  dimCharSize: 0.03
 --- !u!114 &1908743460
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16090,8 +16095,6 @@ MonoBehaviour:
   floorRaycastMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  floorDefaultColor: {r: 1, g: 1, b: 1, a: 1}
-  floorSelectedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   labelFont: {fileID: 0}
   labelFontSize: 5
   labelColor: {r: 0, g: 0, b: 0, a: 1}
@@ -19064,6 +19067,16 @@ PrefabInstance:
       propertyPath: cameraResizeByFloor
       value: 
       objectReference: {fileID: 1336687767}
+    - target: {fileID: 7294655210138116433, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -118.08984
+      objectReference: {fileID: 0}
+    - target: {fileID: 7294655210138116433, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 301.90308
+      objectReference: {fileID: 0}
     - target: {fileID: 7449279310118299843, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchorMax.y
