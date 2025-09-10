@@ -12,7 +12,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: 0e811a58cb88e9341b83c95f04753f8d,
+      objectReference: {fileID: 21300000, guid: b8cbcba07e6278c4e9a621e4f1a6c4f7,
         type: 3}
     - target: {fileID: 3354348105385316814, guid: 1850da32bbd8b94469465dadbf227141,
         type: 3}
@@ -22,7 +22,7 @@ PrefabInstance:
     - target: {fileID: 4657399046887679853, guid: 1850da32bbd8b94469465dadbf227141,
         type: 3}
       propertyPath: m_Name
-      value: Window
+      value: Four Window
       objectReference: {fileID: 0}
     - target: {fileID: 5406030576398905754, guid: 1850da32bbd8b94469465dadbf227141,
         type: 3}
@@ -77,7 +77,7 @@ PrefabInstance:
     - target: {fileID: 5824219951104008082, guid: 1850da32bbd8b94469465dadbf227141,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.26903003
+      value: 0.072246835
       objectReference: {fileID: 0}
     - target: {fileID: 5824219951104008082, guid: 1850da32bbd8b94469465dadbf227141,
         type: 3}
@@ -87,7 +87,7 @@ PrefabInstance:
     - target: {fileID: 5824219951104008082, guid: 1850da32bbd8b94469465dadbf227141,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.049
+      value: 0.0487
       objectReference: {fileID: 0}
     - target: {fileID: 5824219951104008082, guid: 1850da32bbd8b94469465dadbf227141,
         type: 3}
@@ -106,6 +106,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7234985322380843007, guid: 1850da32bbd8b94469465dadbf227141,
         type: 3}
+      propertyPath: data.size.width
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7234985322380843007, guid: 1850da32bbd8b94469465dadbf227141,
+        type: 3}
       propertyPath: data.size.length
       value: 0.2
       objectReference: {fileID: 0}
@@ -118,7 +123,7 @@ PrefabInstance:
     - target: {fileID: 7234985322380843007, guid: 1850da32bbd8b94469465dadbf227141,
         type: 3}
       propertyPath: data.itemTemplateID
-      value: window_1
+      value: window_4
       objectReference: {fileID: 0}
     - target: {fileID: 7234985322380843007, guid: 1850da32bbd8b94469465dadbf227141,
         type: 3}
