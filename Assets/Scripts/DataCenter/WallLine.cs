@@ -71,6 +71,7 @@ public class Room
     public string groupID;
     public string roomName;
     public string floorID; // ID sàn liên kết (nếu có)
+    public float thickness;
 
     public Vector2 center; // tọa độ trung tâm phòng
 
