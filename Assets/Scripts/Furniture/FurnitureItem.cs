@@ -19,7 +19,6 @@ public enum FurnitureState
     Select,
     UnSelect
 }
-
 public partial class FurnitureItem : MonoBehaviour
 {
     public static bool OnDragFurniture = false;
@@ -37,7 +36,7 @@ public partial class FurnitureItem : MonoBehaviour
     {
         get => data.size.lengthMinMax.x / 2;
     }
-
+    [SerializeField] private Vector2 hitBoxSizeBuffer = Vector2.one;
     [Header("Cấu hình để phân biệt cửa/cửa sổ và đồ nội thất")]
     [SerializeField] private bool allowSnapToWall = false; // có thể gắn vào tường
     [SerializeField] private bool allowShowAllCheckPoint = false; // hiển thị 1 phần check point (chỉ bật cho cửa, cửa sổ )
@@ -48,7 +47,6 @@ public partial class FurnitureItem : MonoBehaviour
     public LineType lineType;
     [Header("References")]
     public DrawingInstanced data;
-
     public Transform modelContainer;
     public SpriteRenderer model2D;
     public Vector2 resizeRatio = Vector2.one;
@@ -71,7 +69,6 @@ public partial class FurnitureItem : MonoBehaviour
 
     [Header("Prefabs")]
     [SerializeField] private LineRenderer lineRendererPrefab;
-
     [SerializeField] private TextMeshPro textMeshProPrefab;
 
     public FurnitureMergeToWall furnitureMergeToWall;
@@ -177,8 +174,18 @@ public partial class FurnitureItem : MonoBehaviour
             bottomLeftPoint.gameObject,
             bottomRightPoint.gameObject);
 
-        TextDistance topTextDistance = new TextDistance(CreateTextMeshPro(), topLine);
-        TextDistance rightTextDistance = new TextDistance(CreateTextMeshPro(), rightLine);
+        TextDistance topTextDistance = null;
+        TextDistance rightTextDistance = null;
+        if (lineType == LineType.None)
+        {
+            topTextDistance = new TextDistance(CreateTextMeshPro(), topLine);
+            rightTextDistance = new TextDistance(CreateTextMeshPro(), rightLine);
+        }
+        else
+        {
+            topTextDistance = new TextDistance(CreateTextMeshPro(), topLine);
+        }
+
 
         IUpdateWhenMoves = new IUpdateWhenMove[]
             { topLine, leftLine, rightLine, bottomLine, topTextDistance, rightTextDistance };
@@ -255,6 +262,7 @@ public partial class FurnitureItem : MonoBehaviour
         if (IUpdateWhenMoves == null) return;
         foreach (var item in IUpdateWhenMoves)
         {
+            if(item == null) continue;
             item.Update();
         }
     }
@@ -273,6 +281,7 @@ public partial class FurnitureItem : MonoBehaviour
         if (IUpdateWhenMoves == null) return;
         foreach (var item in IUpdateWhenMoves)
         {
+            if(item == null) continue;
             item.UpdateWhenCameraZoom();
         }
 

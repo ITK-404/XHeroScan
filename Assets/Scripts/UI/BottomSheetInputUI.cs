@@ -13,6 +13,8 @@ public class BottomSheetInputUI : BottomSheetUI
     protected override void Update()
     {
         base.Update();
+        if (container.gameObject.activeSelf == false) return;
+
         bool isVisible = TouchScreenKeyboard.visible;
 
         if (isVisible != previousState && container.gameObject.activeSelf)
@@ -27,6 +29,8 @@ public class BottomSheetInputUI : BottomSheetUI
             delayTime = 1;
             OnInputFocus();
         }
+
+        Debug.Log($"On Show Keyboard: {TouchScreenKeyboard.visible} {TouchScreenKeyboard.area}");
     }
 
     public void OnInputFocus()
