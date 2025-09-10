@@ -14,9 +14,9 @@ public class CreateRoomOnFloor : MonoBehaviour
 
     [Header("Preview Style")]
     public float lineWidth = 0.02f;
-    public Color previewOKLine = new Color(0.2f, 1f, 0.2f, 1f);
+    public Color previewOKLine = Color.white;
     public Color previewBadLine = new Color(1f, 0.2f, 0.2f, 1f);
-    public Color previewOKFill = new Color(0.2f, 1f, 0.2f, 0.15f);
+    public Color previewOKFill = Color.white;
     public Color previewBadFill = new Color(1f, 0.2f, 0.2f, 0.2f);
 
     // >>> NEW: Layering để room luôn nổi trên floor
@@ -470,7 +470,7 @@ private void DestroyPreviewImmediate()
     {
         if (Vector3.Distance(p1, p2) < 0.01f)
         {
-            Debug.LogWarning("[CreateRoom] Kéo quá ngắn → bỏ qua.");
+            Debug.LogWarning("[CreateRoom] Kéo quá ngắn -> bỏ qua.");
             ResetDragState(keepPlacing: true);
             return;
         }
