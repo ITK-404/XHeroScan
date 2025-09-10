@@ -5,10 +5,18 @@ public class UndoRedoButton : MonoBehaviour
 {
     public bool isUndo = true;
     private Button btn;
+
+    private UndoRedoController controller;
+    
     private void Awake()
     {
         btn = GetComponent<Button>();
         btn.onClick.AddListener(OnClicked);
+    }
+
+    private void Start()
+    {
+        controller = UndoRedoController.Instance;
     }
 
     private void OnDestroy()
@@ -16,15 +24,22 @@ public class UndoRedoButton : MonoBehaviour
         btn.onClick.RemoveListener(OnClicked);
     }
 
+    private void Update()
+    {
+        if (controller == null) return;
+
+        btn.interactable = controller.CanUndo();
+    }
+    
     private void OnClicked()
     {
         if (isUndo)
         {
-            UndoRedoController.Instance.Undo();
+            controller.Undo();
         }
         else
         {
-            UndoRedoController.Instance.Redo();
+            controller.Redo();
         }
     }
 }

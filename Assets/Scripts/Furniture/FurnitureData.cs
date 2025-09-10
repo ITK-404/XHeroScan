@@ -75,4 +75,8 @@ public struct DrawingInstanced
     // just use for door and window
     public bool isFlip;
 
+    public void InitNewInstanceID()
+    {
+        instanceID = Guid.NewGuid().ToString();
+    }
 }

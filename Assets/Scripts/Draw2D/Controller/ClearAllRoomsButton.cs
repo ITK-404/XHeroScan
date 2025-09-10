@@ -240,7 +240,7 @@ public class ClearAllRoomsButton : MonoBehaviour
                 {
                     var deleteAllRoomCommand = new DeleteAllRoomCommand(deleteRoomDataList);
                     deleteAllRoomCommand.ClearAllRoom = this;
-                    UndoRedoController.Instance.AddToUndo(deleteAllRoomCommand);
+                    //UndoRedoController.Instance.AddToUndo(deleteAllRoomCommand);
                 }
 
                 FurnitureManager.Instance?.ClearAllFurnitures();
@@ -305,7 +305,7 @@ public class ClearAllRoomsButton : MonoBehaviour
         {
             var cmd = new DeleteAllRoomCommand(deleteAllRoomDataList);
             cmd.ClearAllRoom = this;
-            UndoRedoController.Instance.AddToUndo(cmd);
+            //UndoRedoController.Instance.AddToUndo(cmd);
         }
 
         FurnitureManager.Instance.ClearAllFurnitures();

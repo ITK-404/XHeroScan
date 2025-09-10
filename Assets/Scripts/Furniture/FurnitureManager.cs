@@ -87,8 +87,9 @@ public class FurnitureManager : MonoBehaviour
             Debug.LogWarning("Furniture item with ID " + ItemID + " not found.");
             return null;
         }
-
-        return Instantiate(prefab != null ? prefab : furnitureItemPrefab);
+        var instance = Instantiate(prefab != null ? prefab : furnitureItemPrefab);
+        instance.data.InitNewInstanceID();
+        return instance;
     }
 
     private FurnitureItem GetFurniturePrefabByID(string itemID)
@@ -115,7 +116,9 @@ public class FurnitureManager : MonoBehaviour
     {
         var worldPointFromViewPort = mainCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f));
         var centerPosition = new Vector3(worldPointFromViewPort.x, SpawnHeight, worldPointFromViewPort.z);
-        SpawnFurniture(itemID, centerPosition);
+        var item = SpawnFurniture(itemID, centerPosition);
+        UndoRedoController.Instance.AddToUndo(new CreateItemCommand(item.data.instanceID));
+
     }
 
     public FurnitureItem SpawnFurniture(string itemID, Vector3 position)
@@ -128,6 +131,8 @@ public class FurnitureManager : MonoBehaviour
         furniture.InitLineAndText();
         runtimeFurnitures.Add(furniture);
         Debug.Log("Spawn Position: " + position);
+
+
         return furniture;
     }
 
@@ -179,10 +184,10 @@ public class FurnitureManager : MonoBehaviour
         //    currentFurniture.data.roomID = roomID;
         //}
 
-        //if (Input.GetKeyDown(KeyCode.Space))
-        //{
-        //    SpawnFurnitureCenterScreen("bed_1");
-        //}
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            SpawnFurnitureCenterScreen("bed_1");
+        }
     }
 
     public void ClearAllFurnitures()
@@ -217,6 +222,20 @@ public class FurnitureManager : MonoBehaviour
             currentFurniture?.EnableCheckPoint();
         }
   
+    }
+
+    public FurnitureItem GetFurnitureByInstanceID(string instanceID)
+    {
+        Debug.Log("Instance: ID" + instanceID);
+        foreach(var item in runtimeFurnitures)
+        {
+            if (item.data.instanceID.Equals(instanceID))
+            {
+                return item;
+            }
+        }
+
+        return null;
     }
 
     private Vector3 GetWorldMousePosition()

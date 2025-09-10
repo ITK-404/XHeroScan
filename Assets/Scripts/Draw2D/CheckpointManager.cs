@@ -816,7 +816,7 @@ foreach (var wl in room.wallLines)
         data.heigh = height;
         data.RoomID = newRoom.ID;
         data.position = center;
-        UndoRedoController.Instance.AddToUndo(new CreateRectangularCommand(data));
+        //UndoRedoController.Instance.AddToUndo(new CreateRectangularCommand(data));
     }
 
     public void CreateRoomByRoomData(Room room,Vector3 position)

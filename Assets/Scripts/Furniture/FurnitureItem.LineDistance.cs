@@ -88,7 +88,7 @@ public partial class FurnitureItem
         /// <param name="offset"></param>
         public void Recalculator(Transform point, CheckpointType type, Bounds bounds, Vector3 offset)
         {
-            Debug.Log($"Recalculator: {point.transform.localPosition}");
+            //Debug.Log($"Recalculator: {point.transform.localPosition}");
             // tính toán tỉ lệ của bound dựa trên vị trí mới của point tương ứng
             Vector3 newPosition = point.transform.localPosition;
             float xExtend = Mathf.Max(bounds.extents.x, furnitureItem.minSizeX);
