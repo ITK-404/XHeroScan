@@ -65,13 +65,14 @@ public class WallLine
 [System.Serializable]
 public class Room
 {
+    public static float Thickness = 0.1f; 
     private static int roomCounter = 0; // Biến đếm số lượng phòng
 
     public string ID { get; private set; }  // ID chỉ đọc từ bên ngoài
     public string groupID;
     public string roomName;
     public string floorID; // ID sàn liên kết (nếu có)
-    public float thickness;
+    public float thickness = 0.1f; // kích thước mặc định là 20 cm
 
     public Vector2 center; // tọa độ trung tâm phòng
 
