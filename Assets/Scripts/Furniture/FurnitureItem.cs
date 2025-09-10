@@ -177,8 +177,8 @@ public partial class FurnitureItem : MonoBehaviour
             bottomLeftPoint.gameObject,
             bottomRightPoint.gameObject);
 
-        var topTextDistance = new TextDistance(CreateTextMeshPro(), topLine);
-        var rightTextDistance = new TextDistance(CreateTextMeshPro(), rightLine);
+        TextDistance topTextDistance = new TextDistance(CreateTextMeshPro(), topLine);
+        TextDistance rightTextDistance = new TextDistance(CreateTextMeshPro(), rightLine);
 
         IUpdateWhenMoves = new IUpdateWhenMove[]
             { topLine, leftLine, rightLine, bottomLine, topTextDistance, rightTextDistance };

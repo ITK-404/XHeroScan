@@ -225,7 +225,7 @@ public class CheckpointManager : MonoBehaviour
                 Vector3 e = wl.end; e.y = yLine;
 
                 DrawingTool.currentLineType = wl.type;
-                DrawingTool.DrawLineAndDistance(s, e);
+                DrawingTool.DrawLineAndDistance(s, e,room.thickness);
 
                 // chỉ sync handle cho cửa/cửa sổ
                 if (wl.type != LineType.Door && wl.type != LineType.Window) continue;
@@ -576,7 +576,7 @@ foreach (var wl in room.wallLines)
 
     // Vẽ đoạn tường gốc như cũ
     DrawingTool.currentLineType = wl.type;
-    DrawingTool.DrawLineAndDistance(s, e);
+    DrawingTool.DrawLineAndDistance(s, e,room.thickness);
 
     // >>> ADDED: draw wall heading arrow (Bắc = Z+)
     // Lấy heading từ data; nếu =0 và đoạn không song song Z+, tự tính từ vector start->end
@@ -648,7 +648,7 @@ foreach (var wl in room.wallLines)
 
     public void ClearAllLines() => DrawingTool.ClearAllLines();
     public void DrawAllLinesFromRoomStorage()=> DrawingTool.DrawAllLinesFromRoomStorage();
-    public void DrawLineAndDistance(Vector3 start, Vector3 end) => DrawingTool.DrawLineAndDistance(start, end);
+    public void DrawLineAndDistance(Vector3 start, Vector3 end, float width) => DrawingTool.DrawLineAndDistance(start, end,width);
 
     void ShowIncompleteLoopPopup()
     {
@@ -770,7 +770,7 @@ foreach (var wl in room.wallLines)
                 ? currentCheckpoints[0].transform.position
                 : currentCheckpoints[i + 1].transform.position;
 
-            DrawingTool.DrawLineAndDistance(start, end);
+            DrawingTool.DrawLineAndDistance(start, end,Room.Thickness);
             wallLines.Add(new WallLine(start, end, LineType.Wall));
         }
 
@@ -836,7 +836,7 @@ foreach (var wl in room.wallLines)
         foreach (WallLine item in room.wallLines)
         {
             Debug.Log($"Start {item.start} End{item.end}");
-            DrawingTool.DrawLineAndDistance(item.start, item.end);
+            DrawingTool.DrawLineAndDistance(item.start, item.end,room.thickness);
         }
         // đảm bảo data trong command độc lập với data runtime
         RoomStorage.rooms.Add(new Room(room));

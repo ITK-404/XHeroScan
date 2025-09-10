@@ -159,7 +159,7 @@ public class SplitRoomManager: MonoBehaviour
             foreach (var wl in room.wallLines)
             {
                 checkPointManager.DrawingTool.currentLineType = wl.type;
-                checkPointManager.DrawLineAndDistance(wl.start, wl.end);
+                checkPointManager.DrawLineAndDistance(wl.start, wl.end,room.thickness);
 
                 // Nếu là cửa/cửa sổ
                 if (wl.type == LineType.Door || wl.type == LineType.Window)

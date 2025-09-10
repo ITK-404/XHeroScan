@@ -200,7 +200,7 @@ public class HandleCheckpointManger : MonoBehaviour
                 if (B_onBoundary2 && !room.checkpoints.Any(p => Vector2.Distance(p, B) < EDGE_EPS))
                     tempCreatedPoints.Add(SpawnEdgeCheckpoint(room, map, end, B));
 
-                checkPointManager.DrawLineAndDistance(start, end);
+                checkPointManager.DrawLineAndDistance(start, end,room.thickness);
 
                 var newline = new WallLine { start = start, end = end, type = checkPointManager.currentLineType };
                 room.wallLines.Add(newline);
@@ -303,7 +303,7 @@ public class HandleCheckpointManger : MonoBehaviour
 
                 // Vẽ ngay trên DrawingTool (chỉ để preview tức thời)
                 checkPointManager.DrawingTool.currentLineType = checkPointManager.currentLineType;
-                checkPointManager.DrawLineAndDistance(newline.start, newline.end);
+                checkPointManager.DrawLineAndDistance(newline.start, newline.end,room.thickness);
                 checkPointManager.DrawingTool.wallLines.Add(newline);
 
                 // Lưu lại room
@@ -340,7 +340,7 @@ public class HandleCheckpointManger : MonoBehaviour
                 if (!room.extraCheckpoints.Any(p => (p - B).sqrMagnitude <= eps2)) room.extraCheckpoints.Add(B);
 
                 checkPointManager.DrawingTool.currentLineType = checkPointManager.currentLineType;
-                checkPointManager.DrawLineAndDistance(a3, b3);
+                checkPointManager.DrawLineAndDistance(a3, b3,room.thickness);
 
                 room.wallLines.Add(new WallLine
                 {

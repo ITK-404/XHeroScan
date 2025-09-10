@@ -6,7 +6,7 @@ using UnityEngine;
 [Serializable]
 public class FurnitureMergeToWall
 {
-    private float offset;
+    private float flipOffset;
     public float ratio;
     private FurnitureItem furnitureItem;
 
@@ -76,7 +76,7 @@ public class FurnitureMergeToWall
 
         ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
     }
-    
+
     public void SnapToNearestWallOfCurrentRoom()
     {
         if (attachedRoom == null) return;
@@ -134,7 +134,7 @@ public class FurnitureMergeToWall
             //Debug.Log("Distance: " + dist);
         }
     }
-    
+
     private void SetAttachedWallLine(WallLine wallLine)
     {
         // Thoát sớm nếu không có thay đổi
@@ -190,10 +190,21 @@ public class FurnitureMergeToWall
 
         UpdateOwnWallLine();
         UpdateRoomAttaced();
+        ProcessWidthForWindow();
     }
+    private void ProcessWidthForWindow()
+    {
+        // xử lý độ dày cho cửa sổ
+        if (furnitureItem.lineType != LineType.Window)
+            return;
+        if (attachedRoom == null)
+            return;
 
+        furnitureItem.data.size.length = attachedRoom.thickness;
+    }
     private void UpdateRoomAttaced()
     {
+        // cập nhật rằng furniture đang được gắn trong room hay không
         if (attachedRoom == null)
         {
             furnitureItem.data.roomID = "";
@@ -205,11 +216,12 @@ public class FurnitureMergeToWall
 
     private void RotationToWallLine()
     {
-        offset = furnitureItem.data.isFlip ? 180 : 0;
+        
+        flipOffset = furnitureItem.data.isFlip ? 180 : 0;
         Vector3 dir = attachedWallLine.end - attachedWallLine.start;
         dir.y = 0;
         float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
-        furnitureItem.SetRotation(-angle + offset);
+        furnitureItem.SetRotation(-angle + flipOffset);
     }
 
     private bool IsWithinDistance(Vector3 point1, Vector3 point2, float distance)
@@ -227,7 +239,7 @@ public class FurnitureMergeToWall
     public void ResetAttached()
     {
         attachedRoom = null;
-        attachedWallLine = null;    
+        attachedWallLine = null;
     }
 }
 
