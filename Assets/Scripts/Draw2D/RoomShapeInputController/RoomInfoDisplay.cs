@@ -1,9 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
-using Org.BouncyCastle.Security;
-using System;
-using NUnit.Framework.Internal.Filters;
 
 public class RoomInfoDisplay : MonoBehaviour
 {
@@ -14,8 +11,8 @@ public class RoomInfoDisplay : MonoBehaviour
     [SerializeField] private LayerMask floorRaycastMask = ~0;
 
     [Header("Floor Highlight")]
-    private Color floorDefaultColor = Color.white; // default
-    private Color floorSelectedColor = new Color(0.9608f, 0.9608f, 0.9608f, 1f); // selected
+    [SerializeField] private Color floorDefaultColor  = Color.white;
+    [SerializeField] private Color floorSelectedColor = Color.white; // giữ mesh trắng khi selected
 
     [Header("World Label")]
     [SerializeField] private TMP_FontAsset labelFont; // optional
@@ -29,16 +26,15 @@ public class RoomInfoDisplay : MonoBehaviour
     [SerializeField] private bool allowFloorPickWhenNoRoomSelected = false;
 
     [Header("Popup UI (Screen-Space)")]
-    [SerializeField] private GameObject ActionSpace;        // RectTransform trong Canvas (Screen Space)
-    [SerializeField] private GameObject PopupRoom;          // Prefab panel (không nhất thiết có Canvas)
-    [SerializeField] private Vector2 popupScreenOffset = new Vector2(0, 40); // px
+    [SerializeField] private GameObject ActionSpace;
+    [SerializeField] private GameObject PopupRoom;
+    [SerializeField] private Vector2 popupScreenOffset = new Vector2(0, 40);
 
     [Header("Popup World Fallback")]
     [SerializeField] private float popupY = 0.2f;
     [SerializeField] private float popupX = 0.2f;
     [SerializeField] private float popupZ = 0.2f;
 
-    // ===== State =====
     private enum SelectionKind { None, Room, Floor, Furniture }
     private SelectionKind selectionKind = SelectionKind.None;
     private string selectedRoomID = "";
@@ -49,21 +45,28 @@ public class RoomInfoDisplay : MonoBehaviour
     private bool suppressAutoPick = false;
     private int lastRoomsCount = 0;
 
-    // Labels
     private readonly Dictionary<string, TextMeshPro> roomLabels = new();
     private readonly Dictionary<string, TextMeshPro> floorLabels = new();
 
-    // Popup (UI) + Canvas refs
-    private GameObject popupUI;            // instance của PopupRoom (child của ActionSpace)
-    private RectTransform popupRect;       // rect của popupUI
-    private RectTransform actionSpaceRect; // rect của container
-    private Canvas uiCanvas;               // canvas chứa ActionSpace
-
-    // Fallback world-space (nếu không có ActionSpace)
+    private GameObject popupUI;
+    private RectTransform popupRect;
+    private RectTransform actionSpaceRect;
+    private Canvas uiCanvas;
     private GameObject popupWS;
 
-    // hide furniture feature
     [SerializeField] RoomToggleFurnitureVisible roomToggle;
+
+    // ===== HIGHLIGHT =====
+    [Header("Highlight (points + lines)")]
+    [SerializeField] private Color highlightColor = Color.red;
+
+    private readonly Dictionary<Renderer, Color> _origRendererColor = new();
+    private readonly Dictionary<LineRenderer, (Color start, Color end)> _origLineColor = new();
+    private readonly Dictionary<LineRenderer, (int propId, Color col)> _origLineMatColor = new();
+
+    private static readonly int PROP_COLOR     = Shader.PropertyToID("_Color");
+    private static readonly int PROP_BASECOLOR = Shader.PropertyToID("_BaseColor");
+    private static readonly int PROP_TINT      = Shader.PropertyToID("_TintColor");
 
     void Start()
     {
@@ -79,7 +82,6 @@ public class RoomInfoDisplay : MonoBehaviour
 
     void Update()
     {
-        // Click chọn
         if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
         {
             if (FurnitureManager.Instance.TryPickFurniture())
@@ -87,10 +89,6 @@ public class RoomInfoDisplay : MonoBehaviour
                 DeselectAll();
                 ResetState();
                 selectionKind = SelectionKind.Furniture;
-                //var furniture = FurnitureManager.Instance.CurrentFurnitureItem();
-                //var highlightTarget = furniture ? furniture.GetComponent<FurnitureHighlight>() : null;
-
-                //HighlightHandler.Instance.Select(highlightTarget);
                 return;
             }
 
@@ -111,7 +109,6 @@ public class RoomInfoDisplay : MonoBehaviour
             return;
         }
 
-        // Xoá room => dọn dẹp
         int curCount = RoomStorage.rooms.Count;
         if (curCount < lastRoomsCount)
         {
@@ -141,13 +138,14 @@ public class RoomInfoDisplay : MonoBehaviour
             suppressAutoPick = false;
             forceSelectFirstRoom = false;
 
+            UnhighlightAllVisuals();
             HideAllLabels();
             if (popupUI) popupUI.SetActive(false);
             if (popupWS) popupWS.SetActive(false);
             return;
         }
         if (selectionKind == SelectionKind.Furniture) return;
-        // Cập nhật label realtime
+
         if (selectionKind != SelectionKind.Floor)
         {
             string currentRoomID = checkpointManager.GetSelectedRoomID();
@@ -178,11 +176,13 @@ public class RoomInfoDisplay : MonoBehaviour
                     SetFloorColor(highlightedID, floorDefaultColor);
                     highlightedID = "";
                 }
-                HideRoomLabel(selectedRoomID);
 
+                HideRoomLabel(selectedRoomID);
                 selectedRoomID = "";
                 selectionKind = SelectionKind.None;
                 roomToggle.DeSelectect();
+
+                UnhighlightAllVisuals();
 
                 if (popupUI) popupUI.SetActive(false);
                 if (popupWS) popupWS.SetActive(false);
@@ -207,12 +207,10 @@ public class RoomInfoDisplay : MonoBehaviour
 
     void LateUpdate()
     {
-        // Lấy ID đang chọn
         string curId = (selectionKind == SelectionKind.Room) ? selectedRoomID :
                        (selectionKind == SelectionKind.Floor) ? selectedFloorID : "";
         if (string.IsNullOrEmpty(curId)) return;
 
-        // Lấy checkpoints hiện tại
         List<Vector2> cps = null;
         if (selectionKind == SelectionKind.Room)
         {
@@ -226,43 +224,34 @@ public class RoomInfoDisplay : MonoBehaviour
         }
         if (cps == null || cps.Count < 3) return;
 
-        // Tính anchor world: cùng X/Z với label, Y = max(centroidY, top of mesh) + lift
         var targetGO = GetFloorGO(curId);
         float baseY = targetGO ? targetGO.transform.position.y : 0f;
         Vector2 c2 = PolygonCentroid(cps);
 
-        // ===== Offset theo camera: X (right) và Z (forward), đều tính theo mét =====
-        // ===== Offset theo camera: X (right) và Z (forward), đều tính theo mét =====
-        Vector3 lateral = Vector3.zero; // X (right)
-        Vector3 depth = Vector3.zero; // Z (forward)
+        Vector3 lateral = Vector3.zero;
+        Vector3 depth = Vector3.zero;
 
         var cam = Camera.main;
         if (cam)
         {
-            // Right (X)
-            Vector3 camRight = cam.transform.right;
-            camRight.y = 0f;
-            if (camRight.sqrMagnitude < 1e-6f) camRight = Vector3.right; // fallback an toàn
+            Vector3 camRight = cam.transform.right; camRight.y = 0f;
+            if (camRight.sqrMagnitude < 1e-6f) camRight = Vector3.right;
             camRight.Normalize();
             lateral = camRight * popupX;
 
-            // Forward (Z) phẳng theo XZ. Nếu top-down (≈0) thì dùng up × right để tạo fwd nằm trên mặt phẳng.
-            Vector3 camFwd = cam.transform.forward;
-            camFwd.y = 0f;
+            Vector3 camFwd = cam.transform.forward; camFwd.y = 0f;
             if (camFwd.sqrMagnitude < 1e-6f)
-                camFwd = Vector3.Cross(Vector3.up, camRight); // quay 90° quanh Y từ right
+                camFwd = Vector3.Cross(Vector3.up, camRight);
             camFwd.Normalize();
             depth = camFwd * popupZ;
         }
 
-        // Vị trí gốc theo centroid + offset XZ từ camera
         Vector3 worldPos = new Vector3(
             c2.x + lateral.x + depth.x,
             baseY + labelYLift,
             c2.y + lateral.z + depth.z
         );
 
-        // Y: đỉnh mesh + popupY
         if (targetGO)
         {
             var rs = targetGO.GetComponentsInChildren<Renderer>(true);
@@ -276,31 +265,26 @@ public class RoomInfoDisplay : MonoBehaviour
         }
         else worldPos.y += popupY;
 
-
-        // ==== ƯU TIÊN: đặt popup trong ActionSpace (UI Screen Space) ====
         if (actionSpaceRect && uiCanvas && popupUI && popupUI.activeSelf)
         {
-            Camera camWS;    // camera để WorldToScreen
-            Camera camLocal; // camera cho ScreenPointToLocalPointInRectangle
+            Camera camWS;
+            Camera camLocal;
             if (uiCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
             {
-                camWS = Camera.main; // dùng camera nhìn scene
-                camLocal = null;       // overlay => null
+                camWS = Camera.main;
+                camLocal = null;
             }
-            else // ScreenSpaceCamera
+            else
             {
                 camWS = uiCanvas.worldCamera ? uiCanvas.worldCamera : Camera.main;
                 camLocal = camWS;
             }
             if (!camWS) return;
 
-            // Ẩn nếu điểm ở sau camera (tránh warning)
             var view = camWS.WorldToViewportPoint(worldPos);
             if (view.z <= 0f) { popupUI.SetActive(false); return; }
 
             Vector3 screen = camWS.WorldToScreenPoint(worldPos) + (Vector3)popupScreenOffset;
-
-            // clamp trong màn hình
             screen.x = Mathf.Clamp(screen.x, 0, Screen.width);
             screen.y = Mathf.Clamp(screen.y, 0, Screen.height);
 
@@ -313,7 +297,6 @@ public class RoomInfoDisplay : MonoBehaviour
             return;
         }
 
-        // ==== Fallback: world-space popup (khi không set ActionSpace) ====
         if (popupWS && popupWS.activeSelf)
         {
             popupWS.transform.position = worldPos;
@@ -322,7 +305,6 @@ public class RoomInfoDisplay : MonoBehaviour
     }
 
     // ===================== SELECTION =====================
-
 
     private void SelectRoom(string roomId)
     {
@@ -337,12 +319,15 @@ public class RoomInfoDisplay : MonoBehaviour
         selectedRoomID = roomId;
         selectionKind = SelectionKind.Room;
         highlightedID = roomId;
+
         SetFloorColor(highlightedID, floorSelectedColor);
+
+        UnhighlightAllVisuals();      // clear cũ
+        HighlightRoomVisuals(roomId); // tô đỏ point + line
 
         var room = RoomStorage.GetRoomByID(selectedRoomID);
         ShowOnlyRoomLabel(room);
 
-        // Spawn/attach popup: ưu tiên UI container
         var targetGO = GetFloorGO(roomId);
         SpawnOrAttachPopup(targetGO);
 
@@ -366,7 +351,10 @@ public class RoomInfoDisplay : MonoBehaviour
         selectedFloorID = floorId;
         selectionKind = SelectionKind.Floor;
         highlightedID = floorId;
+
         SetFloorColor(highlightedID, floorSelectedColor);
+
+        UnhighlightAllVisuals();
 
         var floor = FindFloorByID(selectedFloorID);
         ShowOnlyFloorLabel(floor);
@@ -390,6 +378,8 @@ public class RoomInfoDisplay : MonoBehaviour
         selectionKind = SelectionKind.None;
         roomToggle.DeSelectect();
 
+        UnhighlightAllVisuals();
+
         HideAllLabels();
         if (popupUI) popupUI.SetActive(false);
         if (popupWS) popupWS.SetActive(false);
@@ -409,6 +399,9 @@ public class RoomInfoDisplay : MonoBehaviour
 
         forceSelectFirstRoom = true;
         suppressAutoPick = false;
+
+        UnhighlightAllVisuals();
+
         HideAllLabels();
         if (popupUI) popupUI.SetActive(false);
         if (popupWS) popupWS.SetActive(false);
@@ -428,6 +421,9 @@ public class RoomInfoDisplay : MonoBehaviour
 
         forceSelectFirstRoom = false;
         suppressAutoPick = true;
+
+        UnhighlightAllVisuals();
+
         HideAllLabels();
         if (popupUI) popupUI.SetActive(false);
         if (popupWS) popupWS.SetActive(false);
@@ -822,12 +818,10 @@ public class RoomInfoDisplay : MonoBehaviour
         if (rend != null) rend.material.color = color;
     }
 
-    // === spawn/attach popup vào container nếu có, ngược lại tạo world-space fallback
-    [SerializeField] private bool popupStickToMesh = true; // ép world-space
+    [SerializeField] private bool popupStickToMesh = true;
 
     private void SpawnOrAttachPopup(GameObject targetGO)
     {
-        // Ưu tiên world-space nếu bật cờ
         if (popupStickToMesh || !actionSpaceRect || !uiCanvas)
         {
             if (!PopupRoom || !targetGO) return;
@@ -839,7 +833,6 @@ public class RoomInfoDisplay : MonoBehaviour
             if (!popupWS.GetComponentInChildren<UnityEngine.UI.GraphicRaycaster>())
                 popupWS.AddComponent<UnityEngine.UI.GraphicRaycaster>();
 
-            // pivot bottom-center để position là “chân” popup
             var rt = popupWS.GetComponent<RectTransform>();
             if (!rt) rt = popupWS.AddComponent<RectTransform>();
             rt.pivot = new Vector2(0.5f, 0.5f);
@@ -849,19 +842,18 @@ public class RoomInfoDisplay : MonoBehaviour
             popupWS.transform.localScale = Vector3.one * 0.01f;
             popupWS.SetActive(true);
 
-            if (popupUI) popupUI.SetActive(false); // tắt UI screen-space nếu có
+            if (popupUI) popupUI.SetActive(false);
             return;
         }
 
-        // Ngược lại: screen-space trong ActionSpace
         if (!popupUI) popupUI = Instantiate(PopupRoom);
         popupRect = popupUI.GetComponent<RectTransform>() ?? popupUI.AddComponent<RectTransform>();
         popupUI.transform.SetParent(actionSpaceRect, false);
         popupUI.SetActive(true);
         if (popupWS) popupWS.SetActive(false);
     }
-    public enum SelType { None, Room, Floor }
 
+    public enum SelType { None, Room, Floor }
     public bool TryGetSelection(out SelType kind, out string id)
     {
         if (selectionKind == SelectionKind.Room && !string.IsNullOrEmpty(selectedRoomID))
@@ -875,4 +867,178 @@ public class RoomInfoDisplay : MonoBehaviour
         kind = SelType.None; id = ""; return false;
     }
 
+    // ===================== HIGHLIGHT =====================
+
+    private IEnumerable<Renderer> EnumerateCheckpointRenderers(string roomId)
+    {
+        if (checkpointManager == null || checkpointManager.loopMappings == null) yield break;
+
+        for (int i = 0; i < checkpointManager.loopMappings.Count; i++)
+        {
+            var map = checkpointManager.loopMappings[i];
+            if (map == null || map.RoomID != roomId || map.CheckpointsGO == null) continue;
+
+            for (int j = 0; j < map.CheckpointsGO.Count; j++)
+            {
+                var go = map.CheckpointsGO[j];
+                if (!go) continue;
+
+                var r = go.GetComponent<Renderer>();
+                if (r) yield return r;
+
+                var childRends = go.GetComponentsInChildren<Renderer>(true);
+                for (int k = 0; k < childRends.Length; k++) yield return childRends[k];
+            }
+            yield break;
+        }
+    }
+
+    private IEnumerable<LineRenderer> EnumerateRoomLinesUnderFloor(string roomId)
+    {
+        var floorGO = GetFloorGO(roomId);
+        if (!floorGO) yield break;
+
+        var lines = floorGO.GetComponentsInChildren<LineRenderer>(true);
+        for (int i = 0; i < lines.Length; i++) yield return lines[i];
+    }
+
+    // Fallback: line ở bất cứ đâu, 2 đầu mút nằm trong/biên polygon room
+    private IEnumerable<LineRenderer> EnumerateRoomLinesAnywhere(string roomId)
+    {
+        var room = RoomStorage.GetRoomByID(roomId);
+        if (room == null || room.checkpoints == null || room.checkpoints.Count < 3) yield break;
+
+        bool InPoly(Vector3 p)
+        {
+            var pp = new Vector2(p.x, p.z);
+            return PointIn(room.checkpoints, pp) || OnBoundary(pp, room.checkpoints, 1e-3f);
+        }
+
+        // var all = GameObject.FindObjectsOfType<LineRenderer>(true);
+            var all = Object.FindObjectsByType<LineRenderer>(
+                    FindObjectsInactive.Include,   // lấy cả inactive
+                    FindObjectsSortMode.None       // không cần sort để nhanh hơn
+                    );
+        foreach (var lr in all)
+        {
+            if (!lr || lr.positionCount < 2) continue;
+            Vector3 a = lr.GetPosition(0);
+            Vector3 b = lr.GetPosition(lr.positionCount - 1);
+            if (InPoly(a) && InPoly(b)) yield return lr;
+        }
+    }
+
+    private static bool TryGetColorProp(Material m, out int propId)
+    {
+        propId = 0;
+        if (!m) return false;
+        if (m.HasProperty(PROP_COLOR))     { propId = PROP_COLOR;     return true; }
+        if (m.HasProperty(PROP_BASECOLOR)) { propId = PROP_BASECOLOR; return true; }
+        if (m.HasProperty(PROP_TINT))      { propId = PROP_TINT;      return true; }
+        return false;
+    }
+
+    private void SetRendererColor(Renderer r, Color c)
+    {
+        if (!r) return;
+        if (r is SpriteRenderer sr) { sr.color = c; return; }
+
+        var m = r.material;
+        if (!m) return;
+
+        if (m.HasProperty(PROP_COLOR))     { m.color = c; return; }
+        if (m.HasProperty(PROP_BASECOLOR)) { m.SetColor(PROP_BASECOLOR, c); return; }
+        if (m.HasProperty(PROP_TINT))      { m.SetColor(PROP_TINT, c); return; }
+    }
+
+    private void TintLine(LineRenderer lr, Color col)
+    {
+        if (!lr) return;
+
+        // đổi gradient
+        lr.startColor = col;
+        lr.endColor   = col;
+
+        // tint material nếu có
+        var m = lr.material;
+        if (m && TryGetColorProp(m, out int pid))
+        {
+            if (!_origLineMatColor.ContainsKey(lr))
+            {
+                // cache màu gốc của material
+                Color baseCol = m.GetColor(pid);
+                _origLineMatColor[lr] = (pid, baseCol);
+            }
+            m.SetColor(pid, col);
+        }
+    }
+
+    private void HighlightRoomVisuals(string roomId)
+    {
+        // POINTS
+        foreach (var r in EnumerateCheckpointRenderers(roomId))
+        {
+            if (!r) continue;
+            if (!_origRendererColor.ContainsKey(r))
+            {
+                Color baseCol = Color.white;
+                if (r is SpriteRenderer sr) baseCol = sr.color;
+                else if (r.material && r.material.HasProperty(PROP_COLOR))     baseCol = r.material.color;
+                else if (r.material && r.material.HasProperty(PROP_BASECOLOR)) baseCol = r.material.GetColor(PROP_BASECOLOR);
+                else if (r.material && r.material.HasProperty(PROP_TINT))      baseCol = r.material.GetColor(PROP_TINT);
+                _origRendererColor[r] = baseCol;
+            }
+            SetRendererColor(r, highlightColor);
+        }
+
+        // LINES dưới floor
+        foreach (var lr in EnumerateRoomLinesUnderFloor(roomId))
+        {
+            if (!lr) continue;
+            if (!_origLineColor.ContainsKey(lr))
+                _origLineColor[lr] = (lr.startColor, lr.endColor);
+
+            TintLine(lr, highlightColor);
+        }
+
+        // Fallback: LINES ở bất cứ đâu
+        foreach (var lr in EnumerateRoomLinesAnywhere(roomId))
+        {
+            if (!lr) continue;
+            if (!_origLineColor.ContainsKey(lr))
+                _origLineColor[lr] = (lr.startColor, lr.endColor);
+
+            TintLine(lr, highlightColor);
+        }
+    }
+
+    private void UnhighlightAllVisuals()
+    {
+        // checkpoints
+        foreach (var kv in _origRendererColor)
+        {
+            var r = kv.Key; if (!r) continue;
+            SetRendererColor(r, kv.Value);
+        }
+        _origRendererColor.Clear();
+
+        // line gradient
+        foreach (var kv in _origLineColor)
+        {
+            var lr = kv.Key; if (!lr) continue;
+            lr.startColor = kv.Value.start;
+            lr.endColor   = kv.Value.end;
+        }
+        _origLineColor.Clear();
+
+        // line material tint
+        foreach (var kv in _origLineMatColor)
+        {
+            var lr = kv.Key; if (!lr) continue;
+            var m = lr.material;
+            if (m && m.HasProperty(kv.Value.propId))
+                m.SetColor(kv.Value.propId, kv.Value.col);
+        }
+        _origLineMatColor.Clear();
+    }
 }
