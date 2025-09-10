@@ -39,8 +39,14 @@ public class FurniturePoint : MonoBehaviour
                 throw new ArgumentOutOfRangeException();
         }
     }
-    #endif
-
+#endif
+    private float width, heigh;
+    private void OnMouseDown()
+    {
+        FurnitureItem.SnapShotTemp = furniture.data;
+        width = furniture.width;
+        heigh = furniture.height;
+    }
     private void OnMouseDrag()
     {
         if (furniture == null)
@@ -56,6 +62,11 @@ public class FurniturePoint : MonoBehaviour
     private void OnMouseUp()
     {
         FurnitureItem.OnDragPoint = false;
+
+        if(width != furniture.width || heigh != furniture.height)
+        {
+            furniture.CreareEditCommandBySnapShot();
+        }
     }
 
     public ResizeAxis GetReSizeAxis()

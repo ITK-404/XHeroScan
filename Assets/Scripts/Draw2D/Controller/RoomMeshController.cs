@@ -362,7 +362,7 @@ public class RoomMeshController : MonoBehaviour
         moveObject.CurrentCheckPointPos = SaveCheckPointPosition(RoomID);
         
         var command = new MoveRectangularUndoRedoCommand(moveObject);
-        UndoRedoController.Instance.AddToUndo(command);
+        //UndoRedoController.Instance.AddToUndo(command);
     }
 
     // === Hàm ko cho move trên UI

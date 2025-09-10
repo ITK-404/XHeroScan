@@ -1,5 +1,6 @@
-using UnityEngine;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class UndoRedoController : MonoBehaviour
 {
@@ -36,10 +37,12 @@ public class UndoRedoController : MonoBehaviour
         }
     }
 #endif
+
+    public bool CanUndo() => undoList.Count > 0;
+
     public void AddToUndo(IUndoRedoCommand command)
     {
-        Debug.Log("Add to undo stack");
-        return;
+        Debug.Log($"[UNDO] Added: {command.GetType().Name} | Time: {DateTime.Now:HH:mm:ss}");
         undoList.Add(command);
         
         redoList.Clear(); // Clear redo khi có hành động mới
@@ -59,7 +62,7 @@ public class UndoRedoController : MonoBehaviour
         IUndoRedoCommand command = undoList[^1];
         undoList.Remove(command);
         command.Undo();
-        redoList.Add(command);
+        //redoList.Add(command);
     }
 
     public void Redo()

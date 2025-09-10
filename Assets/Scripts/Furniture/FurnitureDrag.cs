@@ -1,12 +1,15 @@
+using Org.BouncyCastle.Ocsp;
 using UnityEngine;
 
 public class FurnitureDrag : MonoBehaviour
 {
     [SerializeField] private FurnitureItem furnitureItem;
-
+    private Vector3 startPosition;
     private void OnMouseDown()
     {
         furnitureItem.StartDrag();
+        FurnitureItem.SnapShotTemp = furnitureItem.data;
+        startPosition = furnitureItem.GetWorldPosition();
     }
 
     private void OnMouseDrag()
@@ -20,15 +23,16 @@ public class FurnitureDrag : MonoBehaviour
         {
             furnitureItem.Dragging(transform);
         }
-        //else
-        //{
-        //    FurnitureManager.Instance.SelectFurniture(furnitureItem);
-        //}
         
     }
 
     private void OnMouseUp()
     {
         furnitureItem.DeActiveDrag();
+
+        if(startPosition != furnitureItem.GetWorldPosition())
+        {
+            furnitureItem.CreareEditCommandBySnapShot();
+        }
     }
 }

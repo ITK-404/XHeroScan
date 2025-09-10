@@ -53,7 +53,9 @@ public class FurnitureEditFunction : MonoBehaviour
     {
         if(currentFurniture != null)
         {
-            currentFurniture.InitClone();
+            var furniture = currentFurniture.InitClone();
+            UndoRedoController.Instance.AddToUndo(new CreateItemCommand(furniture.data.instanceID));
+
         }
     }
 
@@ -69,6 +71,7 @@ public class FurnitureEditFunction : MonoBehaviour
     {
         if(currentFurniture != null)
         {
+            UndoRedoController.Instance.AddToUndo(new DeleteItemCommand(currentFurniture.data));
             currentFurniture.Destroy();
         }
     }
@@ -80,6 +83,8 @@ public class FurnitureEditFunction : MonoBehaviour
             Debug.Log("On Change size of furniture item");
             // change size here
             var data = currentFurniture.data;
+            FurnitureItem.SnapShotTemp = data;
+            currentFurniture.CreareEditCommandBySnapShot();
 
             float width = TryParse(widthInputField, data.size.width);
             float length = TryParse(lengthInputField, data.size.length);

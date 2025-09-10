@@ -202,6 +202,7 @@ public class FurnitureMergeToWall
         furnitureItem.data.roomID = attachedRoom.ID;
     }
 
+
     private void RotationToWallLine()
     {
         offset = furnitureItem.data.isFlip ? 180 : 0;
@@ -221,6 +222,12 @@ public class FurnitureMergeToWall
     public bool IsInWall()
     {
         return attachedWallLine != null;
+    }
+
+    public void ResetAttached()
+    {
+        attachedRoom = null;
+        attachedWallLine = null;    
     }
 }
 

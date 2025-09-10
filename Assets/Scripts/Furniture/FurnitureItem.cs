@@ -1,5 +1,6 @@
 using DG.Tweening.Core.Easing;
 using iTextSharp.text.pdf;
+using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -25,7 +26,7 @@ public partial class FurnitureItem : MonoBehaviour
     public static bool OnDragPoint = false;
 
     private static Camera mainCam;
-
+    public static DrawingInstanced SnapShotTemp;
     // public const float LIMIT_SIZE = 0.5f;
     public float minSizeX
     {
@@ -594,21 +595,29 @@ public partial class FurnitureItem : MonoBehaviour
         bounds.size = size;
     }
 
-    public void InitClone()
+    public FurnitureItem InitClone()
     {
-        FurnitureManager.Instance.RemoveFromRuntime(this);
+        //FurnitureManager.Instance.RemoveFromRuntime(this);
         FurnitureManager.Instance.SelectFurniture(null);
         Vector3 position = transform.position + new Vector3(length, 0, width);
         var furniture = FurnitureManager.Instance.SpawnFurniture(this.data.itemTemplateID, position);
         furniture.FetchData(this.data);
+        furniture.data.InitNewInstanceID();
+        return furniture;
     }
 
     public void Destroy()
     {
         Debug.Log("Destroy furniture");
+
+
         FurnitureManager.Instance.RemoveFromRuntime(this);
         FurnitureManager.Instance.SelectFurniture(null);
         Destroy(gameObject);
     }
 
+    public void CreareEditCommandBySnapShot()
+    {
+        UndoRedoController.Instance.AddToUndo(new EditItemCommand(SnapShotTemp));
+    }
 }
