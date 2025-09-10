@@ -23,7 +23,11 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     public float lineLift = 0.0005f; // line nổi hơn mesh 0.5mm
     public float labelLift = 0.01f;   // label nổi hơn mesh 1cm
 
+[SerializeField] private GameObject ButtomPanel;
+[SerializeField] private bool requireExitPanelToActivate = true;
+
     private bool isDragging = false;
+    private bool dragActivated = false;
     private float yaw = 0f;
     private Vector3 lastHitPos = Vector3.zero;
 
@@ -70,6 +74,25 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     private float BaseY(int index) => index * layerStepY;
     // Mỗi floor một GO chứa preview/handles/labels
     private static readonly Dictionary<string, GameObject> s_floorVisuals = new();
+
+    private RectTransform _bottomPanelRect;
+    private Camera UiCamForPanel {
+        get {
+            var canvas = ButtomPanel ? ButtomPanel.GetComponentInParent<Canvas>() : null;
+            if (canvas == null) return null; // overlay => trả null là đúng
+            return canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null
+                : (canvas.worldCamera != null ? canvas.worldCamera : Camera.main);
+        }
+    }
+
+    private bool IsInsideBottomPanel(Vector2 screenPos, Camera eventCam = null)
+    {
+        if (!_bottomPanelRect) _bottomPanelRect = ButtomPanel ? ButtomPanel.GetComponent<RectTransform>() : null;
+        if (!_bottomPanelRect) return false;
+        // Ưu tiên camera từ event data nếu có, fallback UiCamForPanel
+        var cam = eventCam != null ? eventCam : UiCamForPanel;
+        return RectTransformUtility.RectangleContainsScreenPoint(_bottomPanelRect, screenPos, cam);
+    }
 
     private void Awake()
     {
@@ -198,10 +221,22 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         ResetSingleFloor();
 
         isDragging = true;
+        dragActivated = !requireExitPanelToActivate;
         yaw = 0f;
         lastHitPos = Vector3.zero;
 
-        // dọn cũ
+        if (dragActivated)
+        {
+            // Giữ nguyên phần bạn đang làm ở OnBeginDrag cũ:
+            ResetSingleFloor();
+            ClearHandles();
+            hasRect = false;
+
+            // tạo previewGO, previewLR, previewMF, previewMR...
+            EnsurePreviewObjects();
+            previewGO.SetActive(true);
+        }
+
         ClearHandles();
         hasRect = false;
 
@@ -245,7 +280,27 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (!isDragging) return;
+    if (!isDragging) return;
+
+    if (!dragActivated && requireExitPanelToActivate)
+    {
+        // Còn đang ở trong panel => chưa cho kéo thật
+        if (IsInsideBottomPanel(eventData.position, eventData.pressEventCamera))
+            return;
+
+        // Vừa rời panel => kích hoạt kéo thật
+        dragActivated = true;
+
+        ResetSingleFloor();
+        ClearHandles();
+        hasRect = false;
+
+        EnsurePreviewObjects();
+        previewGO.SetActive(true);
+    }
+
+    // Nếu tới đây mà vẫn chưa activated (do option), thôi không xử lý
+    if (!dragActivated) return;
 
         var cam = Camera.main; if (cam == null) return;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
@@ -306,7 +361,14 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     public void OnEndDrag(PointerEventData eventData)
     {
         if (!isDragging) return;
-
+        if (!dragActivated && requireExitPanelToActivate)
+        {
+            // Người dùng kết thúc kéo nhưng chưa rời panel => không spawn gì
+            isDragging = false;
+            // tuỳ chọn: dọn preview nếu có
+            if (previewGO) previewGO.SetActive(false);
+            return;
+        }
         if (lastHitPos != Vector3.zero)
         {
             float hw = width * 0.5f;
