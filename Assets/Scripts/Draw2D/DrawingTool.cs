@@ -145,7 +145,7 @@ public class DrawingTool : MonoBehaviour
         lr.textureMode = LineTextureMode.Tile;
         lr.alignment = LineAlignment.View; // Quan trọng: để line luôn xoay đúng góc nhìn
         lr.numCapVertices = 0;
-        lr.widthMultiplier = 0.04f;
+        lr.widthMultiplier = 0.5f;
         lr.positionCount = 2;
     }
 
