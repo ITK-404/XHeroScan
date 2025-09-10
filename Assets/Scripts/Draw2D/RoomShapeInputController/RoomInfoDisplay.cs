@@ -98,8 +98,9 @@ public class RoomInfoDisplay : MonoBehaviour
                 return;
             }
 
-            bool canPickFloorNow = (selectionKind != SelectionKind.None) || allowFloorPickWhenNoRoomSelected;
-            if (canPickFloorNow && TryPickFloorUnderPointer(out var floorId, out var _))
+            // bool canPickFloorNow = (selectionKind != SelectionKind.None) || allowFloorPickWhenNoRoomSelected;
+            // if (canPickFloorNow && TryPickFloorUnderPointer(out var floorId, out var _))
+            if (TryPickFloorUnderPointer(out var floorId, out var _))
             {
                 SelectFloor(floorId);
                 return;
@@ -125,40 +126,30 @@ public class RoomInfoDisplay : MonoBehaviour
 
         if (RoomStorage.rooms.Count == 0)
         {
-            if (!string.IsNullOrEmpty(highlightedID))
+            // Chỉ clear lựa chọn ROOM, giữ nguyên FLOOR nếu đang chọn floor
+            if (selectionKind == SelectionKind.Room)
             {
-                SetFloorColor(highlightedID, floorDefaultColor);
-                highlightedID = "";
+                if (!string.IsNullOrEmpty(highlightedID))
+                {
+                    SetFloorColor(highlightedID, floorDefaultColor);
+                    highlightedID = "";
+                }
+
+                HideRoomLabel(selectedRoomID);
+                selectedRoomID = "";
+                selectionKind = string.IsNullOrEmpty(selectedFloorID) ? SelectionKind.None : SelectionKind.Floor;
+                roomToggle.DeSelectect();
+
+                UnhighlightAllVisuals();
+                if (popupUI) popupUI.SetActive(false); // popup room
             }
-            selectedRoomID = "";
-            selectedFloorID = "";
-            selectionKind = SelectionKind.None;
-            roomToggle.DeSelectect();
-
-            suppressAutoPick = false;
-            forceSelectFirstRoom = false;
-
-            UnhighlightAllVisuals();
-            HideAllLabels();
-            if (popupUI) popupUI.SetActive(false);
-            if (popupWS) popupWS.SetActive(false);
-            return;
         }
+
         if (selectionKind == SelectionKind.Furniture) return;
 
         if (selectionKind != SelectionKind.Floor)
         {
             string currentRoomID = checkpointManager.GetSelectedRoomID();
-            if (!string.IsNullOrEmpty(currentRoomID) && currentRoomID != selectedRoomID)
-                SelectRoom(currentRoomID);
-
-            if (selectionKind == SelectionKind.None &&
-                forceSelectFirstRoom && RoomStorage.rooms.Count > 0 && string.IsNullOrEmpty(selectedRoomID))
-            {
-                SelectRoom(RoomStorage.rooms[0].ID);
-                forceSelectFirstRoom = false;
-                return;
-            }
 
             if (selectionKind == SelectionKind.None &&
                 !suppressAutoPick &&
@@ -383,6 +374,8 @@ public class RoomInfoDisplay : MonoBehaviour
         HideAllLabels();
         if (popupUI) popupUI.SetActive(false);
         if (popupWS) popupWS.SetActive(false);
+
+        suppressAutoPick = true;
     }
 
     public void ResetState()
@@ -397,7 +390,7 @@ public class RoomInfoDisplay : MonoBehaviour
         selectionKind = SelectionKind.None;
         roomToggle.DeSelectect();
 
-        forceSelectFirstRoom = true;
+        // forceSelectFirstRoom = true;
         suppressAutoPick = false;
 
         UnhighlightAllVisuals();
@@ -419,7 +412,7 @@ public class RoomInfoDisplay : MonoBehaviour
         roomToggle.DeSelectect();
         selectionKind = SelectionKind.None;
 
-        forceSelectFirstRoom = false;
+        // forceSelectFirstRoom = false;
         suppressAutoPick = true;
 
         UnhighlightAllVisuals();

@@ -15684,19 +15684,17 @@ MonoBehaviour:
   floorMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  lineWidth: 0.02
-  previewOKLine: {r: 0.2, g: 1, b: 0.2, a: 1}
-  previewBadLine: {r: 1, g: 0.2, b: 0.2, a: 1}
-  previewOKFill: {r: 0.2, g: 1, b: 0.2, a: 0.15}
-  previewBadFill: {r: 1, g: 0.2, b: 0.2, a: 0.2}
+  useArrowPreview: 1
+  arrowColor: {r: 0, g: 0, b: 0, a: 1}
+  arrowWidth: 0.02
+  arrowHeadSize: 0.15
+  arrowLift: 0.012
+  showDiagonalArrow: 1
+  arrowTextFontSize: 100
+  arrowTextCharSize: 0.03
   roomIndex: 2
   layerStepY: 0.002
   roomWallLift: 0.003
-  dimLineMul: 0.6
-  dimOffset: 0.1
-  dimHeadSize: 0.1
-  dimFontSize: 100
-  dimCharSize: 0.03
 --- !u!114 &1908743460
 MonoBehaviour:
   m_ObjectHideFlags: 0

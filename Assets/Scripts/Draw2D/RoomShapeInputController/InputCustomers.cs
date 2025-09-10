@@ -95,14 +95,14 @@ public class DimensionOkHandler : MonoBehaviour
         float baseY = 2f * layerStep;                        // index = 2
         float roomWallLift = (cr != null) ? cr.roomWallLift : fallbackRoomWallLift;
 
-        // Ghi lại polygon LxW quanh centroid (axis-aligned theo world)
+        // Ghi lại polygon LxW quanh centroid (GIỮ THỨ TỰ NHƯ KHI TẠO)
         float hx = L * 0.5f, hy = W * 0.5f;
         var rect = new List<Vector2>(4)
         {
-            new Vector2(centroid.x - hx, centroid.y - hy),
-            new Vector2(centroid.x + hx, centroid.y - hy),
-            new Vector2(centroid.x + hx, centroid.y + hy),
-            new Vector2(centroid.x - hx, centroid.y + hy)
+            new Vector2(centroid.x - hx, centroid.y - hy), // v0 
+            new Vector2(centroid.x - hx, centroid.y + hy), // v1 
+            new Vector2(centroid.x + hx, centroid.y + hy), // v2 
+            new Vector2(centroid.x + hx, centroid.y - hy)  // v3 
         };
         room.checkpoints = rect;
 
