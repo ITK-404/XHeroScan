@@ -390,6 +390,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
             var floor = new Floor();
 
+            floor.width = width;
+            floor.length = depth;
+
             floor.checkpoints.Add(new Vector2(a.x, a.z));
             floor.checkpoints.Add(new Vector2(b.x, b.z));
             floor.checkpoints.Add(new Vector2(d.x, d.z));

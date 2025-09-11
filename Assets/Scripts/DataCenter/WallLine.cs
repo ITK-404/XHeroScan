@@ -174,6 +174,8 @@ public class Floor
     // Liên kết nhiều phòng với sàn này
     public List<string> roomIDs = new();
 
+    public float width, length;
+
     public Floor()
     {
         ID = GenerateID(); // Tự tạo ID khi khởi tạo

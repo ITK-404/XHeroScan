@@ -1,6 +1,6 @@
 using System.Globalization;
-using System.Collections;               
-using System.Reflection;   
+using System.Collections;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -23,9 +23,9 @@ public class DimensionOkHandler : MonoBehaviour
 
     private void Awake()
     {
-        if (!roomInfoDisplay)    roomInfoDisplay   = FindFirstObjectByType<RoomInfoDisplay>();
-        if (!checkpointManager)  checkpointManager = FindFirstObjectByType<CheckpointManager>();
-        if (!spawnFloor)  spawnFloor = FindFirstObjectByType<DragFromButtonSpawnFloor>();
+        if (!roomInfoDisplay) roomInfoDisplay = FindFirstObjectByType<RoomInfoDisplay>();
+        if (!checkpointManager) checkpointManager = FindFirstObjectByType<CheckpointManager>();
+        if (!spawnFloor) spawnFloor = FindFirstObjectByType<DragFromButtonSpawnFloor>();
         if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedRoom);
         if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedFloor);
     }
@@ -67,7 +67,7 @@ public class DimensionOkHandler : MonoBehaviour
         Debug.Log($"[DimOK] Editing ROOM ID = {roomId}");
         RecreateRoomWithInputDims(roomId);
     }
-    
+
     // Update dims cho ROOM
     private void RecreateRoomWithInputDims(string roomId)
     {
@@ -174,7 +174,7 @@ public class DimensionOkHandler : MonoBehaviour
         FurnitureManager.Instance.TrySnapToNearestWall();
         Debug.Log($"[DimOK] UPDATED room {roomId}: points+lines+mesh (index=2) -> {L}x{W}, baseY={baseY}, lift={roomWallLift}");
     }
-    
+
     private List<GameObject> TryGetCheckpointListForRoom(string id)
     {
         if (checkpointManager == null || checkpointManager.loopMappings == null) return null;
@@ -214,14 +214,26 @@ public class DimensionOkHandler : MonoBehaviour
     // Update dims cho Floor
     private void RecreateFloorWithInputDims(string floorId)
     {
+        var target = FindFloor(floorId);
+        if (target == null) return;
+        float prevousWidth = target.width;
+        float previousLength = target.length;
+        // chú ý: length = chiều dọc (Z), width = chiều ngang (X)
         // Đọc L & W
         if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
         {
             Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng cho FLOOR.");
             return;
         }
+        // W và L bị đảo ngươc4
+        if (TryUpdateFloor(target, L, W))
+        {
+            UndoRedoController.Instance.AddToUndo(new EditFloorCommand(floorId, prevousWidth, previousLength, this));
+        }
+    }
 
-        // Tìm Floor trong FloorStorage
+    public Floor FindFloor(string floorId)
+    {
         Floor target = null;
         if (FloorStorage.floors != null)
         {
@@ -234,12 +246,21 @@ public class DimensionOkHandler : MonoBehaviour
         if (target == null)
         {
             Debug.LogWarning($"[DimOK] Không tìm thấy FLOOR với ID={floorId}");
-            return;
+            return null;
         }
+        return target;
+    }
+
+    public bool TryUpdateFloor(Floor target, float W, float L)
+    {
+        // Tìm Floor trong FloorStorage
+        string floorId = target.ID;
 
         // Tính centroid hiện có
         Vector2 centroid = ComputeCentroid2D(target.checkpoints);
-
+        // Input của hàm bị ngược lúc truyền vào 
+        target.width = L;
+        target.length = W;
         // Ghi lại polygon L×W (axis-aligned theo world) vào storage
         float hx = L * 0.5f, hy = W * 0.5f;
         target.checkpoints = new List<Vector2>(4)
@@ -261,6 +282,8 @@ public class DimensionOkHandler : MonoBehaviour
         }
         Debug.Log($"[DimOK] UPDATED FLOOR {floorId}: points + line + mesh -> {L}x{W}, area={L * W}");
         cameraResizeByFloor.Resize(target.center, target.checkpoints);
+
+        return true;
     }
 
     private static string TryReadStringId(object obj)
@@ -349,7 +372,7 @@ public class DimensionOkHandler : MonoBehaviour
             var p = poly[i];
             var q = poly[(i + 1) % n];
             float cr = p.x * q.y - q.x * p.y;
-            A  += cr;
+            A += cr;
             cx += (p.x + q.x) * cr;
             cy += (p.y + q.y) * cr;
         }
