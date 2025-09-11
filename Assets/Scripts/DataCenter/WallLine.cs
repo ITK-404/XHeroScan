@@ -156,6 +156,11 @@ public class FloorLine
         this.start = start;
         this.end = end;
     }
+    public FloorLine(FloorLine floorLine)
+    {
+        this.start = floorLine.start;
+        this.end = floorLine.end;
+    }
 }
 [System.Serializable]
 public class Floor
@@ -207,6 +212,26 @@ public class Floor
     public void SetID(string newID)
     {
         ID = newID;
+    }
+
+    public static Floor Clone(Floor other)
+    {
+        if(other == null )
+        {
+            Debug.Log("Bạn đang clone 1 object null");
+            return null; 
+        }
+        Floor floor = new Floor();
+        floor.ID = other.ID;
+        floor.floorName = other.floorName;
+        floor.center = other.center;
+        floor.checkpoints = new List<Vector2>(other.checkpoints);
+        floor.floorLine = new List<FloorLine>(other.floorLine.Select(w => new FloorLine(w)));
+        floor.heights = new List<float>(other.heights);
+        floor.roomIDs = new List<string>(other.roomIDs);
+        floor.width = other.width;
+        floor.length = other.length;
+        return floor;
     }
 }
 #endregion

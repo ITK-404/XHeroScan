@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class CameraResizeByFloor : MonoBehaviour
 {
+    public static CameraResizeByFloor Instance;
     private Camera mainCamera;
     private Tween moveTween;
     private Tween sizeTween;
@@ -43,6 +44,7 @@ public class CameraResizeByFloor : MonoBehaviour
 
     private void Awake()
     {
+        Instance = this;
         mainCamera = Camera.main;
     }
 

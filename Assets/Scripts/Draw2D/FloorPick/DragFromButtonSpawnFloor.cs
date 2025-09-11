@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
 {
+    public static DragFromButtonSpawnFloor Instance;
     [Header("Placement params")]
     public float width = 20f;
     public float depth = 5f;
@@ -22,7 +23,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     public float layerStepY = 0.002f; // mỗi index lệch 2mm
     public float lineLift = 0.0005f; // line nổi hơn mesh 0.5mm
     public float labelLift = 0.01f;   // label nổi hơn mesh 1cm
-
+    
 [SerializeField] private GameObject ButtomPanel;
 [SerializeField] private bool requireExitPanelToActivate = true;
 
@@ -71,6 +72,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     [Header("Flow")]
     public bool editAfterPlace = true;   // false: vẽ xong là dọn sạch
 
+    private Floor previousFloor;
+
     private float BaseY(int index) => index * layerStepY;
     // Mỗi floor một GO chứa preview/handles/labels
     private static readonly Dictionary<string, GameObject> s_floorVisuals = new();
@@ -96,6 +99,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
     private void Awake()
     {
+        Instance = this;
         // Camera tối thiểu
         if (Camera.main == null)
         {
@@ -217,6 +221,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
     public void OnBeginDrag(PointerEventData eventData)
     {
+        // store previous
+        previousFloor = FloorStorage.floors.Count > 0 ? FloorStorage.floors[0] : null;
+
         ResetSingleFloor();
 
         isDragging = true;
@@ -367,8 +374,11 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             if (previewGO) previewGO.SetActive(false);
             return;
         }
+
         if (lastHitPos != Vector3.zero)
         {
+            Debug.Log("Trước khi tạo" + FloorStorage.floors.Count);
+
             float hw = width * 0.5f;
             float hd = depth * 0.5f;
 
@@ -437,7 +447,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             // Vẽ lại từ state (sẽ cập nhật mesh/line/label vị trí)
             RedrawRectangleFromState();
 
-            Camera.main.GetComponent<CameraResizeByFloor>().Resize(floor.center, floor.checkpoints);
+            CameraResizeByFloor.Instance.Resize(floor.center, floor.checkpoints);
 
         }
         isDragging = false;
@@ -453,6 +463,11 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             if (previewGO) previewGO.SetActive(true);
         }
 
+        UndoRedoController.Instance.AddToUndo(new EditFloorCommand(previousFloor));
+
+
+        Debug.Log("Trước khi tạo" + FloorStorage.floors.Count);
+        Debug.Log("Draggin xong, tạo sàn hoàn tấc");
     }
 
     // ==== Hiển thị độ dài cạnh ====
@@ -906,7 +921,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         for (int i = 0; i < 4; i++) f.heights.Add(0.1f);
     }
     // gọi để quay về trạng thái chỉ còn 1 floor (xoá hết data + visuals cũ)
-    private void ResetSingleFloor()
+    public void ResetSingleFloor()
     {
         // Nếu preview đang nằm trong lastFloorGO, tách ra trước khi phá parent
         if (previewGO && lastFloorGO && previewGO.transform.IsChildOf(lastFloorGO.transform))

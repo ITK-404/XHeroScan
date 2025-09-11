@@ -54,7 +54,12 @@ public class FurnitureMergeToWall
         SnapTemp(allowSnap);
     }
 
-    public void SnapTemp(bool allowSnap)
+    public void ForceSnapToWall()
+    {
+        SnapTemp(true);
+    }
+
+    private void SnapTemp(bool allowSnap)
     {
         if (allowSnap == false) return;
 

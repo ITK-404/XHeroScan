@@ -6,7 +6,7 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 
-public class DimensionOkHandler : MonoBehaviour
+public class InputCustomers : MonoBehaviour
 {
     [Header("Refs")]
     private RoomInfoDisplay roomInfoDisplay;
@@ -19,7 +19,6 @@ public class DimensionOkHandler : MonoBehaviour
     [Header("Rebuild Settings")]
     [Tooltip("Độ nhô của line/marker so với nền phòng khi rebuild (fallback nếu không tìm thấy CreateRoomOnFloor).")]
     [SerializeField] private float fallbackRoomWallLift = 0.003f;
-    [SerializeField] private CameraResizeByFloor cameraResizeByFloor;
 
     private void Awake()
     {
@@ -77,9 +76,9 @@ public class DimensionOkHandler : MonoBehaviour
             Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng.");
             return;
         }
-
         // Lấy room
         Room room = RoomStorage.GetRoomByID(roomId);
+        UndoRedoController.Instance.AddToUndo(new EditRoomCommand(new Room(room)));
         if (room == null)
         {
             Debug.LogWarning($"[DimOK] Không tìm thấy ROOM với ID={roomId}");
@@ -215,6 +214,7 @@ public class DimensionOkHandler : MonoBehaviour
     private void RecreateFloorWithInputDims(string floorId)
     {
         var target = FindFloor(floorId);
+        var cloneOfTarget = Floor.Clone(target);
         if (target == null) return;
         float prevousWidth = target.width;
         float previousLength = target.length;
@@ -228,7 +228,7 @@ public class DimensionOkHandler : MonoBehaviour
         // W và L bị đảo ngươc4
         if (TryUpdateFloor(target, L, W))
         {
-            UndoRedoController.Instance.AddToUndo(new EditFloorCommand(floorId, prevousWidth, previousLength, this));
+            UndoRedoController.Instance.AddToUndo(new EditFloorCommand(cloneOfTarget));
         }
     }
 
@@ -258,7 +258,7 @@ public class DimensionOkHandler : MonoBehaviour
 
         // Tính centroid hiện có
         Vector2 centroid = ComputeCentroid2D(target.checkpoints);
-        // Input của hàm bị ngược lúc truyền vào 
+        // Input của hàm bị ngược lúc truyền vào S
         target.width = L;
         target.length = W;
         // Ghi lại polygon L×W (axis-aligned theo world) vào storage
@@ -281,7 +281,7 @@ public class DimensionOkHandler : MonoBehaviour
             Debug.LogWarning("[DimOK] spawnFloor NULL — không thể vẽ lại points/line. Hãy đảm bảo DragFromButtonSpawnFloor có trong scene.");
         }
         Debug.Log($"[DimOK] UPDATED FLOOR {floorId}: points + line + mesh -> {L}x{W}, area={L * W}");
-        cameraResizeByFloor.Resize(target.center, target.checkpoints);
+        CameraResizeByFloor.Instance.Resize(target.center, target.checkpoints);
 
         return true;
     }
