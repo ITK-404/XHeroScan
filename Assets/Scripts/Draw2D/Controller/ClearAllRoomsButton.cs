@@ -50,7 +50,8 @@ public class ClearAllRoomsButton : MonoBehaviour
             popupOne.ClickYesEvent = () =>
             {
                 Debug.Log($"Người dùng xác nhận: Xóa phòng {displayName} ({currentRoomID})");
-                ClearRoomById(currentRoomID);
+                UndoRedoController.Instance.AddToUndo(new DeleteRoomCommand(new Room(room)));
+                checkpointManager.ClearRoomById(currentRoomID);
                 checkpointManager?.ClearSelectedRoom();
 
                 // Reset UI
@@ -81,74 +82,7 @@ public class ClearAllRoomsButton : MonoBehaviour
     /// <summary>
     /// Xóa DUY NHẤT 1 phòng theo roomID.
     /// </summary>
-    public void ClearRoomById(string roomID)
-    {
-        if (string.IsNullOrEmpty(roomID)) { Debug.LogWarning("[ClearRoomById] roomID rỗng."); return; }
-
-        var room = RoomStorage.GetRoomByID(roomID);
-        if (room == null) { Debug.LogWarning($"[ClearRoomById] Không tìm thấy phòng: {roomID}"); return; }
-
-        // XÓA EXTRA GOs theo roomID (placedPointsByRoom)
-        var mpm = FindFirstObjectByType<MovePointManager>();
-        if (mpm != null && mpm.placedPointsByRoom != null &&
-            mpm.placedPointsByRoom.TryGetValue(roomID, out var extras) && extras != null)
-        {
-            foreach (var go in extras) if (go) Destroy(go);
-            mpm.placedPointsByRoom.Remove(roomID);
-        }
-
-        // Xóa floor mesh
-        var floors = GameObject.FindObjectsByType<RoomMeshController>(FindObjectsSortMode.None);
-        foreach (var floor in floors) if (floor.RoomID == roomID) Destroy(floor.gameObject);
-
-        // Xóa checkpoints (main) theo loop
-        var loop = GetLoopByRoomID(roomID);
-        if (loop != null)
-        {
-            if (checkpointManager != null &&
-                checkpointManager.selectedCheckpoint != null &&
-                loop.Contains(checkpointManager.selectedCheckpoint))
-            {
-                checkpointManager.DeselectCheckpoint();
-                checkpointManager.isDragging = false;
-                checkpointManager.isMovingCheckpoint = false;
-            }
-
-            foreach (var cp in loop) if (cp) Destroy(cp);
-            checkpointManager?.AllCheckpoints.Remove(loop);
-        }
-
-        // Gỡ mapping khác
-        checkpointManager?.RoomFloorMap.Remove(roomID);
-        if (checkpointManager?.currentCheckpoints != null)
-            checkpointManager.currentCheckpoints.RemoveAll(go => !go); // dọn null
-
-        // Xóa cửa/cửa sổ tạm
-        if (checkpointManager != null &&
-            checkpointManager.tempDoorWindowPoints != null &&
-            checkpointManager.tempDoorWindowPoints.TryGetValue(roomID, out var doorPts))
-        {
-            foreach (var (_, p1GO, p2GO) in doorPts)
-            {
-                if (p1GO) Destroy(p1GO);
-                if (p2GO) Destroy(p2GO);
-            }
-            checkpointManager.tempDoorWindowPoints.Remove(roomID);
-        }
-
-        // Xóa dữ liệu phòng trong RoomStorage
-        RoomStorage.rooms.RemoveAll(r => r.ID == roomID);
-
-        // Vẽ lại
-        if (checkpointManager != null)
-        {
-            checkpointManager.ClearAllLines();
-            checkpointManager.RedrawAllRooms();
-            checkpointManager.ClearSelectedRoom();
-        }
-
-        Debug.Log($"Đã xóa phòng: {roomID}");
-    }
+    
 
     /// <summary>
     /// Xóa TẤT CẢ phòng + checkpoint + mesh + dữ liệu tạm (có Undo tổng nếu hệ thống có).
@@ -195,7 +129,7 @@ public class ClearAllRoomsButton : MonoBehaviour
 
                 // Xoá room
                 for (int i = 0; i < roomsOnFloor.Count; i++)
-                    ClearRoomById(roomsOnFloor[i].ID);
+                    checkpointManager.ClearRoomById(roomsOnFloor[i].ID);
 
                 // Xoá floor trong FloorStorage
                 Floor floorData = null;
@@ -311,11 +245,5 @@ public class ClearAllRoomsButton : MonoBehaviour
         FurnitureManager.Instance.ClearAllFurnitures();
     }
 
-    private List<GameObject> GetLoopByRoomID(string roomID)
-    {
-        if (checkpointManager == null) return null;
-        foreach (var lp in checkpointManager.AllCheckpoints)
-            if (checkpointManager.FindRoomIDForLoop(lp) == roomID) return lp;
-        return null;
-    }
+    
 }

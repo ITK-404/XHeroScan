@@ -22,6 +22,7 @@ public static class FloorStorage
         {
             if (floors[i].ID == updated.ID)
             {
+                Debug.Log("Tìm thấy floor trùng ID, cập nhật dữ liệu");
                 // cập nhật tối thiểu, bạn có thể mở rộng tùy ý
                 floors[i].floorName = updated.floorName;
                 floors[i].checkpoints = new List<Vector2>(updated.checkpoints ?? new List<Vector2>());

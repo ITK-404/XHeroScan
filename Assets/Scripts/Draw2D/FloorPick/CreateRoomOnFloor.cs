@@ -115,6 +115,8 @@ public class CreateRoomOnFloor : MonoBehaviour
             }
             else if (TryGetMouseOnAnyFloorClamped(out var p1Snap, out var root2))
             {
+                Debug.Log("Phòng được tạo ở đây");
+
                 isDragging = true;
                 IsCreateRooom = true;
 
@@ -442,43 +444,39 @@ public class CreateRoomOnFloor : MonoBehaviour
         };
 
         // Hướng mặc định Bắc
-        room.headingCompass = 0f;
-        room.Compass = new Vector2(0f, 1f);
-        for (int i = 0; i < room.wallLines.Count; i++)
-        {
-            var wl = room.wallLines[i];
-            wl.headingCompass = HeadingManager.HeadingDeg(wl.start, wl.end);
-            room.wallLines[i] = wl;
-        }
+
+        checkPointManager.DrawWallLineByRoom(room);
 
         room.center = GeoUtil.Centroid(room.checkpoints);
         RoomStorage.UpdateOrAddRoom(room);
         floor.RegisterRoom(room);
 
-        GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
-        floorGO.transform.SetPositionAndRotation(new Vector3(0f, baseRoomY, 0f), Quaternion.identity);
-        var meshCtrl = floorGO.AddComponent<RoomMeshController>();
-        meshCtrl.Initialize(room.ID);
-        meshCtrl.GenerateMesh(room.checkpoints);
+        checkPointManager.CreateRoomMeshCtrl(room, room.center);
+        //GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
+        //floorGO.transform.SetPositionAndRotation(new Vector3(0f, baseRoomY, 0f), Quaternion.identity);
+        //var meshCtrl = floorGO.AddComponent<RoomMeshController>();
+        //meshCtrl.Initialize(room.ID);
+        //meshCtrl.GenerateMesh(room.checkpoints);
 
         if (checkPointManager != null)
         {
-            checkPointManager.RoomFloorMap ??= new Dictionary<string, GameObject>();
-            checkPointManager.RoomFloorMap[room.ID] = floorGO;
+            //checkPointManager.RoomFloorMap ??= new Dictionary<string, GameObject>();
+            //checkPointManager.RoomFloorMap[room.ID] = floorGO;
 
-            var loopGO = new List<GameObject>();
-            if (checkPointManager.checkpointPrefab != null)
-            {
-                loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v0_show, Quaternion.identity));
-                loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v1_show, Quaternion.identity));
-                loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v2_show, Quaternion.identity));
-                loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v3_show, Quaternion.identity));
-            }
+            //var loopGO = new List<GameObject>();
+            //if (checkPointManager.checkpointPrefab != null)
+            //{
+            //    loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v0_show, Quaternion.identity));
+            //    loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v1_show, Quaternion.identity));
+            //    loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v2_show, Quaternion.identity));
+            //    loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v3_show, Quaternion.identity));
+            //}
 
-            checkPointManager.loopMappings ??= new List<LoopMap>();
-            checkPointManager.loopMappings.Add(new LoopMap(room.ID, loopGO));
-            checkPointManager.AllCheckpoints.Add(loopGO);
 
+            //checkPointManager.loopMappings ??= new List<LoopMap>();
+            //checkPointManager.loopMappings.Add(new LoopMap(room.ID, loopGO));
+            //checkPointManager.AllCheckpoints.Add(loopGO);
+            checkPointManager.AddGameObjectCheckPointToGlobalVariable(room);
             checkPointManager.RedrawAllRooms();
         }
 
@@ -492,6 +490,13 @@ public class CreateRoomOnFloor : MonoBehaviour
             colors.normalColor = Color.white;
             CreateRoomButton.colors = colors;
         }
+
+        UndoRedoController.Instance.AddToUndo(new CreateRoomCommand(room.ID));
+    }
+
+    public void CreateRoomByRoomData(Room room)
+    {
+        
     }
 
     private void ResetDragState(bool keepPlacing)

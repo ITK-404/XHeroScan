@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Linq;
+using UnityEngine;
 
 public class CreateItemCommand : IUndoRedoCommand
 {
@@ -71,36 +72,5 @@ public class EditItemCommand : IUndoRedoCommand
         item.furnitureMergeToWall.ResetAttached();
         item.FetchData(itemData);
         item.furnitureMergeToWall.TryToMergeAndSnapInAllWall();
-    }
-}
-
-public class EditFloorCommand : IUndoRedoCommand
-{
-    public string floorId;
-    public float width;
-    public float length;
-    public DimensionOkHandler okHandler;
-    public EditFloorCommand(string floorID, float width, float length, DimensionOkHandler okHandler)
-    {
-        this.floorId = floorID;
-        this.width = width;
-        this.length = length;
-        this.okHandler = okHandler;
-    }
-    public void Redo()
-    {
-    }
-    public void Undo()
-    {
-        Debug.Log("Undo chỉnh sửa sàn " + floorId + " về kích thước " + width + "x" + length);
-        var target = okHandler.FindFloor(floorId);
-
-        if (target == null)
-        {
-            Debug.LogWarning("Không tìm thấy sàn để undo");
-            return;
-        }
-        // Hàm đang sai chiều dài và rộng bị đảo ngược
-        okHandler.TryUpdateFloor(target, length, width);
     }
 }

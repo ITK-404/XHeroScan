@@ -52,6 +52,10 @@ public class FurnitureManager : MonoBehaviour
             var item = GameObject.Instantiate(prefab);
             item.FetchData(data);
             item.InitLineAndText();
+            if(item.lineType == LineType.Door || item.lineType == LineType.Window)
+            {
+                item.furnitureMergeToWall.ForceSnapToWall();
+            }
             runtimeFurnitures.Add(item);
         }
 
@@ -321,7 +325,15 @@ public class FurnitureManager : MonoBehaviour
         Debug.Log("try snap to nearest room");
         foreach (var item in runtimeFurnitures)
         {
-            item.furnitureMergeToWall.SnapTemp(true);
+            item.furnitureMergeToWall.ForceSnapToWall();
+        }
+    }
+
+    public void ResetAttachedItems()
+    {
+        foreach (var item in runtimeFurnitures)
+        {
+            item.furnitureMergeToWall.ResetAttached();
         }
     }
 

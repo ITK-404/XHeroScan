@@ -429,14 +429,15 @@ public class CheckpointManager : MonoBehaviour
 
         return ray.GetPoint(5f);
     }
+    const float layerStepY = 0.002f;
+    const int floorIndex = 1;
+    const float floorIndexY = floorIndex * layerStepY;
+    const float roomIndexY = 2 * layerStepY;
+    const float lineLift = 0.0005f;
+    const float lineWidth = 0.03f;
     void LoadPointsFromStorage()
     {
-        const float layerStepY = 0.002f;
-        const int   floorIndex = 1;
-        const float floorIndexY = floorIndex  * layerStepY;
-        const float roomIndexY = 2 * layerStepY;
-        const float lineLift = 0.0005f;
-        const float lineWidth   = 0.03f;
+
 
         // ====== FLOOR ======
         foreach (var floor in FloorStorage.floors)
@@ -551,100 +552,31 @@ public class CheckpointManager : MonoBehaviour
             if (room == null || room.checkpoints == null || room.checkpoints.Count < 3) continue;
 
             // Checkpoints (world)
-            var loopGO = new List<GameObject>();
-            foreach (var p in room.checkpoints)
-            {
-                var wp = new Vector3(p.x, roomIndexY, p.y);
-                loopGO.Add(Instantiate(checkpointPrefab, wp, Quaternion.identity));
-            }
-            allCheckpoints.Add(loopGO);
-            loopMappings.Add(new LoopMap(room.ID, loopGO));
+            //var loopGO = new List<GameObject>();
+            //foreach (var p in room.checkpoints)
+            //{
+            //    var wp = new Vector3(p.x, roomIndexY, p.y);
+            //    loopGO.Add(Instantiate(checkpointPrefab, wp, Quaternion.identity));
+            //}
+            //allCheckpoints.Add(loopGO);
+            //loopMappings.Add(new LoopMap(room.ID, loopGO));
+            AddGameObjectCheckPointToGlobalVariable(room);
 
             // Mesh (world)
-            var roomGO = new GameObject($"RoomFloor_{room.ID}");
-            roomGO.transform.position = new Vector3(0, roomIndexY, 0);
-            var mesh = roomGO.AddComponent<RoomMeshController>();
-            mesh.Initialize(room.ID);
-            mesh.GenerateMesh(room.checkpoints); // truyền world points
-
+            //var roomGO = new GameObject($"RoomFloor_{room.ID}");
+            //roomGO.transform.position = new Vector3(0, roomIndexY, 0);
+            //var mesh = roomGO.AddComponent<RoomMeshController>();
+            //mesh.Initialize(room.ID);
+            //mesh.GenerateMesh(room.checkpoints); // truyền world points
+            CreateRoomMeshCtrl(room, new Vector3(0, roomIndexY, 0));
             // Wall lines (world + nâng y)
-// Wall lines (world + nâng y)
-// foreach (var wl in room.wallLines)
-// {
-//     var s = new Vector3(wl.start.x, roomIndexY + lineLift, wl.start.z);
-//     var e = new Vector3(wl.end.x,   roomIndexY + lineLift, wl.end.z);
+            // Wall lines (world + nâng y)
 
-//     // Vẽ đoạn tường gốc như cũ
-//     DrawingTool.currentLineType = wl.type;
-//     DrawingTool.DrawLineAndDistance(s, e,room.thickness);
-
-//     // >>> ADDED: draw wall heading arrow (Bắc = Z+)
-//     // Lấy heading từ data; nếu =0 và đoạn không song song Z+, tự tính từ vector start->end
-//     float compass = wl.headingCompass;
-//     Vector3 dirSE = (e - s); dirSE.y = 0f;
-
-//     if (compass == 0f && dirSE.sqrMagnitude > 1e-8f)
-//     {
-//         // 0° khi trỏ thẳng Z+; 90° khi trỏ X+
-//         float ang = Mathf.Atan2(dirSE.x, dirSE.z) * Mathf.Rad2Deg;
-//         if (ang < 0f) ang += 360f;
-//         compass = ang;
-//         wl.headingCompass = ang; // lưu ngược lại nếu bạn muốn
-//     }
-
-//     // Mũi tên ở giữa đoạn, chỉ theo compass
-//     Vector3 mid = (s + e) * 0.5f;
-//     Quaternion rot = Quaternion.Euler(0f, compass, 0f);
-//     Vector3 fwd = rot * Vector3.forward; // Bắc = Z+ => 0°
-
-//     float arrowLen  = 0.6f;   // chiều dài mũi tên
-//     float headSize  = 0.18f;  // kích thước đầu mũi tên
-
-//     Vector3 tip     = mid + fwd.normalized * arrowLen;
-//     Vector3 basePt  = mid;
-
-//     // Tạo GO vẽ mũi tên (line mảnh)
-//     var arrowGO = new GameObject($"Heading_{room.ID}");
-//     arrowGO.transform.position = Vector3.zero;
-//     var lr = arrowGO.AddComponent<LineRenderer>();
-//     lr.useWorldSpace = true;
-//     lr.loop = false;
-//     lr.widthMultiplier = 0.02f;
-//     lr.numCornerVertices = 2;
-
-//     var unlit = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
-//     lr.material = new Material(unlit);
-//     if (lr.material.HasProperty("_Color")) lr.material.SetColor("_Color", new Color(0.9f, 0.7f, 0.2f, 1f));
-
-//     // Thân mũi tên
-//     lr.positionCount = 2;
-//     lr.SetPosition(0, basePt);
-//     lr.SetPosition(1, tip);
-
-//     // Hai gạch đầu mũi tên (tạo thêm 2 LineRenderer nhỏ)
-//     Vector3 headLeftDir  = (Quaternion.Euler(0f, 150f, 0f) * fwd).normalized;
-//     Vector3 headRightDir = (Quaternion.Euler(0f, -150f, 0f) * fwd).normalized;
-
-//     void DrawHead(Vector3 from, Vector3 dir)
-//     {
-//         var h = new GameObject("Head");
-//         h.transform.SetParent(arrowGO.transform, false);
-//         var l = h.AddComponent<LineRenderer>();
-//         l.useWorldSpace = true;
-//         l.loop = false;
-//         l.widthMultiplier = 0.02f;
-//         l.material = lr.material;
-//         l.positionCount = 2;
-//         l.SetPosition(0, from);
-//         l.SetPosition(1, from + dir * headSize);
-//     }
-//     DrawHead(tip, headLeftDir);
-//     DrawHead(tip, headRightDir);
-//     // <<< ADDED
-// }
-
+            DrawWallLineByRoom(room);
         }
     }
+
+   
 
     public void ClearAllLines() => DrawingTool.ClearAllLines();
     public void DrawAllLinesFromRoomStorage()=> DrawingTool.DrawAllLinesFromRoomStorage();
@@ -760,7 +692,6 @@ public class CheckpointManager : MonoBehaviour
         List<Vector3> corners = new List<Vector3> { p1, p2, p3, p4 };
 
         // Tạo checkpoint prefab tại từng góc
-        CreateCheckPointGameObject(corners);
 
         // Tạo wallLines & vẽ line
         for (int i = 0; i < currentCheckpoints.Count; i++)
@@ -801,7 +732,6 @@ public class CheckpointManager : MonoBehaviour
         CreateRoomMeshCtrl(newRoom, center);
 
         // Ánh xạ loop
-        AddGameObjectCheckPointToGlobalVariable(newRoom.ID, currentCheckpoints);
 
         currentCheckpoints.Clear();
         wallLines.Clear();
@@ -819,62 +749,128 @@ public class CheckpointManager : MonoBehaviour
         //UndoRedoController.Instance.AddToUndo(new CreateRectangularCommand(data));
     }
 
-    public void CreateRoomByRoomData(Room room,Vector3 position)
+    public void AddGameObjectCheckPointToGlobalVariable(Room room)
     {
-        // chuyển đổi list sang vector3
-        Debug.Log("Create Room by room data: "+room.ID);
-        var convertList = new List<Vector3>();
-        foreach(var item in room.checkpoints)
+        var loopGO = new List<GameObject>();
+        foreach (var p in room.checkpoints)
         {
-            Vector3 pos = new Vector3(item.x, 0, item.y);
-            convertList.Add(pos);
+            var wp = new Vector3(p.x, roomIndexY, p.y);
+            loopGO.Add(Instantiate(checkpointPrefab, wp, Quaternion.identity));
         }
-        // tạo check dạng game object
-        CreateCheckPointGameObject(convertList);
-    
-        // vẽ line dữa theo wall line
-        foreach (WallLine item in room.wallLines)
-        {
-            Debug.Log($"Start {item.start} End{item.end}");
-            DrawingTool.DrawLineAndDistance(item.start, item.end,room.thickness);
-        }
-        // đảm bảo data trong command độc lập với data runtime
-        RoomStorage.rooms.Add(new Room(room));
 
-        // thêm list game object check point vào global data
-        AddGameObjectCheckPointToGlobalVariable(room.ID, currentCheckpoints);
-        // init floor mesh 
-        CreateRoomMeshCtrl(room,position);
-        
-        
-        currentCheckpoints.Clear();
-        wallLines.Clear();
-        
-        DrawingTool.DrawAllLinesFromRoomStorage();
+        allCheckpoints.Add(loopGO);
+        loopMappings.Add(new LoopMap(room.ID, loopGO));
     }
 
-    private void CreateCheckPointGameObject(List<Vector3> corners)
+    public void CreateRoomMeshCtrl(Room room,Vector3 position)
     {
-        foreach (Vector3 pos in corners)
-        {
-            var cp = Instantiate(checkpointPrefab, pos, Quaternion.identity);
-            currentCheckpoints.Add(cp);
-        }
-    }
-
-    private void AddGameObjectCheckPointToGlobalVariable(string roomID,List<GameObject> checkPoints)
-    {
-        List<GameObject> loopRef = new List<GameObject>(checkPoints);
-        allCheckpoints.Add(loopRef);
-        loopMappings.Add(new LoopMap(roomID, loopRef));
-    }
-
-    private void CreateRoomMeshCtrl(Room newRoom,Vector3 position)
-    {
-        GameObject floorGO = new GameObject($"RoomFloor_{newRoom.ID}");
+        GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
         RoomMeshController meshCtrl = floorGO.AddComponent<RoomMeshController>();
-        meshCtrl.Initialize(newRoom.ID);
-        floorGO.transform.position = position;
+        meshCtrl.Initialize(room.ID);
+        meshCtrl.GenerateMesh(room.checkpoints);
+        floorGO.transform.position = new Vector3(position.x, roomIndexY, position.z);
+        RoomFloorMap[room.ID] = floorGO;
+
     }
 
+    public void ClearRoomById(string roomID)
+    {
+        if (string.IsNullOrEmpty(roomID)) { Debug.LogWarning("[ClearRoomById] roomID rỗng."); return; }
+
+        var room = RoomStorage.GetRoomByID(roomID);
+        if (room == null) { Debug.LogWarning($"[ClearRoomById] Không tìm thấy phòng: {roomID}"); return; }
+
+        // XÓA EXTRA GOs theo roomID (placedPointsByRoom)
+        var mpm = FindFirstObjectByType<MovePointManager>();
+        if (mpm != null && mpm.placedPointsByRoom != null &&
+            mpm.placedPointsByRoom.TryGetValue(roomID, out var extras) && extras != null)
+        {
+            foreach (var go in extras) if (go) Destroy(go);
+            mpm.placedPointsByRoom.Remove(roomID);
+        }
+
+        // Xóa floor mesh
+        var floors = GameObject.FindObjectsByType<RoomMeshController>(FindObjectsSortMode.None);
+        foreach (var floor in floors) if (floor.RoomID == roomID) Destroy(floor.gameObject);
+
+        // Xóa checkpoints (main) theo loop
+        var loop = GetLoopByRoomID(roomID);
+        if (loop != null)
+        {
+            if (
+                selectedCheckpoint != null &&
+                loop.Contains(selectedCheckpoint))
+            {
+                DeselectCheckpoint();
+                isDragging = false;
+                isMovingCheckpoint = false;
+            }
+
+            foreach (var cp in loop) if (cp) Destroy(cp);
+            AllCheckpoints.Remove(loop);
+        }
+
+        // Gỡ mapping khác
+        RoomFloorMap.Remove(roomID);
+        if (currentCheckpoints != null)
+            currentCheckpoints.RemoveAll(go => !go); // dọn null
+
+        // Xóa cửa/cửa sổ tạm
+        if (
+            tempDoorWindowPoints != null &&
+            tempDoorWindowPoints.TryGetValue(roomID, out var doorPts))
+        {
+            foreach (var (_, p1GO, p2GO) in doorPts)
+            {
+                if (p1GO) Destroy(p1GO);
+                if (p2GO) Destroy(p2GO);
+            }
+            tempDoorWindowPoints.Remove(roomID);
+        }
+
+        // Xóa dữ liệu phòng trong RoomStorage
+        RoomStorage.rooms.RemoveAll(r => r.ID == roomID);
+
+        // Vẽ lại
+        ClearAllLines();
+        RedrawAllRooms();
+        ClearSelectedRoom();
+        Debug.Log($"Đã xóa phòng: {roomID}");
+    }
+
+    public void DrawWallLineByRoom(Room room)
+    {
+        room.headingCompass = 0f;
+        room.Compass = new Vector2(0f, 1f);
+        foreach (var wl in room.wallLines)
+        {
+            wl.headingCompass = HeadingManager.HeadingDeg(wl.start, wl.end);
+
+            var s = new Vector3(wl.start.x, roomIndexY + lineLift, wl.start.z);
+            var e = new Vector3(wl.end.x, roomIndexY + lineLift, wl.end.z);
+            // Vẽ đoạn tường gốc như cũ
+            DrawingTool.currentLineType = wl.type;
+            DrawingTool.DrawLineAndDistance(s, e, room.thickness);
+        }
+    }
+
+    private List<GameObject> GetLoopByRoomID(string roomID)
+    {
+        foreach (var lp in AllCheckpoints)
+            if (FindRoomIDForLoop(lp) == roomID) return lp;
+        return null;
+    }
+
+    public void RestoreRoom(Room roomSnapShot)
+    {
+        var room = new Room(roomSnapShot); // copy
+        RoomStorage.UpdateOrAddRoom(room);
+        AddGameObjectCheckPointToGlobalVariable(room);
+
+        CreateRoomMeshCtrl(room, room.center);
+
+        DrawWallLineByRoom(room);
+
+        RedrawAllRooms();
+    }
 }

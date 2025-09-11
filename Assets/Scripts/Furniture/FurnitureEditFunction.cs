@@ -45,7 +45,9 @@ public class FurnitureEditFunction : MonoBehaviour
     {
         if(currentFurniture != null)
         {
+            FurnitureItem.SnapShotTemp = currentFurniture.data;
             currentFurniture.data.isFlip = !currentFurniture.data.isFlip;
+            currentFurniture.CreareEditCommandBySnapShot();
         }
     }
 
