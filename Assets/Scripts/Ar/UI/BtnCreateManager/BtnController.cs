@@ -1162,7 +1162,7 @@ for (int j = 0; j < n; j++) {
 
             // RoomStorage.rooms.Add(room); 
             RoomStorage.UpdateOrAddRoomForAR(room);
-
+    
             // Tính diện tích mặt đứng **phải làm ở đây**, trước khi clear
             for (int i = 0; i < count; i++)
             {
