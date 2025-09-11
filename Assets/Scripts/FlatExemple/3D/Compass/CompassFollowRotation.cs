@@ -120,7 +120,7 @@ public class CompassFollowRotation : MonoBehaviour
             // Gợi ý hướng chữ
             string directionLabel = AngleToDirectionLabel(realWorldAngle);
 
-            Debug.Log($"[list][WallDir] 2 {line.start} → {line.end} = {realWorldAngle:0.0}° ({directionLabel})");
+            Debug.Log($"[list][WallDir] 2 {line.start} -> {line.end} = {realWorldAngle:0.0}° ({directionLabel})");
         }
     }
 

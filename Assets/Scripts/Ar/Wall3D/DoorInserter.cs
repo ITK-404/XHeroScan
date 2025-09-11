@@ -23,7 +23,7 @@ public class DoorInserter : MonoBehaviour
 
     void InsertDoorToRoom()
     {
-        // Tìm đoạn wall chứa pa → pb
+        // Tìm đoạn wall chứa pa -> pb
         for (int i = 0; i < room.checkpoints.Count; i++)
         {
             Vector2 p1 = room.checkpoints[i];
@@ -33,7 +33,7 @@ public class DoorInserter : MonoBehaviour
             {
                 Debug.Log("Found line segment for door.");
 
-                // Chèn các điểm mới theo thứ tự: p1 → pa → pb → p2
+                // Chèn các điểm mới theo thứ tự: p1 -> pa -> pb -> p2
                 room.checkpoints.Insert(i + 1, pa);
                 room.checkpoints.Insert(i + 2, pb);
 

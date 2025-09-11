@@ -93,7 +93,7 @@ public static class GeometryUtils
                     loop.Add(cur);
                     usedDir.Add((prev, cur));
 
-                    // tìm “hàng xóm bên trái nhất” (left-hand rule) của cạnh prev→cur
+                    // tìm “hàng xóm bên trái nhất” (left-hand rule) của cạnh prev->cur
                     Vector2 next = adj[cur]
                         .Where(nb => nb != prev)
                         .OrderBy(nb => LeftTurnAngle(prev, cur, nb))
@@ -105,7 +105,7 @@ public static class GeometryUtils
                         // khép vòng
                         loop.Add(next);
                         if (IsSimpleLoop(loop) && AddIfNew(loop, known, loops))
-                            Debug.Log($"[DEBUG][LOOP] {room.ID}  ⟹  {string.Join(" → ", loop.Select(p => p.ToString()))}");
+                            Debug.Log($"[DEBUG][LOOP] {room.ID}  ⟹  {string.Join(" -> ", loop.Select(p => p.ToString()))}");
                         break;
                     }
 

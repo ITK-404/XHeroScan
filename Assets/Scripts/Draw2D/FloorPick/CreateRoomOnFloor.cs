@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 public class CreateRoomOnFloor : MonoBehaviour
@@ -24,7 +25,7 @@ public class CreateRoomOnFloor : MonoBehaviour
     public float arrowHeadSize = 0.15f;
     [Tooltip("Nhấc mũi tên lên khỏi mặt sàn (m) để tránh z-fighting).")]
     public float arrowLift = 0.012f;
-    [Tooltip("Hiện thêm mũi tên đường chéo P1→P2.")]
+    [Tooltip("Hiện thêm mũi tên đường chéo P1->P2.")]
     public bool showDiagonalArrow = true;
 
     [Header("Arrow Text")]
@@ -158,7 +159,7 @@ public class CreateRoomOnFloor : MonoBehaviour
             }
             else
             {
-                Debug.LogError("[CreateRoom] MouseUp nhưng không còn ở cùng RoomFloor → huỷ.");
+                Debug.LogError("[CreateRoom] MouseUp nhưng không còn ở cùng RoomFloor -> huỷ.");
                 ResetDragState(keepPlacing: true);
             }
             IsCreateRooom = false;
@@ -281,49 +282,6 @@ public class CreateRoomOnFloor : MonoBehaviour
     {
         EnsurePreviewObjects(floorRoot);
 
-        // Helper vẽ mũi tên và text
-        void DrawArrow(LineRenderer body, LineRenderer head, TextMesh tmesh, Vector3 a, Vector3 b, Color c, string txt)
-        {
-            if (!body || !head || !tmesh) return;
-
-            // body
-            body.enabled = true;
-            body.startColor = c; body.endColor = c;
-            body.widthMultiplier = arrowWidth;
-            body.positionCount = 2;
-            body.SetPosition(0, a);
-            body.SetPosition(1, b);
-            SetMatColor(body.material, c);
-
-            // head (V-shape)
-            Vector3 dir = (b - a); dir.y = 0f;
-            if (dir.sqrMagnitude < 1e-6f) { head.enabled = false; tmesh.text = ""; return; }
-            dir.Normalize();
-
-            Vector3 wingL = (Quaternion.Euler(0f, +25f, 0f) * -dir) * arrowHeadSize;
-            Vector3 wingR = (Quaternion.Euler(0f, -25f, 0f) * -dir) * arrowHeadSize;
-
-            head.enabled = true;
-            head.startColor = c; head.endColor = c;
-            head.widthMultiplier = arrowWidth;
-            head.positionCount = 3;
-            head.SetPosition(0, b);
-            head.SetPosition(1, b + wingL);
-            head.SetPosition(2, b + wingR);
-            SetMatColor(head.material, c);
-
-            // text
-            tmesh.color = c;
-            tmesh.text = txt;
-            Vector3 mid = (a + b) * 0.5f;
-            tmesh.transform.position = mid + Vector3.up * 0.001f;
-
-            // nằm phẳng + quay theo hướng
-            Quaternion flat = Quaternion.AngleAxis(90f, Vector3.right);
-            float yaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-            tmesh.transform.rotation = Quaternion.AngleAxis(yaw, Vector3.up) * flat;
-        }
-
         // ===== ARROW PREVIEW =====
         if (!useArrowPreview) return;
 
@@ -352,6 +310,66 @@ public class CreateRoomOnFloor : MonoBehaviour
             if (arrowD) arrowD.enabled = false;
             if (arrowDHead) arrowDHead.enabled = false;
             if (arrowDText) arrowDText.gameObject.SetActive(false);
+        }
+    }
+    void DrawArrow(LineRenderer body, LineRenderer head, TextMesh tmesh,
+                   Vector3 a, Vector3 b, Color c, string txt)
+    {
+        if (!body || !head || !tmesh) return;
+
+        body.enabled = true;
+        body.startColor = c; body.endColor = c;
+        body.widthMultiplier = arrowWidth;
+        body.positionCount = 2;
+        body.SetPosition(0, a);
+        body.SetPosition(1, b);
+        SetMatColor(body.material, c);
+
+        Vector3 dir = (b - a); dir.y = 0f;
+        if (dir.sqrMagnitude < 1e-6f) { head.enabled = false; tmesh.text = ""; return; }
+        dir.Normalize();
+
+        Vector3 wingL = (Quaternion.Euler(0f, +25f, 0f) * -dir) * arrowHeadSize;
+        Vector3 wingR = (Quaternion.Euler(0f, -25f, 0f) * -dir) * arrowHeadSize;
+
+        head.enabled = true;
+        head.startColor = c; head.endColor = c;
+        head.widthMultiplier = arrowWidth;
+        head.positionCount = 3;
+        head.SetPosition(0, b);
+        head.SetPosition(1, b + wingL);
+        head.SetPosition(2, b + wingR);
+        SetMatColor(head.material, c);
+
+        // ===== text song song mũi tên, luôn nằm TRÊN line và không bị mirror =====
+        tmesh.color = c;
+        tmesh.text = txt;
+        tmesh.anchor = TextAnchor.MiddleCenter;
+
+        Vector3 mid = (a + b) * 0.5f;
+
+        // pháp tuyến trái của mũi tên trong XZ
+        Vector3 n = Vector3.Cross(Vector3.up, dir).normalized;
+
+        // ép lên phía +Z để "trên" màn (nếu đang hướng -Z thì đảo lại)
+        if (Vector3.Dot(n, Vector3.forward) < 0f) n = -n;
+
+        float sideOffset = Mathf.Max(arrowWidth * 4f, 0.15f);
+        float lift = Mathf.Max(arrowWidth * 0.6f, 0.015f);
+
+        Quaternion rot = Quaternion.LookRotation(-Vector3.up, n);
+
+        tmesh.transform.SetPositionAndRotation(mid + n * sideOffset + Vector3.up * lift, rot);
+
+        // luôn render trên line
+        var mr = tmesh.GetComponent<MeshRenderer>();
+        if (mr)
+        {
+            var m = mr.material;
+            m.renderQueue = 4000;
+            if (m.HasProperty("_ZTest")) m.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+            if (m.HasProperty("_ZWrite")) m.SetInt("_ZWrite", 0);
+            mr.sortingOrder = Mathf.Max(body.sortingOrder, head.sortingOrder) + 10;
         }
     }
 
@@ -385,14 +403,14 @@ public class CreateRoomOnFloor : MonoBehaviour
 
         if (!allOK)
         {
-            Debug.LogError("[CreateRoom] Một hoặc nhiều đỉnh KHÔNG thuộc RoomFloor → không tạo phòng.");
+            Debug.LogError("[CreateRoom] Một hoặc nhiều đỉnh KHÔNG thuộc RoomFloor -> không tạo phòng.");
             ResetDragState(keepPlacing: true);
             return;
         }
 
         if (!TryGetFloorFromRoot(floorRoot, out var floor) || floor == null)
         {
-            Debug.LogError("[CreateRoom] Không tìm ra Floor từ floorRoot → huỷ tạo phòng.");
+            Debug.LogError("[CreateRoom] Không tìm ra Floor từ floorRoot -> huỷ tạo phòng.");
             ResetDragState(keepPlacing: true);
             return;
         }

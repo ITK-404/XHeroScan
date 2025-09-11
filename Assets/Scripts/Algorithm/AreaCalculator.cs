@@ -58,10 +58,10 @@ public static class AreaCalculator
     {
         switch (unit)
         {
-            case "cm": return area * 10000f;  // Mét vuông → Centimét vuông
-            case "m": return area * 1f; // Mét vuông → Mét vuông
-            case "inch": return area * 1550f;  // Mét vuông → Inch vuông
-            case "ft": return area * 10.7639f; // Mét vuông → Feet vuông
+            case "cm": return area * 10000f;  // Mét vuông -> Centimét vuông
+            case "m": return area * 1f; // Mét vuông -> Mét vuông
+            case "inch": return area * 1550f;  // Mét vuông -> Inch vuông
+            case "ft": return area * 10.7639f; // Mét vuông -> Feet vuông
             default: return area; // Mặc định là mét vuông
         }
     }

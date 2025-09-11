@@ -188,7 +188,6 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         if (!TryMouseOnGround(out Vector3 p)) return;
 
-        // đưa p về local
         Quaternion inv = Quaternion.Euler(0f, -rectYaw, 0f);
         Vector3 local = inv * (p - rectCenter);
         float minHalf = 0.05f;
@@ -280,27 +279,27 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
     public void OnDrag(PointerEventData eventData)
     {
-    if (!isDragging) return;
+        if (!isDragging) return;
 
-    if (!dragActivated && requireExitPanelToActivate)
-    {
-        // Còn đang ở trong panel => chưa cho kéo thật
-        if (IsInsideBottomPanel(eventData.position, eventData.pressEventCamera))
-            return;
+        if (!dragActivated && requireExitPanelToActivate)
+        {
+            // Còn đang ở trong panel => chưa cho kéo thật
+            if (IsInsideBottomPanel(eventData.position, eventData.pressEventCamera))
+                return;
 
-        // Vừa rời panel => kích hoạt kéo thật
-        dragActivated = true;
+            // Vừa rời panel => kích hoạt kéo thật
+            dragActivated = true;
 
-        ResetSingleFloor();
-        ClearHandles();
-        hasRect = false;
+            ResetSingleFloor();
+            ClearHandles();
+            hasRect = false;
 
-        EnsurePreviewObjects();
-        previewGO.SetActive(true);
-    }
+            EnsurePreviewObjects();
+            previewGO.SetActive(true);
+        }
 
-    // Nếu tới đây mà vẫn chưa activated (do option), thôi không xử lý
-    if (!dragActivated) return;
+        // Nếu tới đây mà vẫn chưa activated (do option), thôi không xử lý
+        if (!dragActivated) return;
 
         var cam = Camera.main; if (cam == null) return;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
@@ -331,7 +330,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             float hd = depth * 0.5f;
 
             float baseY = BaseY(floorIndex);
-            Vector3 c = lastHitPos; c.y = baseY + lineLift; // line/preview nổi nhẹ
+            Vector3 c = lastHitPos; c.y = baseY + lineLift;
             Quaternion rot = Quaternion.Euler(0f, yaw, 0f);
 
             Vector3 a = c + rot * new Vector3(-hw, 0, -hd);
@@ -363,9 +362,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         if (!isDragging) return;
         if (!dragActivated && requireExitPanelToActivate)
         {
-            // Người dùng kết thúc kéo nhưng chưa rời panel => không spawn gì
             isDragging = false;
-            // tuỳ chọn: dọn preview nếu có
+            
             if (previewGO) previewGO.SetActive(false);
             return;
         }
@@ -390,10 +388,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             rectHalfD = hd;
             hasRect = true;
 
-            // Dữ liệu Floor (2D theo XZ)
             var floor = new Floor();
-            // (Nếu Floor có thuộc tính index/level, ghi luôn)
-            // floor.index = floorIndex; // <— bật nếu class Floor có field này
 
             floor.checkpoints.Add(new Vector2(a.x, a.z));
             floor.checkpoints.Add(new Vector2(b.x, b.z));
@@ -466,39 +461,61 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         if (distanceTextPrefab == null) return;
 
-        // Tâm hình chữ nhật
+        const float LABEL_TOWARD_INWARD = -0.5f; // đẩy theo hướng "vào tâm"
+        const float LABEL_LIFT_Y = 0.01f; // nâng khỏi sàn
+        const float LABEL_SHIFT_X = 0.18f; // lệch hai bên cho cạnh dọc
+        const float LABEL_SHIFT_Z = 0.18f; // lệch trên/dưới cho cạnh ngang
+        const float AXIS_EPS = 1e-5f; // ngưỡng so sánh
+
+        // --- tâm hình chữ nhật ---
         Vector3 center = (a + b + d + e) * 0.25f;
 
         (Vector3 p0, Vector3 p1)[] edges = new (Vector3, Vector3)[]
         {
-            (a, b), (b, d), (d, e), (e, a)
+        (a, b), (b, d), (d, e), (e, a)
         };
 
         for (int i = 0; i < edges.Length; i++)
         {
             var (p0, p1) = edges[i];
 
-            // Midpoint trên cạnh
-            // Vector3 mid = (p0 + p1) * 0.53f;
+            // midpoint cạnh
             Vector3 mid = (p0 + p1) * 0.5f;
 
-            // Vector "vào tâm"
             Vector3 inward = center - mid;
             inward.y = 0f;
-            if (inward.sqrMagnitude < 1e-6f) inward = Vector3.forward; // fallback
+            if (inward.sqrMagnitude < AXIS_EPS) inward = Vector3.forward;
+            Vector3 inwardN = inward.normalized;
 
-            // Vị trí nhãn
-            Vector3 pos = mid + inward.normalized * -0.5f;
-            pos.y += 0.01f;
+            Vector3 pos = mid + inwardN * LABEL_TOWARD_INWARD;
+            pos.y += LABEL_LIFT_Y;
+            
+            float dxEdge = Mathf.Abs(p1.x - p0.x);
+            float dzEdge = Mathf.Abs(p1.z - p0.z);
 
-            // Parent ưu tiên Floor_<ID>, fallback previewGO
-            Transform parentTf = lastFloorGO != null ? lastFloorGO.transform : (previewGO != null ? previewGO.transform : null);
+            if (dzEdge > dxEdge) // trục Z
+            {
+                float signX = Mathf.Sign(mid.x - center.x);
+                if (Mathf.Abs(mid.x - center.x) < AXIS_EPS)
+                    signX = (inward.x >= 0f ? 1f : -1f);
+                pos.x += signX * LABEL_SHIFT_X;
+            }
+            else // trục X
+            {
+                float signZ = Mathf.Sign(mid.z - center.z);
+                if (Mathf.Abs(mid.z - center.z) < AXIS_EPS)
+                    signZ = (inward.z >= 0f ? 1f : -1f);
+                pos.z += signZ * LABEL_SHIFT_Z;
+            }
+            Transform parentTf = lastFloorGO != null
+                ? lastFloorGO.transform
+                : (previewGO != null ? previewGO.transform : null);
 
-            // Tạo nhãn
             GameObject label = Instantiate(distanceTextPrefab, pos, Quaternion.identity, parentTf);
             label.name = $"EdgeLength_{i}";
             edgeLabels.Add(label);
 
+            // text
             float len = Vector3.Distance(p0, p1);
             string text = $"{len:0.##} m";
 
@@ -520,8 +537,21 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
                 }
             }
 
-            float angleDeg = Mathf.Atan2(inward.z, inward.x) * Mathf.Rad2Deg - 90f;
-            label.transform.rotation = Quaternion.Euler(90f, 0f, -angleDeg);
+            Vector3 tangent = p1 - p0;
+            tangent.y = 0f;
+            if (tangent.sqrMagnitude < 1e-6f) tangent = Vector3.right;
+            tangent.Normalize();
+
+            Quaternion rot = Quaternion.LookRotation(-Vector3.up, -inwardN);
+
+            Vector3 rightNow = Vector3.Cross(inwardN, -Vector3.up).normalized;
+
+            if (Vector3.Dot(rightNow, tangent) < 0f)
+            {
+                rot = Quaternion.AngleAxis(180f, inwardN) * rot;
+            }
+
+            label.transform.rotation = rot;
         }
     }
 
@@ -567,47 +597,47 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         return false;
     }
 
-private void SyncLastFloorDataToCurrentRect()
-{
-    if (!hasRect || string.IsNullOrEmpty(currentFloorId)) return;
-
-    Floor floor = null;
-    if (FloorStorage.floors != null)
+    private void SyncLastFloorDataToCurrentRect()
     {
-        foreach (var f in FloorStorage.floors)
-            if (f != null && f.ID == currentFloorId) { floor = f; break; }
+        if (!hasRect || string.IsNullOrEmpty(currentFloorId)) return;
+
+        Floor floor = null;
+        if (FloorStorage.floors != null)
+        {
+            foreach (var f in FloorStorage.floors)
+                if (f != null && f.ID == currentFloorId) { floor = f; break; }
+        }
+        if (floor == null) return;
+
+        Quaternion rot = Quaternion.Euler(0f, rectYaw, 0f);
+        Vector3 c = rectCenter;
+
+        Vector3 a = c + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
+        Vector3 b = c + rot * new Vector3(rectHalfW, 0, -rectHalfD);
+        Vector3 d = c + rot * new Vector3(rectHalfW, 0, rectHalfD);
+        Vector3 e = c + rot * new Vector3(-rectHalfW, 0, rectHalfD);
+
+        floor.checkpoints.Clear();
+        floor.checkpoints.Add(new Vector2(a.x, a.z));
+        floor.checkpoints.Add(new Vector2(b.x, b.z));
+        floor.checkpoints.Add(new Vector2(d.x, d.z));
+        floor.checkpoints.Add(new Vector2(e.x, e.z));
+
+        floor.floorLine.Clear();
+        floor.floorLine.Add(new FloorLine(floor.checkpoints[0], floor.checkpoints[1]));
+        floor.floorLine.Add(new FloorLine(floor.checkpoints[1], floor.checkpoints[2]));
+        floor.floorLine.Add(new FloorLine(floor.checkpoints[2], floor.checkpoints[3]));
+        floor.floorLine.Add(new FloorLine(floor.checkpoints[3], floor.checkpoints[0]));
+
+        floor.center = GeoUtil.Centroid(floor.checkpoints);
+
+        if (floor.heights.Count != 4)
+        {
+            floor.heights.Clear();
+            for (int i = 0; i < 4; i++) floor.heights.Add(0.1f);
+        }
+        FloorStorage.UpdateOrAddFloor(floor);
     }
-    if (floor == null) return;
-
-    Quaternion rot = Quaternion.Euler(0f, rectYaw, 0f);
-    Vector3 c = rectCenter;
-
-    Vector3 a = c + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
-    Vector3 b = c + rot * new Vector3( rectHalfW, 0, -rectHalfD);
-    Vector3 d = c + rot * new Vector3( rectHalfW, 0,  rectHalfD);
-    Vector3 e = c + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
-
-    floor.checkpoints.Clear();
-    floor.checkpoints.Add(new Vector2(a.x, a.z));
-    floor.checkpoints.Add(new Vector2(b.x, b.z));
-    floor.checkpoints.Add(new Vector2(d.x, d.z));
-    floor.checkpoints.Add(new Vector2(e.x, e.z));
-
-    floor.floorLine.Clear();
-    floor.floorLine.Add(new FloorLine(floor.checkpoints[0], floor.checkpoints[1]));
-    floor.floorLine.Add(new FloorLine(floor.checkpoints[1], floor.checkpoints[2]));
-    floor.floorLine.Add(new FloorLine(floor.checkpoints[2], floor.checkpoints[3]));
-    floor.floorLine.Add(new FloorLine(floor.checkpoints[3], floor.checkpoints[0]));
-
-    floor.center = GeoUtil.Centroid(floor.checkpoints);
-
-    if (floor.heights.Count != 4) {
-        floor.heights.Clear();
-        for (int i = 0; i < 4; i++) floor.heights.Add(0.1f);
-    }
-    FloorStorage.UpdateOrAddFloor(floor);
-}
-
 
     private void SpawnHandles(Vector3 a, Vector3 b, Vector3 d, Vector3 e, Transform parent)
     {

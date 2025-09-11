@@ -27,12 +27,12 @@ public class AutoResize : MonoBehaviour
         
         if (aspect > 1.45f)
         {
-            // Widescreen → ưu tiên chiều cao
+            // Widescreen -> ưu tiên chiều cao
             canvasScaler.matchWidthOrHeight = matchValue1;
         }
         else
         {
-            // Gần vuông (iPad, 4:3, 6:5) → ưu tiên chiều rộng
+            // Gần vuông (iPad, 4:3, 6:5) -> ưu tiên chiều rộng
             canvasScaler.matchWidthOrHeight = matchValue2;
         }
     }

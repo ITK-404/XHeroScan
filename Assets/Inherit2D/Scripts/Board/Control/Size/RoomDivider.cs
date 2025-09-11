@@ -160,10 +160,10 @@ public class RoomDivider : MonoBehaviour
         string drawDirection = "Khong xac dinh ?"; // Mặc định nếu không rơi vào vùng nào
 
         if (angle >= -2f && angle < 2f)
-            drawDirection = "Right →";
+            drawDirection = "Right";
         else if (angle >= 2f && angle < 38f)
         {
-            drawDirection = "Top-Right ↗";
+            drawDirection = "Top-Right ";
 
             finalPoints.Add(points[points.Count - 1]);
 
@@ -207,28 +207,28 @@ public class RoomDivider : MonoBehaviour
             }
         }
         else if (angle >= 38f && angle < 88f)  // Mở rộng vùng Lên-Phải
-            drawDirection = "Top-right ⬈";
+            drawDirection = "Top-right";
         else if (angle >= 88f && angle < 92f)  // Thu hẹp vùng Lên
             drawDirection = "Top ↑";
         else if (angle >= 92f && angle < 142f) // Mở rộng vùng Lên-Trái
-            drawDirection = "Top-left ⬉";
+            drawDirection = "Top-left";
         else if (angle >= 142f && angle < 178f)
-            drawDirection = "Top-left ↖";
+            drawDirection = "Top-left";
         else if (angle >= 178f || angle < -178f)
-            drawDirection = "Left ←";
+            drawDirection = "Left";
         else if (angle >= -178f && angle < -142f)
-            drawDirection = "Down-left ↙";
+            drawDirection = "Down-left";
         else if (angle >= -142f && angle < -92f) // Mở rộng vùng Xuống-Trái
-            drawDirection = "Down-left ⬋";
+            drawDirection = "Down-left";
         else if (angle >= -92f && angle < -88f)  // Thu hẹp vùng Xuống
-            drawDirection = "Down ↓";
+            drawDirection = "Down";
         else if (angle >= -88f && angle < -38f)  // Mở rộng vùng Xuống-Phải
         {
-            drawDirection = "Down-right ⬊";
+            drawDirection = "Down-right";
         }
         else if (angle >= -38f && angle < -2f)
         {
-            drawDirection = "Down-right ↘";
+            drawDirection = "Down-right";
 
             finalPoints.Add(points[points.Count - 1]);
 

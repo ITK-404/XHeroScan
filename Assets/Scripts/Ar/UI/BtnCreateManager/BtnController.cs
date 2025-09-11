@@ -534,12 +534,12 @@ public class BtnController : MonoBehaviour
                     GameObject secondDoorTopPoint = Instantiate(pointPrefab, insertPoint + Vector3.up * heightDoor, Quaternion.identity);
 
                     // 1. Kết nối Pn với Pn' của mỗi điểm
-                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position, firstDoorBasePoint, firstDoorTopPoint);   // p1 ↔ p1'
-                    lineManager.DrawLineAndDistance(secondDoorBasePoint.transform.position, secondDoorTopPoint.transform.position, secondDoorBasePoint, secondDoorTopPoint); // p2 ↔ p2'
+                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position, firstDoorBasePoint, firstDoorTopPoint);   // p1 <--> p1'
+                    lineManager.DrawLineAndDistance(secondDoorBasePoint.transform.position, secondDoorTopPoint.transform.position, secondDoorBasePoint, secondDoorTopPoint); // p2 <--> p2'
 
-                    // 2. Kết nối base và top: p1 → p2, p1' → p2'
-                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, secondDoorBasePoint.transform.position, firstDoorBasePoint, secondDoorBasePoint); // p1 → p2
-                    lineManager.DrawLineAndDistance(firstDoorTopPoint.transform.position, secondDoorTopPoint.transform.position, firstDoorTopPoint, secondDoorTopPoint);   // p1' → p2'
+                    // 2. Kết nối base và top: p1 -> p2, p1' -> p2'
+                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, secondDoorBasePoint.transform.position, firstDoorBasePoint, secondDoorBasePoint); // p1 -> p2
+                    lineManager.DrawLineAndDistance(firstDoorTopPoint.transform.position, secondDoorTopPoint.transform.position, firstDoorTopPoint, secondDoorTopPoint);   // p1' -> p2'
 
                     // Vẽ tường cửa riêng biệt
                     modelView.CreateWall(
@@ -621,7 +621,7 @@ public class BtnController : MonoBehaviour
                         foreach (var l in targetRoom.wallLines)
                             Debug.Log($"[L]Sau xoa: {l.type} {l.start} -> {l.end}");
 
-                        // Split đoạn wrap: Pn → DoorA → DoorB → P1
+                        // Split đoạn wrap: Pn -> DoorA -> DoorB -> P1
                         targetRoom.wallLines.Add(new WallLine(targetWall.start, firstDoorBasePoint.transform.position, LineType.Wall, 0f, heightValue));
                         targetRoom.wallLines.Add(new WallLine(firstDoorBasePoint.transform.position, secondDoorBasePoint.transform.position, LineType.Door, 0f, heightDoor));
                         targetRoom.wallLines.Add(new WallLine(secondDoorBasePoint.transform.position, targetWall.end, LineType.Wall, 0f, heightValue));
@@ -655,7 +655,7 @@ public class BtnController : MonoBehaviour
                             Debug.Log($"[L]Sau xoa: {l.type} {l.start} -> {l.end}");
 
 
-                        // Split đoạn thường: Pi → DoorA → DoorB → Pi+1
+                        // Split đoạn thường: Pi -> DoorA -> DoorB -> Pi+1
                         targetRoom.wallLines.Add(new WallLine(targetWall.start, firstDoorBasePoint.transform.position, LineType.Wall, 0f, heightValue));
                         targetRoom.wallLines.Add(new WallLine(firstDoorBasePoint.transform.position, secondDoorBasePoint.transform.position, LineType.Door, 0f, heightDoor));
                         targetRoom.wallLines.Add(new WallLine(secondDoorBasePoint.transform.position, targetWall.end, LineType.Wall, 0f, heightValue));
@@ -788,12 +788,12 @@ public class BtnController : MonoBehaviour
                     Vector3 p2 = secondDoorBasePoint.transform.position;
 
                     // 1. Kết nối Pn với Pn' của mỗi điểm
-                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position, firstDoorBasePoint, firstDoorTopPoint);   // p1 ↔ p1'
-                    lineManager.DrawLineAndDistance(secondDoorBasePoint.transform.position, secondDoorTopPoint.transform.position, secondDoorBasePoint, secondDoorTopPoint); // p2 ↔ p2'
+                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, firstDoorTopPoint.transform.position, firstDoorBasePoint, firstDoorTopPoint);   // p1 <--> p1'
+                    lineManager.DrawLineAndDistance(secondDoorBasePoint.transform.position, secondDoorTopPoint.transform.position, secondDoorBasePoint, secondDoorTopPoint); // p2 <--> p2'
 
-                    // 2. Kết nối base và top: p1 → p2, p1' → p2'
-                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, secondDoorBasePoint.transform.position, firstDoorBasePoint, secondDoorBasePoint); // p1 → p2
-                    lineManager.DrawLineAndDistance(firstDoorTopPoint.transform.position, secondDoorTopPoint.transform.position, firstDoorTopPoint, secondDoorTopPoint);   // p1' → p2'
+                    // 2. Kết nối base và top: p1 -> p2, p1' -> p2'
+                    lineManager.DrawLineAndDistance(firstDoorBasePoint.transform.position, secondDoorBasePoint.transform.position, firstDoorBasePoint, secondDoorBasePoint); // p1 -> p2
+                    lineManager.DrawLineAndDistance(firstDoorTopPoint.transform.position, secondDoorTopPoint.transform.position, firstDoorTopPoint, secondDoorTopPoint);   // p1' -> p2'
 
                     // Vẽ tường cửa riêng biệt
                     modelView.CreateWall(
@@ -852,7 +852,7 @@ public class BtnController : MonoBehaviour
                     // {
                     //     if (insertIndex == pts.Count - 1)
                     //     {
-                    //         // Chèn sau điểm cuối và đầu vòng (cuối danh sách → đầu)
+                    //         // Chèn sau điểm cuối và đầu vòng (cuối danh sách -> đầu)
                     //         pts.Insert(0, doorEnd);
                     //         hts.Insert(0, heightDoor);
                     //         pts.Insert(0, doorStart);
@@ -1329,7 +1329,7 @@ for (int j = 0; j < n; j++) {
         for (int i = 0; i < basePts.Count; i++)
             outList.Add(basePts[i].transform.position);
 
-        // nếu điểm cuối trùng đầu trong khoảng eps → bỏ điểm cuối
+        // nếu điểm cuối trùng đầu trong khoảng eps -> bỏ điểm cuối
         if (outList.Count >= 2) {
             if (Vector3.Distance(outList[outList.Count - 1], outList[0]) <= eps)
                 outList.RemoveAt(outList.Count - 1);

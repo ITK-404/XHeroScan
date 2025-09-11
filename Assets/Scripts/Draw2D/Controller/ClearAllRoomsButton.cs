@@ -32,7 +32,7 @@ public class ClearAllRoomsButton : MonoBehaviour
             Debug.LogError("Chưa gán CheckpointManager!");
     }
 
-    void OnClearAllClicked()
+    public void OnClearAllClicked()
     {
         if (checkpointManager == null) return;
         

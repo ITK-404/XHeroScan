@@ -33,6 +33,7 @@ public class PenManager : MonoBehaviour
     [SerializeField] private ToggleGroupUI toggleGroupUI;
 
     [SerializeField] DrawingTool drawingTool;
+    [SerializeField] RoomInfoDisplay roomInfoDisplay;
 
     void Start()
     {
@@ -50,6 +51,7 @@ public class PenManager : MonoBehaviour
         UpdatePenState();
         HandleToggleGroupUI(isPenActive);
         DrawTool = FindFirstObjectByType<DrawingTool>();
+        roomInfoDisplay = FindFirstObjectByType<RoomInfoDisplay>();
     }
 
     void LateUpdate()
@@ -113,7 +115,7 @@ public class PenManager : MonoBehaviour
                     movePointManager.MoveSelectedCheckpoint();
                     checkpointManager.isDragging = true;
 
-                    // đang kéo checkpoint/handle → giữ cờ
+                    // đang kéo checkpoint/handle -> giữ cờ
                     InteractionFlags.IsFloorHandleDragging = true;
                 }
             }
@@ -196,7 +198,7 @@ public class PenManager : MonoBehaviour
         {
             if (result.gameObject.name == "Background Black" || result.gameObject.CompareTag("UI"))
             {
-                Debug.Log("Click UI trên Background Black ➜ Không cho pan/zoom");
+                Debug.Log("Click UI trên Background Black -> Không cho pan/zoom");
                 return true;
             }
         }
@@ -231,7 +233,7 @@ public class PenManager : MonoBehaviour
 
         // if (checkpointManager != null && checkpointManager.isMovingCheckpoint)
         // {
-        //     // Debug.Log("Đang move checkpoint ➜ KHÔNG pan/zoom!");
+        //     // Debug.Log("Đang move checkpoint -> KHÔNG pan/zoom!");
         //     return;
         // }
 
@@ -258,7 +260,7 @@ public class PenManager : MonoBehaviour
                 {
                     if (hit.collider.gameObject.name == "Background Black")
                     {
-                        Debug.Log("Raycast hit Background Black ➜ Không cho pan/zoom");
+                        Debug.Log("Raycast hit Background Black -> Không cho pan/zoom");
                         return;
                     }
 
@@ -268,10 +270,10 @@ public class PenManager : MonoBehaviour
                         string nm = hit.collider.gameObject.name;
                         if (nm.StartsWith("RoomFloor_"))
                         {
-                            Debug.Log("Hit ROOM floor → block pan/zoom");
+                            Debug.Log("Hit ROOM floor -> block pan/zoom");
                             return;
                         }
-                        // nm.StartsWith("Floor_") → cho phép pan/zoom bình thường
+                        // nm.StartsWith("Floor_") -> cho phép pan/zoom bình thường
                     }
                 }
             }
@@ -311,6 +313,7 @@ public class PenManager : MonoBehaviour
         // Phóng to/thu nhỏ bằng hai ngón tay (pinch-to-zoom)
         if (Input.touchCount == 2)
         {
+            roomInfoDisplay.ResetState();
             Touch touch1 = Input.GetTouch(0);
             Touch touch2 = Input.GetTouch(1);
 

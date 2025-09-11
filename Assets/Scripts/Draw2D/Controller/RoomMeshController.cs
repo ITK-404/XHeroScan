@@ -87,7 +87,7 @@ public class RoomMeshController : MonoBehaviour
 
         if (IsClickingOnBackgroundBlackUI(Input.mousePosition))
         {
-            Debug.Log("Đang nhấn Background Black ➜ Không move Mesh");
+            Debug.Log("Đang nhấn Background Black -> Không move Mesh");
             return;
         }
 
@@ -380,7 +380,7 @@ public class RoomMeshController : MonoBehaviour
         {
             if (result.gameObject.name == "Background Black")
             {
-                Debug.Log("Click UI trên Background Black ➜ Không cho move point");
+                Debug.Log("Click UI trên Background Black -> Không cho move point");
                 return true;
             }
         }

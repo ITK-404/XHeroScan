@@ -40,7 +40,7 @@ public class CheckpointManager : MonoBehaviour
     public List<List<GameObject>> AllCheckpoints =>
         allCheckpoints; // Truy cập danh sách tất cả các checkpoint từ bên ngoài
 
-    public Dictionary<string, GameObject> RoomFloorMap = new(); // roomID → floor GameObject
+    public Dictionary<string, GameObject> RoomFloorMap = new(); // roomID -> floor GameObject
 
     private float closeThreshold = 0.2f; // Khoảng cách tối đa để chọn điểm
     private Vector3 previewPosition; // Vị trí preview
@@ -54,7 +54,7 @@ public class CheckpointManager : MonoBehaviour
     public List<LoopMap> loopMappings = new List<LoopMap>();
     // Lưu lại tất cả các cửa / cửa sổ để chèn lại sau khi rebuild wallLines
 
-    // [RoomID] → List<(WallLine, GameObject p1, GameObject p2)>
+    // [RoomID] -> List<(WallLine, GameObject p1, GameObject p2)>
     public Dictionary<string, List<(WallLine line, GameObject p1, GameObject p2)>> tempDoorWindowPoints
         = new Dictionary<string, List<(WallLine, GameObject, GameObject)>>();
     public string lastSelectedRoomID = null;
@@ -383,7 +383,7 @@ public class CheckpointManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"[GIỮ LẠI] Không gỡ vì line = {length:F2} ➜ giữ kết nối.");
+                Debug.LogWarning($"[GIỮ LẠI] Không gỡ vì line = {length:F2} -> giữ kết nối.");
             }
         }
         else
@@ -725,7 +725,7 @@ foreach (var wl in room.wallLines)
             }
         }
 
-        // Nếu đang kéo mesh ➜ lấy RoomID từ RoomMeshController đang hoạt động
+        // Nếu đang kéo mesh -> lấy RoomID từ RoomMeshController đang hoạt động
         if (IsDraggingRoom)
         {
             var activeFloors = GameObject.FindObjectsByType<RoomMeshController>(FindObjectsSortMode.None);
@@ -739,7 +739,7 @@ foreach (var wl in room.wallLines)
             }
         }
 
-        // Nếu đang không chọn gì nhưng vẫn có room đã chọn trước đó → giữ nguyên
+        // Nếu đang không chọn gì nhưng vẫn có room đã chọn trước đó -> giữ nguyên
         return lastSelectedRoomID;
     }
     public void ClearSelectedRoom()

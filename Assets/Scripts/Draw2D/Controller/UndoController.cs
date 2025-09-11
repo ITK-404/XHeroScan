@@ -15,7 +15,7 @@
 //     {
 //         if (Input.GetKeyDown(KeyCode.U))
 //         {
-//             Debug.Log("Manual U key pressed → Undo");
+//             Debug.Log("Manual U key pressed -> Undo");
 //             OnUndoButtonClick();
 //         }
 //     }
