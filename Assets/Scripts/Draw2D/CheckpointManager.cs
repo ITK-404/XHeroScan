@@ -766,11 +766,15 @@ public class CheckpointManager : MonoBehaviour
     {
         GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
         RoomMeshController meshCtrl = floorGO.AddComponent<RoomMeshController>();
-        Vector3 centerPostion = GeoUtil.Centroid(room.checkpoints);
+        Vector2 centerPostion = GeoUtil.Centroid(room.checkpoints);
 
         meshCtrl.Initialize(room.ID);
         meshCtrl.GenerateMesh(room.checkpoints);
-        floorGO.transform.position = new Vector3(centerPostion.x, roomIndexY, centerPostion.z);
+        floorGO.transform.position = new Vector3(centerPostion.x,roomIndexY,centerPostion.y);
+        //floorGO.transform.position = new Vector3(centerPostion.x, roomIndexY, centerPostion.z);
+
+        Debug.Log("Center position: " + centerPostion);
+        Debug.Log("FloorGO position: " + floorGO.transform.position);
         RoomFloorMap[room.ID] = floorGO;
 
     }
