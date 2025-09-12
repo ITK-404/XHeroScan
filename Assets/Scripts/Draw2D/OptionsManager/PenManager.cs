@@ -77,6 +77,7 @@ public class PenManager : MonoBehaviour
             if (Input.GetMouseButtonDown(0))
             {
                 checkpointManager.SelectCheckpoint();
+                checkpointManager.InitAndClearData();
 
                 //if (checkpointManager.selectedCheckpoint != null)
                 //{
@@ -136,6 +137,9 @@ public class PenManager : MonoBehaviour
                 checkpointManager.isDragging = false;
                 checkpointManager.isMovingCheckpoint = false;
                 InteractionFlags.IsFloorHandleDragging = false;
+
+                checkpointManager.CreateCommandHere();
+
             }
         }
     }

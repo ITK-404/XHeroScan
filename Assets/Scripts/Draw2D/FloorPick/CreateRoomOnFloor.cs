@@ -9,7 +9,7 @@ public class CreateRoomOnFloor : MonoBehaviour
 {
     [Header("UI")]
     public Button CreateRoomButton;
-
+    public static Action OnClickCreateRoomEvent;
     [Header("Raycast")]
     public LayerMask floorMask = ~0;
 
@@ -69,7 +69,7 @@ public class CreateRoomOnFloor : MonoBehaviour
     {
         checkPointManager = FindFirstObjectByType<CheckpointManager>();
         if (CreateRoomButton != null) CreateRoomButton.onClick.AddListener(TogglePlacingMode);
-
+        OnClickCreateRoomEvent += TogglePlacingMode;
         // Material Unlit để tô màu LineRenderer/TextMesh
         var unlit = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
         previewLineMat = new Material(unlit);

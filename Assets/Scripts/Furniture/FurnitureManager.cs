@@ -397,4 +397,9 @@ public class FurnitureManager : MonoBehaviour
         }
         return furnitures;
     }
+
+    public List<FurnitureItem> GetAllFurniture()
+    {
+        return runtimeFurnitures;
+    }
 }

@@ -474,10 +474,19 @@ public class MovePointManager : MonoBehaviour
                 nRoom.center = GeoUtil.Centroid(nRoom.checkpoints);
 
             rebuilt.Add(nRoomID);
-        }
+            checkPointManager.TryAddChangedRoomID(nRoomID);
 
+        }
+        //Debug.Log($"Room of point selected {room.ID}");
+        //foreach(var item in rebuilt)
+        //{
+        //    Debug.Log($"Rebuilt room {item} due to neighbor move");
+        //}
         checkPointManager.ClearAllLines();
         checkPointManager.RedrawAllRooms();
+
+        checkPointManager.TryAddChangedRoomID(room.ID);
+
     }
 
     public bool MoveSelectedCheckpointExtra()
