@@ -568,7 +568,7 @@ public class CheckpointManager : MonoBehaviour
             //var mesh = roomGO.AddComponent<RoomMeshController>();
             //mesh.Initialize(room.ID);
             //mesh.GenerateMesh(room.checkpoints); // truyền world points
-            CreateRoomMeshCtrl(room, new Vector3(0, roomIndexY, 0));
+            CreateRoomMeshCtrl(room);
             // Wall lines (world + nâng y)
             // Wall lines (world + nâng y)
 
@@ -729,7 +729,7 @@ public class CheckpointManager : MonoBehaviour
         RoomStorage.rooms.Add(newRoom);
 
         // Tạo mesh sàn
-        CreateRoomMeshCtrl(newRoom, center);
+        CreateRoomMeshCtrl(newRoom);
 
         // Ánh xạ loop
 
@@ -762,13 +762,15 @@ public class CheckpointManager : MonoBehaviour
         loopMappings.Add(new LoopMap(room.ID, loopGO));
     }
 
-    public void CreateRoomMeshCtrl(Room room,Vector3 position)
+    public void CreateRoomMeshCtrl(Room room)
     {
         GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
         RoomMeshController meshCtrl = floorGO.AddComponent<RoomMeshController>();
+        Vector3 centerPostion = GeoUtil.Centroid(room.checkpoints);
+
         meshCtrl.Initialize(room.ID);
         meshCtrl.GenerateMesh(room.checkpoints);
-        floorGO.transform.position = new Vector3(position.x, roomIndexY, position.z);
+        floorGO.transform.position = new Vector3(centerPostion.x, roomIndexY, centerPostion.z);
         RoomFloorMap[room.ID] = floorGO;
 
     }
@@ -867,7 +869,7 @@ public class CheckpointManager : MonoBehaviour
         RoomStorage.UpdateOrAddRoom(room);
         AddGameObjectCheckPointToGlobalVariable(room);
 
-        CreateRoomMeshCtrl(room, room.center);
+        CreateRoomMeshCtrl(room);
 
         DrawWallLineByRoom(room);
 

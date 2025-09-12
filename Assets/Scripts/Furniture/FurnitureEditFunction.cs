@@ -129,8 +129,11 @@ public class FurnitureEditFunction : MonoBehaviour
             
             Vector3 standPosition = new Vector3(worldPositon.x + offsetX, currentPopup.transform.position.y, finalZPosition);
             currentPopup.transform.position = standPosition;
-            
-            popupEdit.flipBtn.gameObject.SetActive(currentFurniture.lineType == LineType.Door);
+
+
+            // handle when furniture is door
+            bool canShowFlipBtn = currentFurniture.lineType == LineType.Door && currentFurniture.furnitureMergeToWall.IsInWall();
+            popupEdit.flipBtn.gameObject.SetActive(canShowFlipBtn);
             // maybe create world space canvas
         }
         currentPopup.gameObject.SetActive(currentFurniture);

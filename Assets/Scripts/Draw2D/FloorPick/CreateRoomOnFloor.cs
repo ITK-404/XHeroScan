@@ -451,7 +451,7 @@ public class CreateRoomOnFloor : MonoBehaviour
         RoomStorage.UpdateOrAddRoom(room);
         floor.RegisterRoom(room);
 
-        checkPointManager.CreateRoomMeshCtrl(room, room.center);
+        checkPointManager.CreateRoomMeshCtrl(room);
         //GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
         //floorGO.transform.SetPositionAndRotation(new Vector3(0f, baseRoomY, 0f), Quaternion.identity);
         //var meshCtrl = floorGO.AddComponent<RoomMeshController>();
