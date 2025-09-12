@@ -2,9 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using System;
-using System.Collections.Generic;
-using UnityEngine;
-using TMPro;
 
 public class Drawing2D : MonoBehaviour
 {

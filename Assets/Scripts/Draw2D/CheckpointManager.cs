@@ -576,8 +576,6 @@ public class CheckpointManager : MonoBehaviour
         }
     }
 
-   
-
     public void ClearAllLines() => DrawingTool.ClearAllLines();
     public void DrawAllLinesFromRoomStorage()=> DrawingTool.DrawAllLinesFromRoomStorage();
     public void DrawLineAndDistance(Vector3 start, Vector3 end, float width) => DrawingTool.DrawLineAndDistance(start, end,width);
