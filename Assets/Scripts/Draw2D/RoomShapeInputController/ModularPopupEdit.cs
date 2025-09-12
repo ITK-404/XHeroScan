@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Collections;
-
+using System;
 public class ModularPopupEdit : MonoBehaviour
 {
     [Header("Buttons")]
@@ -28,7 +28,7 @@ public class ModularPopupEdit : MonoBehaviour
         if (editBtn)   editBtn.onClick.AddListener(() => ShowOnly(objectEdit));
         if (splitBtn)  splitBtn.onClick.AddListener(() => ShowOnly(objectSplit));
         if (doubleBtn) doubleBtn.onClick.AddListener(() => ShowOnly(objectDouble));
-        if (deleteBtn) deleteBtn.onClick.AddListener(() => clearAllRoomsButton.OnClearAllClicked());
+        //if (deleteBtn) deleteBtn.onClick.AddListener(() => clearAllRoomsButton.OnClearAllClicked());
 
         if (Application.isPlaying && EventSystem.current == null)
         {
@@ -40,10 +40,6 @@ public class ModularPopupEdit : MonoBehaviour
         flipBtn.gameObject.SetActive(!isShowSplit);
     }
 
-    void Start()
-    {
-        clearAllRoomsButton = FindFirstObjectByType<ClearAllRoomsButton>();
-    }
     private void ShowOnly(GameObject target)
     {
         if (!target) return;

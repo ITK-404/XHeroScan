@@ -568,7 +568,7 @@ public class CheckpointManager : MonoBehaviour
             //var mesh = roomGO.AddComponent<RoomMeshController>();
             //mesh.Initialize(room.ID);
             //mesh.GenerateMesh(room.checkpoints); // truyền world points
-            CreateRoomMeshCtrl(room, new Vector3(0, roomIndexY, 0));
+            CreateRoomMeshCtrl(room);
             // Wall lines (world + nâng y)
             // Wall lines (world + nâng y)
 
@@ -727,7 +727,7 @@ public class CheckpointManager : MonoBehaviour
         RoomStorage.rooms.Add(newRoom);
 
         // Tạo mesh sàn
-        CreateRoomMeshCtrl(newRoom, center);
+        CreateRoomMeshCtrl(newRoom);
 
         // Ánh xạ loop
 
@@ -755,18 +755,24 @@ public class CheckpointManager : MonoBehaviour
             var wp = new Vector3(p.x, roomIndexY, p.y);
             loopGO.Add(Instantiate(checkpointPrefab, wp, Quaternion.identity));
         }
-
-        allCheckpoints.Add(loopGO);
+       
         loopMappings.Add(new LoopMap(room.ID, loopGO));
+        allCheckpoints.Add(loopGO);
     }
 
-    public void CreateRoomMeshCtrl(Room room,Vector3 position)
+    public void CreateRoomMeshCtrl(Room room)
     {
         GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
         RoomMeshController meshCtrl = floorGO.AddComponent<RoomMeshController>();
+        Vector2 centerPostion = GeoUtil.Centroid(room.checkpoints);
+
         meshCtrl.Initialize(room.ID);
         meshCtrl.GenerateMesh(room.checkpoints);
-        floorGO.transform.position = new Vector3(position.x, roomIndexY, position.z);
+        floorGO.transform.position = new Vector3(centerPostion.x,roomIndexY,centerPostion.y);
+        //floorGO.transform.position = new Vector3(centerPostion.x, roomIndexY, centerPostion.z);
+
+        Debug.Log("Center position: " + centerPostion);
+        Debug.Log("FloorGO position: " + floorGO.transform.position);
         RoomFloorMap[room.ID] = floorGO;
 
     }
@@ -807,7 +813,17 @@ public class CheckpointManager : MonoBehaviour
             foreach (var cp in loop) if (cp) Destroy(cp);
             AllCheckpoints.Remove(loop);
         }
-
+        LoopMap mapping = null;
+        foreach (LoopMap item in loopMappings)
+        {
+            if (item.RoomID == room.ID)
+            {
+                mapping = item;
+                Debug.Log("Có duplicate roomID trong loopMappings: " + room.ID);
+                break;
+            }
+        }
+        loopMappings.Remove(mapping);
         // Gỡ mapping khác
         RoomFloorMap.Remove(roomID);
         if (currentCheckpoints != null)
@@ -863,12 +879,10 @@ public class CheckpointManager : MonoBehaviour
     {
         var room = new Room(roomSnapShot); // copy
         RoomStorage.UpdateOrAddRoom(room);
-        AddGameObjectCheckPointToGlobalVariable(room);
 
-        CreateRoomMeshCtrl(room, room.center);
-
+        CreateRoomMeshCtrl(room);
         DrawWallLineByRoom(room);
-
+        AddGameObjectCheckPointToGlobalVariable(room);
         RedrawAllRooms();
     }
 }

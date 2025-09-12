@@ -320,7 +320,7 @@ public class FurnitureManager : MonoBehaviour
         }
     }
 
-    public void TrySnapToNearestRoom()
+    public void ForceSnapAllToNearestRoom()
     {
         Debug.Log("try snap to nearest room");
         foreach (var item in runtimeFurnitures)
@@ -379,9 +379,22 @@ public class FurnitureManager : MonoBehaviour
         {
             if (item.lineType == LineType.Door || item.lineType == LineType.Window)
             {
-                exportList.Add(item.furnitureMergeToWall.TypedWallLine);
+                exportList.Add(item.furnitureMergeToWall.PDFWallLine);
             }
         }
         return exportList;
+    }
+
+    public List<DrawingInstanced> GetFurnitureInsideRoom(string iD)
+    {
+       List<DrawingInstanced> furnitures = new List<DrawingInstanced>();
+        foreach(var item in runtimeFurnitures)
+        {
+            if (item.data.roomID == iD)
+            {
+                furnitures.Add(item.data);
+            }
+        }
+        return furnitures;
     }
 }

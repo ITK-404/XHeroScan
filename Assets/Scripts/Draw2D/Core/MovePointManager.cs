@@ -1,8 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using System.Linq;
-using System;
 
 public class MovePointManager : MonoBehaviour
 {
@@ -1098,6 +1099,7 @@ public class MovePointManager : MonoBehaviour
 
     public void CommitRoomMagnet(string roomID)
     {
+
         _magnetLatch = false;
 
         var movingLoop = GetLoopByRoomID(roomID);
@@ -1158,6 +1160,7 @@ public class MovePointManager : MonoBehaviour
         if (room == null || loop == null || loop.Count == 0) return;
 
         // Cập nhật checkpoints (x,z) từ vị trí point (bỏ qua y)
+        Debug.Log($"Room ID: {roomID} {room.checkpoints.Count} {loop.Count}");
         room.checkpoints = loop.Select(go =>
         {
             var p = go.transform.position;
@@ -1167,40 +1170,42 @@ public class MovePointManager : MonoBehaviour
         // Tạo lại line tường chính từ checkpoints (đặt ở lineY)
         int n = room.checkpoints.Count;
         List<WallLine> newWalls = new List<WallLine>(n);
+        Debug.Log($"Tạo lại wall line liên tục");
         for (int i = 0; i < n; i++)
         {
             Vector2 a = room.checkpoints[i];
             Vector2 b = room.checkpoints[(i + 1) % n];
-
-            newWalls.Add(new WallLine
-            {
-                start = new Vector3(a.x, lineY, a.y),
-                end = new Vector3(b.x, lineY, b.y),
-                type = LineType.Wall,
-                isManualConnection = false,
-                distanceHeight = 0f,
-                Height = 3f,
-                materialFront = "Default",
-                materialBack = "Default"
-            });
+            room.wallLines[i].start = new Vector3(a.x, lineY, a.y);
+            room.wallLines[i].end = new Vector3(b.x, lineY, b.y);
+            //newWalls.Add(new WallLine
+            //{
+            //    start = new Vector3(a.x, lineY, a.y),
+            //    end = new Vector3(b.x, lineY, b.y),
+            //    type = LineType.Wall,
+            //    isManualConnection = false,
+            //    distanceHeight = 0f,
+            //    Height = 3f,
+            //    materialFront = "Default",
+            //    materialBack = "Default"
+            //});
         }
 
         // Giữ lại line phụ & cửa/cửa sổ, nhưng chuẩn hoá Y = lineY để không bị chìm
-        var preserved = room.wallLines
-            .Where(w => w.isManualConnection || w.type != LineType.Wall)
-            .Select(w =>
-            {
-                var s = w.start; s.y = lineY;
-                var e = w.end; e.y = lineY;
-                w.start = s; w.end = e;
-                return w;
-            })
-            .ToList();
+        //var preserved = room.wallLines
+        //    .Where(w => w.isManualConnection || w.type != LineType.Wall)
+        //    .Select(w =>
+        //    {
+        //        var s = w.start; s.y = lineY;
+        //        var e = w.end; e.y = lineY;
+        //        w.start = s; w.end = e;
+        //        return w;
+        //    })
+        //    .ToList();
 
         // Gộp & lưu
-        room.wallLines = newWalls.Concat(preserved).ToList();
+        //room.wallLines = newWalls.Concat(preserved).ToList();
         RoomStorage.UpdateOrAddRoom(room);
-
+        
         // Cập nhật mesh sàn phòng: đặt holder lên baseY rồi build lại
         var floorGO = GameObject.Find($"RoomFloor_{roomID}");
         if (floorGO != null)

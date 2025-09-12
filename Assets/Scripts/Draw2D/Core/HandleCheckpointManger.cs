@@ -632,7 +632,7 @@ public class HandleCheckpointManger : MonoBehaviour
 
         checkPointManager.RedrawAllRooms();
 
-        FurnitureManager.Instance.TrySnapToNearestRoom();
+        FurnitureManager.Instance.ForceSnapAllToNearestRoom();
 
     }
     private bool PointInPolygon(Vector2 point, List<Vector2> polygon)
