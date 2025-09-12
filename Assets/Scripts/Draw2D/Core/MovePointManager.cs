@@ -1098,6 +1098,7 @@ public class MovePointManager : MonoBehaviour
 
     public void CommitRoomMagnet(string roomID)
     {
+
         _magnetLatch = false;
 
         var movingLoop = GetLoopByRoomID(roomID);
@@ -1158,6 +1159,7 @@ public class MovePointManager : MonoBehaviour
         if (room == null || loop == null || loop.Count == 0) return;
 
         // Cập nhật checkpoints (x,z) từ vị trí point (bỏ qua y)
+        Debug.Log($"Room ID: {roomID} {room.checkpoints.Count} {loop.Count}");
         room.checkpoints = loop.Select(go =>
         {
             var p = go.transform.position;
@@ -1167,6 +1169,7 @@ public class MovePointManager : MonoBehaviour
         // Tạo lại line tường chính từ checkpoints (đặt ở lineY)
         int n = room.checkpoints.Count;
         List<WallLine> newWalls = new List<WallLine>(n);
+        Debug.Log($"Tạo lại wall line liên tục");
         for (int i = 0; i < n; i++)
         {
             Vector2 a = room.checkpoints[i];
@@ -1200,7 +1203,7 @@ public class MovePointManager : MonoBehaviour
         // Gộp & lưu
         room.wallLines = newWalls.Concat(preserved).ToList();
         RoomStorage.UpdateOrAddRoom(room);
-
+        
         // Cập nhật mesh sàn phòng: đặt holder lên baseY rồi build lại
         var floorGO = GameObject.Find($"RoomFloor_{roomID}");
         if (floorGO != null)

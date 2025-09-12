@@ -379,7 +379,7 @@ public class FurnitureManager : MonoBehaviour
         {
             if (item.lineType == LineType.Door || item.lineType == LineType.Window)
             {
-                exportList.Add(item.furnitureMergeToWall.TypedWallLine);
+                exportList.Add(item.furnitureMergeToWall.PDFWallLine);
             }
         }
         return exportList;

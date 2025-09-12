@@ -109,6 +109,7 @@ public class PenManager : MonoBehaviour
 
                 if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
                 {
+                    Debug.Log("Dragging room floor " + _dragRoomID);
                     movePointManager.MoveRoomSnap(_dragRoomID, delta);
                 }
                 else if (checkpointManager.selectedCheckpoint != null)
@@ -125,7 +126,6 @@ public class PenManager : MonoBehaviour
             {
                 if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
                     movePointManager.CommitRoomMagnet(_dragRoomID);
-
                 _dragRoom = false;
                 _dragRoomID = null;
                 isRoomFloorBeingDragged = false;

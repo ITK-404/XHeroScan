@@ -18,13 +18,12 @@ public class FurnitureMergeToWall
     private Room attachedRoom;
 
     private WallLine typedWallLine;
-    public WallLine TypedWallLine => typedWallLine;
+    public WallLine PDFWallLine => typedWallLine;
     public FurnitureMergeToWall(FurnitureItem furnitureItem)
     {
         this.furnitureItem = furnitureItem;
 
         typedWallLine = new WallLine();
-        typedWallLine.type = furnitureItem.lineType;
     }
 
     public void SetupAnchor(CheckpointType leftPoint, CheckpointType rightPoint)
