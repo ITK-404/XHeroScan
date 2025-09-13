@@ -3,9 +3,6 @@ using UnityEngine;
 
 public class BottomSheetInputUI : BottomSheetUI
 {
-    [SerializeField] private TMP_InputField inputField;
-
- 
     private float delayTime = 1;
     private bool previousState;
 

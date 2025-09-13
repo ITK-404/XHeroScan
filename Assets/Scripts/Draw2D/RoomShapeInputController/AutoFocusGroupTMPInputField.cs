@@ -9,6 +9,7 @@ public class AutoFocusGroupTMPInputField : MonoBehaviour
 
     private void OnEnable()
     {
+        inputFieldList = null; // reset để lấy lại danh sách mới
         if (inputFieldList == null || inputFieldList.Length == 0)
         {
             inputFieldList = GetComponentsInChildren<TMP_InputField>();

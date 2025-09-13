@@ -12,9 +12,12 @@ public class InputCustomers : MonoBehaviour
     private RoomInfoDisplay roomInfoDisplay;
     private CheckpointManager checkpointManager;
     private DragFromButtonSpawnFloor spawnFloor;
-    [SerializeField] private TMP_InputField inputLength;
-    [SerializeField] private TMP_InputField inputWidth;
-    [SerializeField] private Button buttonOk;
+    TMP_InputField inputLength;
+    TMP_InputField inputWidth;
+    TMP_InputField thicknessInput;
+    //[SerializeField] private Button buttonOk;
+
+    [SerializeField] FloorSettingPanel floorSettingPanel;
 
     [Header("Rebuild Settings")]
     [Tooltip("Độ nhô của line/marker so với nền phòng khi rebuild (fallback nếu không tìm thấy CreateRoomOnFloor).")]
@@ -25,14 +28,30 @@ public class InputCustomers : MonoBehaviour
         if (!roomInfoDisplay) roomInfoDisplay = FindFirstObjectByType<RoomInfoDisplay>();
         if (!checkpointManager) checkpointManager = FindFirstObjectByType<CheckpointManager>();
         if (!spawnFloor) spawnFloor = FindFirstObjectByType<DragFromButtonSpawnFloor>();
-        if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedRoom);
-        if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedFloor);
+        //if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedRoom);
+        //if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedFloor);
+
+        floorSettingPanel.OnApplyAction += ApplyDimensionsForSelectedRoom;
+        floorSettingPanel.OnApplyAction += ApplyDimensionsForSelectedFloor;
+
+    }
+    private void Start()
+    {
+        //Invoke(nameof(Find), 0.);
+        Find();
+    }
+
+    private void Find()
+    {
+        inputLength = floorSettingPanel.GetParameterInputField(IntParameterType.Height).InputField;
+        inputWidth = floorSettingPanel.GetParameterInputField(IntParameterType.Width).InputField;
+        thicknessInput = floorSettingPanel.GetParameterInputField(IntParameterType.Thickness).InputField;
     }
 
     private void OnDestroy()
     {
-        if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedRoom);
-        if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedFloor);
+        //if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedRoom);
+        //if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedFloor);
     }
 
     // ROOM đang chọn
@@ -66,16 +85,28 @@ public class InputCustomers : MonoBehaviour
         Debug.Log($"[DimOK] Editing ROOM ID = {roomId}");
         RecreateRoomWithInputDims(roomId);
     }
+    private (float, float, bool) GetWidthLengthFromInput()
+    {
+        if (inputLength == null || inputWidth == null)
+        {
+            Debug.LogWarning("[DimOK] Không tìm thấy input Length/Width trong FloorSettingPanel.");
+            return (0, 0, false);
+        }
+        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
+        {
+            Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng cho FLOOR.");
+            return (0, 0, false);
+        }
+        return (W, L, true);
+    }
+
 
     // Update dims cho ROOM
     private void RecreateRoomWithInputDims(string roomId)
     {
-        // Đọc L & W
-        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
-        {
-            Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng.");
-            return;
-        }
+        var (W, L, ok) = GetWidthLengthFromInput();
+        if (!ok) return;
+
         // Lấy room
         Room room = RoomStorage.GetRoomByID(roomId);
         UndoRedoController.Instance.AddToUndo(new EditRoomCommand(new Room(room)));
@@ -84,7 +115,8 @@ public class InputCustomers : MonoBehaviour
             Debug.LogWarning($"[DimOK] Không tìm thấy ROOM với ID={roomId}");
             return;
         }
-
+        float thickness = thicknessInput != null && TryParse(thicknessInput.text, out float t) ? t : room.thickness;
+        room.thickness = thickness;
         // Tính centroid hiện có
         Vector2 centroid = ComputeCentroid2D(room.checkpoints);
 
@@ -167,11 +199,15 @@ public class InputCustomers : MonoBehaviour
             }
         }
 
+        
+
         // Redraw để line được vẽ lại theo wallLines mới
         checkpointManager.RedrawAllRooms();
         FurnitureManager.Instance.CheckWallLineValidInRoom();
         FurnitureManager.Instance.TrySnapToNearestWall();
         Debug.Log($"[DimOK] UPDATED room {roomId}: points+lines+mesh (index=2) -> {L}x{W}, baseY={baseY}, lift={roomWallLift}");
+        floorSettingPanel.ResetAllParameters();
+
     }
 
     private List<GameObject> TryGetCheckpointListForRoom(string id)
@@ -214,23 +250,25 @@ public class InputCustomers : MonoBehaviour
     private void RecreateFloorWithInputDims(string floorId)
     {
         var target = FindFloor(floorId);
-        var cloneOfTarget = Floor.Clone(target);
         if (target == null) return;
+        var cloneOfTarget = Floor.Clone(target);
         float prevousWidth = target.width;
         float previousLength = target.length;
         // chú ý: length = chiều dọc (Z), width = chiều ngang (X)
         // Đọc L & W
-        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
-        {
-            Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng cho FLOOR.");
-            return;
-        }
+
+        var (W, L, ok) = GetWidthLengthFromInput();
+
+        if (!ok) return;
+
         // W và L bị đảo ngươc4
         if (TryUpdateFloor(target, L, W))
         {
             UndoRedoController.Instance.AddToUndo(new EditFloorCommand(cloneOfTarget));
+            floorSettingPanel.ResetAllParameters();
         }
     }
+
 
     public Floor FindFloor(string floorId)
     {
