@@ -831,7 +831,7 @@ public class BtnController : MonoBehaviour
                     Debug.Log("insertIndex 0 Door = " + insertIndex);
 
                     // Nếu không phải cạnh cuối, kiểm tra các cạnh còn lại
-                    if (insertIndex == -1)
+                    if (insertIndex == -1)  
                     {
                         for (int i = 0; i < pts.Count - 1; i++)
                         {

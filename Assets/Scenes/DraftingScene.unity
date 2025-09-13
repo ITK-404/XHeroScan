@@ -2962,6 +2962,12 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 294843151}
   m_CullTransparentMesh: 1
+--- !u!1 &295034146 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5719441606310001283, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+    type: 3}
+  m_PrefabInstance: {fileID: 4492018900371189173}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &305145587
 GameObject:
   m_ObjectHideFlags: 0
@@ -19136,7 +19142,7 @@ PrefabInstance:
         type: 3}
       propertyPath: ButtomPanel
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 295034146}
     - target: {fileID: 6535419504252253356, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: checkpointPrefab

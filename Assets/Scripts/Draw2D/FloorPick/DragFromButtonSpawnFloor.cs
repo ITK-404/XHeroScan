@@ -61,6 +61,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     private GameObject[] edgeHandles = new GameObject[4]; // AB,BD,DE,EA
 
     private string currentFloorId;
+    [SerializeField]private bool autoSizeByDevice = true; // bật tắt chế độ tìm theo màn hình.
 
     // đánh dấu handle
     private class HandleTag : MonoBehaviour
@@ -219,8 +220,60 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         SyncLastFloorDataToCurrentRect();
     }
 
+    private void ApplySizeByDevice()
+    {
+        if (!autoSizeByDevice) return;
+
+        int w = Screen.width;
+        int h = Screen.height;
+
+        // chuẩn hóa: sw = cạnh ngắn, sh = cạnh dài
+        int sw = Mathf.Min(w, h);
+        int sh = Mathf.Max(w, h);
+
+        // match tuyệt đối
+        if ((sw == 1170 && sh == 2532) || (sw == 2532 && sh == 1170))
+        {
+            width = 5f; depth = 20f; return;
+        }
+        if ((sw == 1812 && sh == 2176) || (sw == 2176 && sh == 1812))
+        {
+            width = 20f; depth = 5f; return;
+        }
+
+        // match xấp xỉ (±4%)
+        float tol = 0.04f;
+        bool approxPhone1170x2532 =
+            Mathf.Abs(sw - 1170) / 1170f <= tol && Mathf.Abs(sh - 2532) / 2532f <= tol;
+        bool approxTablet2176x1812 =
+            Mathf.Abs(sw - 1812) / 1812f <= tol && Mathf.Abs(sh - 2176) / 2176f <= tol;
+
+        if (approxPhone1170x2532)
+        {
+            width = 5f; depth = 20f; return;
+        }
+        if (approxTablet2176x1812)
+        {
+            width = 20f; depth = 5f; return;
+        }
+
+        // Fallback tổng quát:
+        // - Màn rất “cao” (aspect >= 1.8) hoặc cạnh ngắn <= 1280 => coi như phone: 5x20
+        // - Còn lại coi như tablet/large: 20x5
+        float aspect = (float)sh / (float)sw;
+        if (aspect >= 1.8f || sw <= 1280)
+        {
+            width = 5f; depth = 20f;
+        }
+        else
+        {
+            width = 20f; depth = 5f;
+        }
+    }
+
     public void OnBeginDrag(PointerEventData eventData)
     {
+        ApplySizeByDevice();
         // store previous
         previousFloor = FloorStorage.floors.Count > 0 ? FloorStorage.floors[0] : null;
 
@@ -248,7 +301,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         if (previewGO == null)
         {
-            previewGO = new GameObject("FloorPreview");
+            // previewGO = new GameObject("FloorPreview");
             previewGO.hideFlags = HideFlags.DontSave;
 
             previewLR = previewGO.AddComponent<LineRenderer>();
