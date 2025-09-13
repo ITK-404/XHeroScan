@@ -70,6 +70,7 @@ public class RoomInfoDisplay : MonoBehaviour
 
     void Start()
     {
+        roomToggle.gameObject.SetActive(false);
         checkpointManager = FindFirstObjectByType<CheckpointManager>();
         lastRoomsCount = RoomStorage.rooms.Count;
 
