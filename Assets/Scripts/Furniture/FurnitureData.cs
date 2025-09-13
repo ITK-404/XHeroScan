@@ -71,4 +71,12 @@ public struct DrawingInstanced
     public Vector3 worldPosition;
     public ItemType currentItemType;
     public DrawItemSize size;
+
+    // just use for door and window
+    public bool isFlip;
+
+    public void InitNewInstanceID()
+    {
+        instanceID = Guid.NewGuid().ToString();
+    }
 }

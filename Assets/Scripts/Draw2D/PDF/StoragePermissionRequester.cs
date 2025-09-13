@@ -94,7 +94,7 @@ public class StoragePermissionRequester : MonoBehaviour
 
             if (IsAllFilesAccessGranted())
             {
-                Debug.Log("Đã được cấp quyền → có thể lưu file!");
+                Debug.Log("Đã được cấp quyền -> có thể lưu file!");
                 // Gọi callback hoặc thực hiện hành động tiếp theo ở đây nếu muốn
             }
             else

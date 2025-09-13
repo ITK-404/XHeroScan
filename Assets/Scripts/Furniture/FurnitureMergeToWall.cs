@@ -6,9 +6,8 @@ using UnityEngine;
 [Serializable]
 public class FurnitureMergeToWall
 {
-    public float offset;
+    private float flipOffset;
     public float ratio;
-
     private FurnitureItem furnitureItem;
 
     private FurniturePoint leftPoint;
@@ -19,13 +18,12 @@ public class FurnitureMergeToWall
     private Room attachedRoom;
 
     private WallLine typedWallLine;
-    public WallLine TypedWallLine => typedWallLine;
+    public WallLine PDFWallLine => typedWallLine;
     public FurnitureMergeToWall(FurnitureItem furnitureItem)
     {
         this.furnitureItem = furnitureItem;
 
         typedWallLine = new WallLine();
-        typedWallLine.type = furnitureItem.lineType;
     }
 
     public void SetupAnchor(CheckpointType leftPoint, CheckpointType rightPoint)
@@ -55,7 +53,12 @@ public class FurnitureMergeToWall
         SnapTemp(allowSnap);
     }
 
-    public void SnapTemp(bool allowSnap)
+    public void ForceSnapToWall()
+    {
+        SnapTemp(true);
+    }
+
+    private void SnapTemp(bool allowSnap)
     {
         if (allowSnap == false) return;
 
@@ -77,7 +80,7 @@ public class FurnitureMergeToWall
 
         ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
     }
-    
+
     public void SnapToNearestWallOfCurrentRoom()
     {
         if (attachedRoom == null) return;
@@ -135,27 +138,14 @@ public class FurnitureMergeToWall
             //Debug.Log("Distance: " + dist);
         }
     }
-    
+
     private void SetAttachedWallLine(WallLine wallLine)
     {
         // Thoát sớm nếu không có thay đổi
         if (attachedWallLine == wallLine) return;
 
-        // Need refactor
-
         attachedWallLine = wallLine;
-
-        if (attachedWallLine == null)
-        {
-            attachedRoom = null;
-        }
-
-        var room = RoomStorage.GetRoomByWall(attachedWallLine);
-        if (room == null)
-        {
-            attachedWallLine = null;
-            return;
-        }
+        attachedRoom = wallLine != null ? RoomStorage.GetRoomByWall(attachedWallLine) : null;
     }
 
     public void CheckWallLineIsValidInRoom()
@@ -192,7 +182,6 @@ public class FurnitureMergeToWall
                 // moving but using center of wall line
                 // Debug.Log("Wall line is not null, try to align with them");
                 Vector3 centerPosition = Vector3.Lerp(attachedWallLine.start, attachedWallLine.end, ratio);
-                FurnitureManager.Instance.debugPoint.transform.position = centerPosition;
                 // sync y position from model 2D
                 centerPosition.y = furnitureItem.GetWorldPosition().y;
 
@@ -205,10 +194,21 @@ public class FurnitureMergeToWall
 
         UpdateOwnWallLine();
         UpdateRoomAttaced();
+        ProcessWidthForWindow();
     }
+    private void ProcessWidthForWindow()
+    {
+        // xử lý độ dày cho cửa sổ
+        if (furnitureItem.lineType != LineType.Window)
+            return;
+        if (attachedRoom == null)
+            return;
 
+        furnitureItem.data.size.length = attachedRoom.thickness;
+    }
     private void UpdateRoomAttaced()
     {
+        // cập nhật rằng furniture đang được gắn trong room hay không
         if (attachedRoom == null)
         {
             furnitureItem.data.roomID = "";
@@ -217,12 +217,15 @@ public class FurnitureMergeToWall
         furnitureItem.data.roomID = attachedRoom.ID;
     }
 
+
     private void RotationToWallLine()
     {
+        
+        flipOffset = furnitureItem.data.isFlip ? 180 : 0;
         Vector3 dir = attachedWallLine.end - attachedWallLine.start;
         dir.y = 0;
         float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
-        furnitureItem.SetRotation(-angle + offset);
+        furnitureItem.SetRotation(-angle + flipOffset);
     }
 
     private bool IsWithinDistance(Vector3 point1, Vector3 point2, float distance)
@@ -235,6 +238,12 @@ public class FurnitureMergeToWall
     public bool IsInWall()
     {
         return attachedWallLine != null;
+    }
+
+    public void ResetAttached()
+    {
+        attachedRoom = null;
+        attachedWallLine = null;
     }
 }
 

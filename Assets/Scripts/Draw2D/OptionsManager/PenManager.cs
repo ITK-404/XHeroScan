@@ -33,6 +33,7 @@ public class PenManager : MonoBehaviour
     [SerializeField] private ToggleGroupUI toggleGroupUI;
 
     [SerializeField] DrawingTool drawingTool;
+    [SerializeField] RoomInfoDisplay roomInfoDisplay;
 
     void Start()
     {
@@ -50,12 +51,15 @@ public class PenManager : MonoBehaviour
         UpdatePenState();
         HandleToggleGroupUI(isPenActive);
         DrawTool = FindFirstObjectByType<DrawingTool>();
+        roomInfoDisplay = FindFirstObjectByType<RoomInfoDisplay>();
     }
 
     void LateUpdate()
     {
         if (CreateRoomOnFloor.IsCreateRooom) return;
         if (ConnectManager.isConnectActive) return;
+        if (FurnitureItem.OnDragFurniture) return;
+        if (FurnitureItem.OnDragPoint) return;
 
         // KHÔNG bật zoom/pan nếu đang kéo room HOẶC đang kéo point floor
         bool blockZoomPan = InteractionFlags.IsRoomFloorDragging || InteractionFlags.IsFloorHandleDragging;
@@ -73,6 +77,7 @@ public class PenManager : MonoBehaviour
             if (Input.GetMouseButtonDown(0))
             {
                 checkpointManager.SelectCheckpoint();
+                checkpointManager.InitAndClearData();
 
                 //if (checkpointManager.selectedCheckpoint != null)
                 //{
@@ -105,6 +110,7 @@ public class PenManager : MonoBehaviour
 
                 if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
                 {
+                    Debug.Log("Dragging room floor " + _dragRoomID);
                     movePointManager.MoveRoomSnap(_dragRoomID, delta);
                 }
                 else if (checkpointManager.selectedCheckpoint != null)
@@ -113,7 +119,7 @@ public class PenManager : MonoBehaviour
                     movePointManager.MoveSelectedCheckpoint();
                     checkpointManager.isDragging = true;
 
-                    // đang kéo checkpoint/handle → giữ cờ
+                    // đang kéo checkpoint/handle -> giữ cờ
                     InteractionFlags.IsFloorHandleDragging = true;
                 }
             }
@@ -121,7 +127,6 @@ public class PenManager : MonoBehaviour
             {
                 if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
                     movePointManager.CommitRoomMagnet(_dragRoomID);
-
                 _dragRoom = false;
                 _dragRoomID = null;
                 isRoomFloorBeingDragged = false;
@@ -132,6 +137,9 @@ public class PenManager : MonoBehaviour
                 checkpointManager.isDragging = false;
                 checkpointManager.isMovingCheckpoint = false;
                 InteractionFlags.IsFloorHandleDragging = false;
+
+                checkpointManager.CreateCommandHere();
+
             }
         }
     }
@@ -167,18 +175,19 @@ public class PenManager : MonoBehaviour
         if (plane.Raycast(ray, out float enter)) return ray.GetPoint(enter);
         return Vector3.zero;
     }
-
+    [SerializeField] private RectTransform bottomSheet;
     private bool IsPointerInActionSpace(Vector2 screenPosition)
     {
         if (ActionSpace == null) return false;
 
         RectTransform rt = ActionSpace.GetComponent<RectTransform>();
-
         // Nếu canvas là Overlay, camera nên là null
         Canvas canvas = ActionSpace.GetComponentInParent<Canvas>();
         Camera cam = (canvas != null && canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : mainCamera;
 
-        return RectTransformUtility.RectangleContainsScreenPoint(rt, screenPosition, cam);
+        bool isInActionSpace = RectTransformUtility.RectangleContainsScreenPoint(rt, screenPosition, cam);
+        //bool isInBoottomSpace = RectTransformUtility.RectangleContainsScreenPoint(rt, screenPosition, cam);
+        return isInActionSpace;
     }
 
     private bool IsClickingOnBackgroundBlackUI(Vector2 screenPosition)
@@ -193,9 +202,9 @@ public class PenManager : MonoBehaviour
 
         foreach (var result in results)
         {
-            if (result.gameObject.name == "Background Black")
+            if (result.gameObject.name == "Background Black" || result.gameObject.CompareTag("UI"))
             {
-                Debug.Log("Click UI trên Background Black ➜ Không cho pan/zoom");
+                Debug.Log("Click UI trên Background Black -> Không cho pan/zoom");
                 return true;
             }
         }
@@ -230,7 +239,7 @@ public class PenManager : MonoBehaviour
 
         // if (checkpointManager != null && checkpointManager.isMovingCheckpoint)
         // {
-        //     // Debug.Log("Đang move checkpoint ➜ KHÔNG pan/zoom!");
+        //     // Debug.Log("Đang move checkpoint -> KHÔNG pan/zoom!");
         //     return;
         // }
 
@@ -257,7 +266,7 @@ public class PenManager : MonoBehaviour
                 {
                     if (hit.collider.gameObject.name == "Background Black")
                     {
-                        Debug.Log("Raycast hit Background Black ➜ Không cho pan/zoom");
+                        Debug.Log("Raycast hit Background Black -> Không cho pan/zoom");
                         return;
                     }
 
@@ -267,10 +276,10 @@ public class PenManager : MonoBehaviour
                         string nm = hit.collider.gameObject.name;
                         if (nm.StartsWith("RoomFloor_"))
                         {
-                            Debug.Log("Hit ROOM floor → block pan/zoom");
+                            Debug.Log("Hit ROOM floor -> block pan/zoom");
                             return;
                         }
-                        // nm.StartsWith("Floor_") → cho phép pan/zoom bình thường
+                        // nm.StartsWith("Floor_") -> cho phép pan/zoom bình thường
                     }
                 }
             }
@@ -310,6 +319,7 @@ public class PenManager : MonoBehaviour
         // Phóng to/thu nhỏ bằng hai ngón tay (pinch-to-zoom)
         if (Input.touchCount == 2)
         {
+            roomInfoDisplay.ResetState();
             Touch touch1 = Input.GetTouch(0);
             Touch touch2 = Input.GetTouch(1);
 

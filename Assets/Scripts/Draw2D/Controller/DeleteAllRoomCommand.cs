@@ -17,7 +17,6 @@ public class DeleteAllRoomCommand : IUndoRedoCommand
         // spawn lại
         foreach (var item in datas)
         {
-            CheckpointManager.Instance.CreateRoomByRoomData(item.room,item.position);
         }
     }
 

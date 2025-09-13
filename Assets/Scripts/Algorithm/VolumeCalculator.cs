@@ -57,9 +57,9 @@ public static class VolumeCalculator
     {
         switch (unit)
         {
-            case "cm": return volume * 1_000_000f;   // m³ → cm³
-            case "inch": return volume * 61023.7f;   // m³ → inch³
-            case "ft": return volume * 35.3147f;     // m³ → ft³
+            case "cm": return volume * 1_000_000f;   // m³ -> cm³
+            case "inch": return volume * 61023.7f;   // m³ -> inch³
+            case "ft": return volume * 35.3147f;     // m³ -> ft³
             default: return volume;                  // Mặc định: m³
         }
     }

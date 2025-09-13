@@ -11,6 +11,7 @@ public class BottomSheetUI : BaseAnimUI
     protected Vector2 closedPos;
     protected Vector2 keyboardOpenPos;
 
+    private bool isTweenDone = true;
 
     private void Start()
     {
@@ -30,19 +31,30 @@ public class BottomSheetUI : BaseAnimUI
 
     public override void Open()
     {
+        if (container.gameObject.activeSelf) return;
+        if (isTweenDone == false) return;
         container.gameObject.SetActive(true);
-        PlayAnim(openPos, openDuration, showEase);
+        PlayAnim(openPos, openDuration, showEase, () =>
+        {
+            isTweenDone = true;
+        });
         OnStartShowAnim?.Invoke();
+
+        Debug.Log("Bottom Sheet Open "+gameObject.name);
     }
 
     public override void Close()
     {
+        if (!container.gameObject.activeSelf) return;
+        if (isTweenDone == false) return;
         OnEndHideAnim?.Invoke();
         PlayAnim(closedPos, hideDuration, hideEase, () =>
         {
             container.gameObject.SetActive(false);
             OnEndHideAnim?.Invoke();
+            isTweenDone = true;
         });
+        Debug.Log("Bottom Sheet Close " + gameObject.name);
     }
 
     protected void PlayAnim(Vector2 targetPos, float animDuration, Ease animEase, Action endCallback = null)

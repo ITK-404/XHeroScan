@@ -83,7 +83,7 @@ public class ConnectManager : MonoBehaviour
         if (selectedPoint == null)
         {
             selectedPoint = checkpoint;
-            Debug.Log($"[Chọn điểm đầu tiên]: {checkpoint.name} ➜ {checkpoint.transform.position}");
+            Debug.Log($"[Chọn điểm đầu tiên]: {checkpoint.name} -> {checkpoint.transform.position}");
         }
         else
         {
@@ -107,7 +107,7 @@ public class ConnectManager : MonoBehaviour
 
         Debug.Log($"[ToggleConnect] Button clicked. New state = {newState}");
 
-        // Nếu bật Connect và không có room ➜ không cho bật
+        // Nếu bật Connect và không có room -> không cho bật
         if (newState && (RoomStorage.rooms == null || RoomStorage.rooms.Count == 0))
         {
             Debug.LogWarning("[ToggleConnect] Không có room nào để bật kết nối.");

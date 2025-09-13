@@ -41,7 +41,7 @@ public class TutorialHandle : MonoBehaviour
     private void Start()
     {
         mainCam = Camera.main;
-
+        if(tutorial == null) return;
         if (mainCam == null) return;
         
         originalScale = tutorial.transform.localScale;

@@ -41,7 +41,7 @@ public class Model3D : MonoBehaviour
             {
                 bool isZeroLength = Vector3.Distance(w.start, w.end) < 0.01f;
                 if (isZeroLength)
-                    Debug.LogWarning($"[REMOVE] Doan {w.type} do dai ≈ 0: {w.start} → {w.end}");
+                    Debug.LogWarning($"[REMOVE] Doan {w.type} do dai ≈ 0: {w.start} -> {w.end}");
                 return isZeroLength;
             });
 
@@ -159,7 +159,7 @@ public class Model3D : MonoBehaviour
         }
         else
         {
-            Debug.Log($"[NO LABEL] Wall too short ({wallLength:F2}m): {line.start} → {line.end}");
+            Debug.Log($"[NO LABEL] Wall too short ({wallLength:F2}m): {line.start} -> {line.end}");
         }
 
         return wallObj;
@@ -521,7 +521,7 @@ public class Model3D : MonoBehaviour
         else
             Debug.LogWarning("Khong tim thay Model3DHolder trong scene!");
 
-        Debug.Log($"[Compass] Room {RoomStorage.rooms.IndexOf(room)} → Position: {compassPosition}, Parent: {(compassObject.transform.parent != null ? compassObject.transform.parent.name : "null")}");
+        Debug.Log($"[Compass] Room {RoomStorage.rooms.IndexOf(room)} -> Position: {compassPosition}, Parent: {(compassObject.transform.parent != null ? compassObject.transform.parent.name : "null")}");
     }
 
     private void UpdateWallDirections(Room room)
@@ -542,7 +542,7 @@ public class Model3D : MonoBehaviour
             // Gợi ý hướng chữ
             string directionLabel = AngleToDirectionLabel(realWorldAngle);
 
-            Debug.Log($"[Heading][WallDir] {line.start} → {line.end} = {realWorldAngle:0.0}° ({directionLabel})");
+            Debug.Log($"[Heading][WallDir] {line.start} -> {line.end} = {realWorldAngle:0.0}° ({directionLabel})");
         }
     }
 

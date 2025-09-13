@@ -23,6 +23,8 @@ public class WallLine
 
     public bool isManualConnection = false;// line phụ 
 
+    public float headingCompass; // hướng thực địa của tường (tự động tính hoặc mặc định ở Draw2D)
+
     // Dùng cho toàn bộ Line
     public float distanceHeight = 0f;   // độ cao bắt đầu từ mặt đất = 0.5m
     public float Height = 0f; // Chiều cao tường = 2m, chiều cao của cửa / cửa sổ = 1m
@@ -63,12 +65,14 @@ public class WallLine
 [System.Serializable]
 public class Room
 {
+    public static float Thickness = 0.1f; 
     private static int roomCounter = 0; // Biến đếm số lượng phòng
 
     public string ID { get; private set; }  // ID chỉ đọc từ bên ngoài
     public string groupID;
     public string roomName;
     public string floorID; // ID sàn liên kết (nếu có)
+    public float thickness = 0.1f; // kích thước mặc định là 20 cm
 
     public Vector2 center; // tọa độ trung tâm phòng
 
@@ -152,6 +156,11 @@ public class FloorLine
         this.start = start;
         this.end = end;
     }
+    public FloorLine(FloorLine floorLine)
+    {
+        this.start = floorLine.start;
+        this.end = floorLine.end;
+    }
 }
 [System.Serializable]
 public class Floor
@@ -169,6 +178,8 @@ public class Floor
 
     // Liên kết nhiều phòng với sàn này
     public List<string> roomIDs = new();
+
+    public float width, length;
 
     public Floor()
     {
@@ -201,6 +212,26 @@ public class Floor
     public void SetID(string newID)
     {
         ID = newID;
+    }
+
+    public static Floor Clone(Floor other)
+    {
+        if(other == null )
+        {
+            Debug.Log("Bạn đang clone 1 object null");
+            return null; 
+        }
+        Floor floor = new Floor();
+        floor.ID = other.ID;
+        floor.floorName = other.floorName;
+        floor.center = other.center;
+        floor.checkpoints = new List<Vector2>(other.checkpoints);
+        floor.floorLine = new List<FloorLine>(other.floorLine.Select(w => new FloorLine(w)));
+        floor.heights = new List<float>(other.heights);
+        floor.roomIDs = new List<string>(other.roomIDs);
+        floor.width = other.width;
+        floor.length = other.length;
+        return floor;
     }
 }
 #endregion

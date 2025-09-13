@@ -4,20 +4,21 @@ using UnityEngine.UI;
 public class PopupToggleHandle : MonoBehaviour
 {
     [SerializeField] private Button toggleBtn;
-    [SerializeField] private FadePopupUI popupUI;
+    [SerializeField] private BaseAnimUI popupUI;
     [SerializeField] private PopupHideButtons popupHideButtons;
     [SerializeField] private bool isToggle;
     
     private void Start()
     {
         toggleBtn.onClick.AddListener(Toggle);
-        popupHideButtons.OnClickBtnHide = () => { ToggleByState(false); };
+        if(popupHideButtons)
+            popupHideButtons.OnClickBtnHide = () => { ToggleByState(false); };
     }
 
     private void OnValidate()
     {
         if (!popupUI)
-            popupUI = GetComponent<FadePopupUI>();
+            popupUI = GetComponent<BaseAnimUI>();
 
         if (!popupHideButtons)
             popupHideButtons = GetComponent<PopupHideButtons>();
@@ -45,6 +46,11 @@ public class PopupToggleHandle : MonoBehaviour
             popupUI.Close();
         }
 
+        isToggle = state;
+    }
+
+    public void SetToggle(bool state)
+    {
         isToggle = state;
     }
 }

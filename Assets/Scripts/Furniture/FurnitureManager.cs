@@ -16,17 +16,16 @@ public class FurnitureManager : MonoBehaviour
     [SerializeField] private List<FurnitureItem> furnitureItems = new List<FurnitureItem>();
     public bool IsSnapRotation;
 
+    [Header("Drag")]
     private FurnitureItem tempDragItem;
     private FurnitureItem currentFurniture;
-
+    [Header("Rotate")]
     private static List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
     private List<float> snapAngles = new List<float> { -90, 90f, 180f, 0 };
 
     private Camera mainCam;
-
-    public GameObject debugPoint;
-
     public FurnitureItem CurrentFurnitureItem() => currentFurniture;
+    public const float SpawnHeight = 5;
 
 
     private void Awake()
@@ -53,6 +52,10 @@ public class FurnitureManager : MonoBehaviour
             var item = GameObject.Instantiate(prefab);
             item.FetchData(data);
             item.InitLineAndText();
+            if(item.lineType == LineType.Door || item.lineType == LineType.Window)
+            {
+                item.furnitureMergeToWall.ForceSnapToWall();
+            }
             runtimeFurnitures.Add(item);
         }
 
@@ -88,8 +91,9 @@ public class FurnitureManager : MonoBehaviour
             Debug.LogWarning("Furniture item with ID " + ItemID + " not found.");
             return null;
         }
-
-        return Instantiate(prefab != null ? prefab : furnitureItemPrefab);
+        var instance = Instantiate(prefab != null ? prefab : furnitureItemPrefab);
+        instance.data.InitNewInstanceID();
+        return instance;
     }
 
     private FurnitureItem GetFurniturePrefabByID(string itemID)
@@ -114,19 +118,37 @@ public class FurnitureManager : MonoBehaviour
 
     public void SpawnFurnitureCenterScreen(string itemID)
     {
-        var furniture = InitItemByID(itemID);
         var worldPointFromViewPort = mainCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f));
-        var centerPosition = new Vector3(worldPointFromViewPort.x, 5, worldPointFromViewPort.z);
+        var centerPosition = new Vector3(worldPointFromViewPort.x, SpawnHeight, worldPointFromViewPort.z);
+        var item = SpawnFurniture(itemID, centerPosition);
+        UndoRedoController.Instance.AddToUndo(new CreateItemCommand(item.data.instanceID));
 
-        furniture.transform.position = centerPosition;
+    }
+
+    public FurnitureItem SpawnFurniture(string itemID, Vector3 position)
+    {
+        var furniture = InitItemByID(itemID);
+        
+        if (!furniture) return null;
+
+        furniture.transform.position = position;
         furniture.InitLineAndText();
         runtimeFurnitures.Add(furniture);
-        Debug.Log("Spawn Position: " + centerPosition);
+        Debug.Log("Spawn Position: " + position);
 
+
+        return furniture;
     }
 
     private void Update()
     {
+        //if(currentFurniture != null)
+        //{
+        //    Debug.Log("[Furniture] World Position: " + currentFurniture.transform.position);
+        //    Debug.Log(("[Furniture] world model positioon: " + currentFurniture.modelContainer.transform.position));
+        //}
+
+
         if (tempDragItem)
         {
             tempDragItem.transform.position = GetWorldMousePosition();
@@ -166,10 +188,10 @@ public class FurnitureManager : MonoBehaviour
         //    currentFurniture.data.roomID = roomID;
         //}
 
-        //if (Input.GetKeyDown(KeyCode.Space))
-        //{
-        //    SpawnFurnitureCenterScreen("bed_1");
-        //}
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            SpawnFurnitureCenterScreen("bed_1");
+        }
     }
 
     public void ClearAllFurnitures()
@@ -203,7 +225,21 @@ public class FurnitureManager : MonoBehaviour
             currentFurniture = furniture;
             currentFurniture?.EnableCheckPoint();
         }
+  
+    }
 
+    public FurnitureItem GetFurnitureByInstanceID(string instanceID)
+    {
+        Debug.Log("Instance: ID" + instanceID);
+        foreach(var item in runtimeFurnitures)
+        {
+            if (item.data.instanceID.Equals(instanceID))
+            {
+                return item;
+            }
+        }
+
+        return null;
     }
 
     private Vector3 GetWorldMousePosition()
@@ -284,12 +320,20 @@ public class FurnitureManager : MonoBehaviour
         }
     }
 
-    public void TrySnapToNearestRoom()
+    public void ForceSnapAllToNearestRoom()
     {
         Debug.Log("try snap to nearest room");
         foreach (var item in runtimeFurnitures)
         {
-            item.furnitureMergeToWall.SnapTemp(true);
+            item.furnitureMergeToWall.ForceSnapToWall();
+        }
+    }
+
+    public void ResetAttachedItems()
+    {
+        foreach (var item in runtimeFurnitures)
+        {
+            item.furnitureMergeToWall.ResetAttached();
         }
     }
 
@@ -300,6 +344,7 @@ public class FurnitureManager : MonoBehaviour
 
         foreach (var item in runtimeFurnitures)
         {
+            if (item.lineType == LineType.Door || item.lineType == LineType.Window) continue;
             //if (item.data.roomID != roomID) continue;
 
             Debug.Log("Find and check valid furniture");
@@ -311,7 +356,7 @@ public class FurnitureManager : MonoBehaviour
             Debug.Log("Is In Polygon: " + isInPolygon);
             Debug.Log("Is attachef to room: " + isAttachedToRoom);
 
-            if (isInPolygon || isAttachedToRoom && item.lineType != LineType.None)
+            if (isInPolygon || isAttachedToRoom)
             {
                 Debug.Log($"{item.gameObject.name} này nằm trong room", item.gameObject);
                 value.Show(state);
@@ -330,13 +375,31 @@ public class FurnitureManager : MonoBehaviour
     {
         List<WallLine> exportList = new();
 
-        foreach(FurnitureItem item in runtimeFurnitures)
+        foreach (FurnitureItem item in runtimeFurnitures)
         {
-            if(item.lineType == LineType.Door || item.lineType == LineType.Window)
+            if (item.lineType == LineType.Door || item.lineType == LineType.Window)
             {
-                exportList.Add(item.furnitureMergeToWall.TypedWallLine);
+                exportList.Add(item.furnitureMergeToWall.PDFWallLine);
             }
         }
         return exportList;
+    }
+
+    public List<DrawingInstanced> GetFurnitureInsideRoom(string iD)
+    {
+       List<DrawingInstanced> furnitures = new List<DrawingInstanced>();
+        foreach(var item in runtimeFurnitures)
+        {
+            if (item.data.roomID == iD)
+            {
+                furnitures.Add(item.data);
+            }
+        }
+        return furnitures;
+    }
+
+    public List<FurnitureItem> GetAllFurniture()
+    {
+        return runtimeFurnitures;
     }
 }

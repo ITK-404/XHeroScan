@@ -133,7 +133,7 @@ public class CompassManager : MonoBehaviour
         // Tính trung bình góc (mục tiêu mới)
         float smoothedTarget = AverageAngles(headingHistory);
 
-        // Làm mượt giữa currentHeading → smoothedTarget
+        // Làm mượt giữa currentHeading -> smoothedTarget
         currentHeading = Mathf.LerpAngle(currentHeading, smoothedTarget, Time.deltaTime * 3f); // Bạn có thể thử giá trị từ 3f - 10f
         currentHeading = Mathf.Repeat(currentHeading, 360f);
 

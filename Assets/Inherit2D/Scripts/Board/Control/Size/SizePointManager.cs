@@ -694,7 +694,7 @@ public class SizePointManager : MonoBehaviour
             currentRoom = new Room();
             RoomStorage.rooms.Add(currentRoom);
 
-            // Ánh xạ itemId → roomId
+            // Ánh xạ itemId -> roomId
             ItemCreated owner = GetComponentInParent<ItemCreated>();
             if (owner != null)
             {

@@ -2,31 +2,33 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Collections;
-
+using System;
 public class ModularPopupEdit : MonoBehaviour
 {
     [Header("Buttons")]
     public Button editBtn;
     public Button splitBtn;
     public Button doubleBtn;
+    public Button flipBtn;
     public Button deleteBtn;
 
     [Header("Contents (chỉ 1 hiển thị tại 1 thời điểm)")]
     [SerializeField] private GameObject objectEdit;
     [SerializeField] private GameObject objectSplit;
     [SerializeField] private GameObject objectDouble;
-    [SerializeField] private GameObject objectDelete;
-
+    // [SerializeField] private GameObject objectDelete;
     [Header("Open behavior")]
+    [SerializeField] private bool isShowSplit = true;
     [SerializeField] private bool deferOpenOneFrame = true;
 
+    private ClearAllRoomsButton clearAllRoomsButton;
     void Awake()
     {
         gameObject.SetActive(false);
         if (editBtn)   editBtn.onClick.AddListener(() => ShowOnly(objectEdit));
         if (splitBtn)  splitBtn.onClick.AddListener(() => ShowOnly(objectSplit));
         if (doubleBtn) doubleBtn.onClick.AddListener(() => ShowOnly(objectDouble));
-        if (deleteBtn) deleteBtn.onClick.AddListener(() => ShowOnly(objectDelete));
+        //if (deleteBtn) deleteBtn.onClick.AddListener(() => clearAllRoomsButton.OnClearAllClicked());
 
         if (Application.isPlaying && EventSystem.current == null)
         {
@@ -34,6 +36,8 @@ public class ModularPopupEdit : MonoBehaviour
             es.AddComponent<EventSystem>();
             es.AddComponent<StandaloneInputModule>();
         }
+        splitBtn.gameObject.SetActive(isShowSplit);
+        flipBtn.gameObject.SetActive(!isShowSplit);
     }
 
     private void ShowOnly(GameObject target)
@@ -41,10 +45,10 @@ public class ModularPopupEdit : MonoBehaviour
         if (!target) return;
 
         // Tắt tất cả
-        if (objectEdit)   objectEdit.SetActive(false);
-        if (objectSplit)  objectSplit.SetActive(false);
+        if (objectEdit) objectEdit.SetActive(false);
+        if (objectSplit) objectSplit.SetActive(false);
         if (objectDouble) objectDouble.SetActive(false);
-        if (objectDelete) objectDelete.SetActive(false);
+        // if (objectDelete) objectDelete.SetActive(false);
 
         // Bật panel mục tiêu
         target.SetActive(true);

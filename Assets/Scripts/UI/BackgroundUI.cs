@@ -73,6 +73,7 @@ public class BackgroundUI : MonoBehaviour
         if (target)
         {
             background.transform.SetParent(target.transform.parent.transform);
+            background.transform.localScale = Vector3.one;
             int targetIndex = target.transform.GetSiblingIndex();
             int newIndex = Mathf.Max(0, targetIndex - (background.transform.GetSiblingIndex() < targetIndex ? 1 : 0));
             background.transform.SetSiblingIndex(newIndex);
@@ -109,8 +110,8 @@ public class BackgroundUI : MonoBehaviour
             backgroundRect.anchorMax = Vector2.one;
             backgroundRect.sizeDelta = Vector2.zero;
 
-            backgroundRect.offsetMax = new Vector2(500, 500);
-            backgroundRect.offsetMin = new Vector2(-500, -500);
+            backgroundRect.offsetMax = new Vector2(3500, 3500);
+            backgroundRect.offsetMin = new Vector2(-3500, -3500);
 
             var entry = new EventTrigger.Entry();
             entry.eventID = EventTriggerType.PointerClick;

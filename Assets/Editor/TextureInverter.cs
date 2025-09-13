@@ -14,7 +14,7 @@ public class TextureInverter : EditorWindow
 
     void OnGUI()
     {
-        GUILayout.Label("Chọn icon PNG cần đảo màu (đen → trắng)", EditorStyles.boldLabel);
+        GUILayout.Label("Chọn icon PNG cần đảo màu (đen -> trắng)", EditorStyles.boldLabel);
         sourceTexture = (Texture2D)EditorGUILayout.ObjectField("Icon PNG", sourceTexture, typeof(Texture2D), false);
 
         if (sourceTexture != null && GUILayout.Button("Invert và Lưu"))

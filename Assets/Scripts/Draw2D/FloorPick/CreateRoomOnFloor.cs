@@ -2,74 +2,84 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 public class CreateRoomOnFloor : MonoBehaviour
 {
     [Header("UI")]
-    public Button CreateRoomButton;      // Nút bật/tắt chế độ tạo phòng
-
+    public Button CreateRoomButton;
+    public static Action OnClickCreateRoomEvent;
     [Header("Raycast")]
-    public LayerMask floorMask = ~0;     // Layer của các Floor_<ID> có MeshCollider (và/hoặc con của chúng)
+    public LayerMask floorMask = ~0;
 
-    [Header("Preview Style")]
-    public float lineWidth = 0.02f;
-    public Color previewOKLine = new Color(0.2f, 1f, 0.2f, 1f);
-    public Color previewBadLine = new Color(1f, 0.2f, 0.2f, 1f);
-    public Color previewOKFill = new Color(0.2f, 1f, 0.2f, 0.15f);
-    public Color previewBadFill = new Color(1f, 0.2f, 0.2f, 0.2f);
+    // ---------- Arrow Preview ----------
+    [Header("Arrow Preview")]
+    [Tooltip("Dùng mũi tên thay vì khung chữ nhật cho preview.")]
+    public bool useArrowPreview = true;
+    [Tooltip("Màu mũi tên và chữ trên mũi tên.")]
+    public Color arrowColor = Color.white;
+    [Tooltip("Độ dày thân mũi tên (LineRenderer).")]
+    public float arrowWidth = 0.02f;
+    [Tooltip("Độ dài hai cánh đầu mũi tên (m).")]
+    public float arrowHeadSize = 0.15f;
+    [Tooltip("Nhấc mũi tên lên khỏi mặt sàn (m) để tránh z-fighting).")]
+    public float arrowLift = 0.012f;
+    [Tooltip("Hiện thêm mũi tên đường chéo P1->P2.")]
+    public bool showDiagonalArrow = true;
 
-    // >>> NEW: Layering để room luôn nổi trên floor
+    [Header("Arrow Text")]
+    [Tooltip("Cỡ font (TextMesh) cho text trên mũi tên.")]
+    public int arrowTextFontSize = 100;
+    [Tooltip("Kích cỡ ký tự trong world cho TextMesh.")]
+    public float arrowTextCharSize = 0.03f;
+
+    // Layering để room luôn nổi trên floor
     [Header("Render Layering")]
-    public int roomIndex = 2;           // phòng ở index = 2 (floor = 1, item = 99...)
+    public int roomIndex = 2;           // room ở index 2
     public float layerStepY = 0.002f;   // mỗi index cách nhau 2mm
-    public float roomWallLift = 0.003f; // line/marker của room nhô thêm để tránh z-fighting
+    public float roomWallLift = 0.003f; // line/marker nhô nhẹ
 
     private CheckpointManager checkPointManager;
 
-    // Trạng thái
     private bool placingActive = false;
 
-    // Kéo-để-tạo (drag)
+    // Drag state
     private bool isDragging = false;
-    private Vector3 dragStartWorld;             // P1 (khi MouseDown)
-    private Transform dragFloorRoot;            // RoomFloor root tại P1
-    private Collider  dragFloorCol;             // collider tại P1 (thông tin phụ)
+    private Vector3 dragStartWorld;
+    private Transform dragFloorRoot;
+    private Collider dragFloorCol;
 
     // Marker P1
     private GameObject firstMarker = null;
 
-    // ===== Preview objects =====
+    // ===== Preview root + material =====
     private GameObject previewRootGO;
-    private LineRenderer previewLine;
-    private GameObject previewFillGO;
-    private MeshFilter previewFillMF;
-    private MeshRenderer previewFillMR;
-    private Mesh previewFillMesh;
     private Material previewLineMat;
-    private Material previewFillMat;
 
     public static bool IsCreateRooom = false;
+
+    // ===== Arrow renderers/texts =====
+    private LineRenderer arrowX, arrowXHead;   // P1 -> (p2.x, p1.z)
+    private LineRenderer arrowZ, arrowZHead;   // P1 -> (p1.x, p2.z)
+    private LineRenderer arrowD, arrowDHead;   // P1 -> P2 (tuỳ chọn)
+    private TextMesh arrowXText, arrowZText, arrowDText;
 
     void Start()
     {
         checkPointManager = FindFirstObjectByType<CheckpointManager>();
-        if (CreateRoomButton != null)
-            CreateRoomButton.onClick.AddListener(TogglePlacingMode);
-
-        // Tạo material mặc định cho preview
+        if (CreateRoomButton != null) CreateRoomButton.onClick.AddListener(TogglePlacingMode);
+        OnClickCreateRoomEvent += TogglePlacingMode;
+        // Material Unlit để tô màu LineRenderer/TextMesh
         var unlit = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
         previewLineMat = new Material(unlit);
-        previewFillMat = new Material(unlit);
     }
 
     void OnDestroy()
     {
-        if (CreateRoomButton != null)
-            CreateRoomButton.onClick.RemoveListener(TogglePlacingMode);
+        if (CreateRoomButton != null) CreateRoomButton.onClick.RemoveListener(TogglePlacingMode);
         DestroyPreviewImmediate();
         if (firstMarker) Destroy(firstMarker);
-
         IsCreateRooom = false;
     }
 
@@ -77,64 +87,81 @@ public class CreateRoomOnFloor : MonoBehaviour
     {
         if (!placingActive) return;
 
-        // Bỏ qua khi click lên UI
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return;
 
-        // Bắt đầu kéo (đặt P1) khi nhấn chuột
+        // Begin drag: set P1
         if (Input.GetMouseButtonDown(0))
         {
             if (TryGetMouseWorldOnFloor(out var pos, out var col, out var root))
             {
+                float yPlane = pos.y;
+                var p1Clamped = ClampPointToFloor(pos, root, yPlane);
+
                 isDragging = true;
                 IsCreateRooom = true;
 
-                dragStartWorld = pos;
+                dragStartWorld = p1Clamped;
                 dragFloorRoot = root;
                 dragFloorCol = col;
 
-                // Marker P1
                 if (checkPointManager != null && checkPointManager.checkpointPrefab != null)
                 {
-                    firstMarker = Instantiate(checkPointManager.checkpointPrefab, pos + Vector3.up * 0.01f, Quaternion.identity);
+                    firstMarker = Instantiate(checkPointManager.checkpointPrefab, p1Clamped + Vector3.up * 0.01f, Quaternion.identity);
                     firstMarker.name = "RoomP1_Preview";
                 }
 
-                // Khởi tạo preview
                 UpdatePreview(dragStartWorld, pos, dragFloorRoot);
+            }
+            else if (TryGetMouseOnAnyFloorClamped(out var p1Snap, out var root2))
+            {
+                Debug.Log("Phòng được tạo ở đây");
+
+                isDragging = true;
+                IsCreateRooom = true;
+
+                dragStartWorld = p1Snap;
+                dragFloorRoot = root2;
+                dragFloorCol = root2.GetComponent<Collider>() ?? root2.GetComponentInChildren<Collider>();
+
+                if (checkPointManager != null && checkPointManager.checkpointPrefab != null)
+                {
+                    firstMarker = Instantiate(checkPointManager.checkpointPrefab, p1Snap + Vector3.up * 0.01f, Quaternion.identity);
+                    firstMarker.name = "RoomP1_Preview";
+                }
+
+                UpdatePreview(dragStartWorld, p1Snap, dragFloorRoot);
             }
             else
             {
-                // Không trúng RoomFloor → không cho kéo
                 isDragging = false;
                 IsCreateRooom = false;
             }
         }
 
-        // Đang kéo: cập nhật preview theo vị trí chuột hiện tại
+        // Dragging: update preview
         if (isDragging && Input.GetMouseButton(0))
         {
-            if (TryGetMouseWorldOnFloor(out var pos, out var col, out var root) && root == dragFloorRoot)
+            if (TryGetMouseWorldOnFloor(out var pos, out var _, out var root) && root == dragFloorRoot)
             {
                 UpdatePreview(dragStartWorld, pos, dragFloorRoot);
             }
             else
             {
-                // Rời khỏi floor hoặc qua floor khác → ẩn/đỏ preview
                 HidePreview();
             }
         }
 
-        // Thả chuột: kết thúc kéo, nếu hợp lệ thì tạo room
+        // End drag: commit room
         if (isDragging && Input.GetMouseButtonUp(0))
         {
-            if (TryGetMouseWorldOnFloor(out var pos, out var col, out var root) && root == dragFloorRoot)
+            if (TryGetMouseWorldOnFloor(out var pos, out var _, out var root) && root == dragFloorRoot)
             {
                 CommitRoom(dragStartWorld, pos, dragFloorRoot);
             }
             else
             {
-                Debug.LogError("[CreateRoom] Thả chuột nhưng KHÔNG còn ở cùng RoomFloor → huỷ.");
+                Debug.LogError("[CreateRoom] MouseUp nhưng không còn ở cùng RoomFloor -> huỷ.");
                 ResetDragState(keepPlacing: true);
             }
             IsCreateRooom = false;
@@ -152,11 +179,11 @@ public class CreateRoomOnFloor : MonoBehaviour
         }
 
         if (CreateRoomButton != null)
-            {
-                var colors = CreateRoomButton.colors;
-                colors.normalColor = placingActive ? new Color(0.8f, 1f, 0.8f) : Color.white;
-                CreateRoomButton.colors = colors;
-            }
+        {
+            var colors = CreateRoomButton.colors;
+            colors.normalColor = placingActive ? new Color(0.8f, 1f, 0.8f) : Color.white;
+            CreateRoomButton.colors = colors;
+        }
     }
 
     // ===== Raycast chuột -> world pos + collider + RoomFloor root =====
@@ -173,50 +200,68 @@ public class CreateRoomOnFloor : MonoBehaviour
         if (!Physics.Raycast(ray, out var hit, 5000f, floorMask))
             return false;
 
-        // leo lên parent để tìm object có tag "RoomFloor"
         Transform t = hit.collider ? hit.collider.transform : null;
         while (t != null && !t.CompareTag("RoomFloor")) t = t.parent;
         if (t == null) return false;
 
         floorRoot = t;
-        // ưu tiên collider ngay trên root, nếu không có thì dùng collider vừa hit
         floorCol = t.GetComponent<Collider>() ?? hit.collider;
-
-        pos = hit.point; // giữ nguyên cao độ thực tế
+        pos = hit.point;
         return true;
     }
 
-    // ===== Preview =====
+    // ===== Preview objects (arrow only) =====
     private void EnsurePreviewObjects(Transform parentForPreview)
     {
         if (previewRootGO == null)
         {
             previewRootGO = new GameObject("[Room Preview]");
             previewRootGO.transform.SetParent(null, worldPositionStays: true);
-
-            // Line
-            var lineGO = new GameObject("Line");
-            lineGO.transform.SetParent(previewRootGO.transform, false);
-            previewLine = lineGO.AddComponent<LineRenderer>();
-            previewLine.loop = true;
-            previewLine.widthMultiplier = lineWidth;
-            previewLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            previewLine.receiveShadows = false;
-            previewLine.alignment = LineAlignment.View;
-            previewLine.material = previewLineMat;
-            previewLine.positionCount = 4;
-
-            // Fill
-            previewFillGO = new GameObject("Fill");
-            previewFillGO.transform.SetParent(previewRootGO.transform, false);
-            previewFillMF = previewFillGO.AddComponent<MeshFilter>();
-            previewFillMR = previewFillGO.AddComponent<MeshRenderer>();
-            previewFillMR.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            previewFillMR.receiveShadows = false;
-            previewFillMR.sharedMaterial = previewFillMat;
-            previewFillMesh = new Mesh { name = "RoomPreviewFill" };
-            previewFillMF.sharedMesh = previewFillMesh;
         }
+
+        // helpers
+        LineRenderer CreateLR(string name, float width, int order)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(previewRootGO.transform, false);
+            var lr = go.AddComponent<LineRenderer>();
+            lr.useWorldSpace = true;
+            lr.loop = false;
+            lr.widthMultiplier = width;
+            lr.numCornerVertices = 2;
+            lr.alignment = LineAlignment.View;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+            lr.material = previewLineMat;
+            lr.positionCount = 2;
+            lr.sortingOrder = order;
+            return lr;
+        }
+        TextMesh CreateText(string name, int order, int fontSize, float charSize, Color col)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(previewRootGO.transform, false);
+            var tm = go.AddComponent<TextMesh>();
+            tm.text = "";
+            tm.anchor = TextAnchor.MiddleCenter;
+            tm.fontSize = fontSize;
+            tm.characterSize = charSize;
+            tm.color = col;
+            var mr = go.GetComponent<MeshRenderer>(); if (mr) mr.sortingOrder = order;
+            return tm;
+        }
+
+        // Arrow renderers + text
+        if (arrowX == null)      arrowX      = CreateLR("ArrowX", arrowWidth, 20);
+        if (arrowXHead == null)  arrowXHead  = CreateLR("ArrowXHead", arrowWidth, 21);
+        if (arrowZ == null)      arrowZ      = CreateLR("ArrowZ", arrowWidth, 20);
+        if (arrowZHead == null)  arrowZHead  = CreateLR("ArrowZHead", arrowWidth, 21);
+        if (arrowD == null)      arrowD      = CreateLR("ArrowD", arrowWidth, 30);
+        if (arrowDHead == null)  arrowDHead  = CreateLR("ArrowDHead", arrowWidth, 31);
+
+        if (arrowXText == null) arrowXText = CreateText("ArrowXText", 22, arrowTextFontSize, arrowTextCharSize, arrowColor);
+        if (arrowZText == null) arrowZText = CreateText("ArrowZText", 22, arrowTextFontSize, arrowTextCharSize, arrowColor);
+        if (arrowDText == null) arrowDText = CreateText("ArrowDText", 32, arrowTextFontSize, arrowTextCharSize, arrowColor);
 
         previewRootGO.SetActive(true);
     }
@@ -230,60 +275,104 @@ public class CreateRoomOnFloor : MonoBehaviour
     {
         if (previewRootGO != null) Destroy(previewRootGO);
         previewRootGO = null;
-        previewLine = null;
-        previewFillGO = null;
-        previewFillMF = null;
-        previewFillMR = null;
-        previewFillMesh = null;
+
+        arrowX = arrowXHead = arrowZ = arrowZHead = arrowD = arrowDHead = null;
+        arrowXText = arrowZText = arrowDText = null;
     }
 
     private void UpdatePreview(Vector3 p1, Vector3 p2, Transform floorRoot)
     {
         EnsurePreviewObjects(floorRoot);
 
-        float minX = Mathf.Min(p1.x, p2.x);
-        float maxX = Mathf.Max(p1.x, p2.x);
-        float minZ = Mathf.Min(p1.z, p2.z);
-        float maxZ = Mathf.Max(p1.z, p2.z);
+        // ===== ARROW PREVIEW =====
+        if (!useArrowPreview) return;
 
-        float yPlane = p1.y;
-        Vector3 v0 = new(minX, yPlane, minZ);
-        Vector3 v1 = new(minX, yPlane, maxZ);
-        Vector3 v2 = new(maxX, yPlane, maxZ);
-        Vector3 v3 = new(maxX, yPlane, minZ);
+        float yA = p1.y + arrowLift;
+        Vector3 P1 = new(dragStartWorld.x, yA, dragStartWorld.z);
+        Vector3 P2 = new(p2.x, yA, p2.z);
+        Vector3 P1_to_X = new(p2.x, yA, dragStartWorld.z);
+        Vector3 P1_to_Z = new(dragStartWorld.x, yA, p2.z);
 
-        bool ok =
-            IsPointOnThisFloorRoot(v0, floorRoot) &&
-            IsPointOnThisFloorRoot(v1, floorRoot) &&
-            IsPointOnThisFloorRoot(v2, floorRoot) &&
-            IsPointOnThisFloorRoot(v3, floorRoot);
+        float dx = Mathf.Abs(P1_to_X.x - P1.x);
+        float dz = Mathf.Abs(P1_to_Z.z - P1.z);
+        float dd = Vector3.Distance(P1, P2);
 
-        Vector3 lift = Vector3.up * 0.01f;
-        Vector3 vv0 = v0 + lift;
-        Vector3 vv1 = v1 + lift;
-        Vector3 vv2 = v2 + lift;
-        Vector3 vv3 = v3 + lift;
+        Color c = arrowColor;
 
-        // Line
-        previewLine.startColor = ok ? previewOKLine : previewBadLine;
-        previewLine.endColor   = ok ? previewOKLine : previewBadLine;
-        previewLine.widthMultiplier = lineWidth;
-        previewLine.positionCount = 4;
-        previewLine.SetPositions(new[] { vv0, vv1, vv2, vv3 });
+        DrawArrow(arrowX, arrowXHead, arrowXText, P1, P1_to_X, c, $"{dx:0.##} m");
+        DrawArrow(arrowZ, arrowZHead, arrowZText, P1, P1_to_Z, c, $"{dz:0.##} m");
 
-        // Fill
-        var verts = new Vector3[] { vv0, vv1, vv2, vv3 };
-        var tris  = new int[] { 0, 1, 2, 0, 2, 3 };
+        if (showDiagonalArrow)
+        {
+            if (arrowDText) arrowDText.gameObject.SetActive(true);
+            DrawArrow(arrowD, arrowDHead, arrowDText, P1, P2, c, $"{dd:0.##} m");
+        }
+        else
+        {
+            if (arrowD) arrowD.enabled = false;
+            if (arrowDHead) arrowDHead.enabled = false;
+            if (arrowDText) arrowDText.gameObject.SetActive(false);
+        }
+    }
+    void DrawArrow(LineRenderer body, LineRenderer head, TextMesh tmesh,
+                   Vector3 a, Vector3 b, Color c, string txt)
+    {
+        if (!body || !head || !tmesh) return;
 
-        previewFillMesh.Clear();
-        previewFillMesh.vertices = verts;
-        previewFillMesh.triangles = tris;
-        previewFillMesh.RecalculateNormals();
-        previewFillMesh.RecalculateBounds();
+        body.enabled = true;
+        body.startColor = c; body.endColor = c;
+        body.widthMultiplier = arrowWidth;
+        body.positionCount = 2;
+        body.SetPosition(0, a);
+        body.SetPosition(1, b);
+        SetMatColor(body.material, c);
 
-        if (previewFillMR.sharedMaterial == null) previewFillMR.sharedMaterial = previewFillMat;
-        if (previewFillMR.sharedMaterial.HasProperty("_Color"))
-            previewFillMR.sharedMaterial.color = ok ? previewOKFill : previewBadFill;
+        Vector3 dir = (b - a); dir.y = 0f;
+        if (dir.sqrMagnitude < 1e-6f) { head.enabled = false; tmesh.text = ""; return; }
+        dir.Normalize();
+
+        Vector3 wingL = (Quaternion.Euler(0f, +25f, 0f) * -dir) * arrowHeadSize;
+        Vector3 wingR = (Quaternion.Euler(0f, -25f, 0f) * -dir) * arrowHeadSize;
+
+        head.enabled = true;
+        head.startColor = c; head.endColor = c;
+        head.widthMultiplier = arrowWidth;
+        head.positionCount = 3;
+        head.SetPosition(0, b);
+        head.SetPosition(1, b + wingL);
+        head.SetPosition(2, b + wingR);
+        SetMatColor(head.material, c);
+
+        // ===== text song song mũi tên, luôn nằm TRÊN line và không bị mirror =====
+        tmesh.color = c;
+        tmesh.text = txt;
+        tmesh.anchor = TextAnchor.MiddleCenter;
+
+        Vector3 mid = (a + b) * 0.5f;
+
+        // pháp tuyến trái của mũi tên trong XZ
+        Vector3 n = Vector3.Cross(Vector3.up, dir).normalized;
+
+        // ép lên phía +Z để "trên" màn (nếu đang hướng -Z thì đảo lại)
+        if (Vector3.Dot(n, Vector3.forward) < 0f) n = -n;
+
+        float sideOffset = Mathf.Max(arrowWidth * 4f, 0.15f);
+        float lift = Mathf.Max(arrowWidth * 0.6f, 0.015f);
+
+        Quaternion rot = Quaternion.LookRotation(-Vector3.up, n);
+
+        tmesh.transform.SetPositionAndRotation(mid + n * sideOffset + Vector3.up * lift, rot);
+
+        // luôn render trên line
+        var mr = tmesh.GetComponent<MeshRenderer>();
+        if (mr)
+        {
+            var m = mr.material;
+            m.renderQueue = 4000;
+            if (m.HasProperty("_ZTest")) m.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+            if (m.HasProperty("_ZWrite")) m.SetInt("_ZWrite", 0);
+            mr.sortingOrder = Mathf.Max(body.sortingOrder, head.sortingOrder) + 10;
+        }
     }
 
     // ===== Tạo room khi thả chuột =====
@@ -291,7 +380,7 @@ public class CreateRoomOnFloor : MonoBehaviour
     {
         if (Vector3.Distance(p1, p2) < 0.01f)
         {
-            Debug.LogWarning("[CreateRoom] Kéo quá ngắn → bỏ qua.");
+            Debug.LogWarning("[CreateRoom] Kéo quá ngắn -> bỏ qua.");
             ResetDragState(keepPlacing: true);
             return;
         }
@@ -301,7 +390,6 @@ public class CreateRoomOnFloor : MonoBehaviour
         float minZ = Mathf.Min(p1.z, p2.z);
         float maxZ = Mathf.Max(p1.z, p2.z);
 
-        // đặt “tầng” cho room bằng roomIndex
         float baseRoomY = roomIndex * layerStepY;
 
         Vector3 v0 = new(minX, baseRoomY, minZ);
@@ -317,15 +405,14 @@ public class CreateRoomOnFloor : MonoBehaviour
 
         if (!allOK)
         {
-            Debug.LogError("[CreateRoom] Một hoặc nhiều đỉnh KHÔNG thuộc RoomFloor → không tạo phòng.");
+            Debug.LogError("[CreateRoom] Một hoặc nhiều đỉnh KHÔNG thuộc RoomFloor -> không tạo phòng.");
             ResetDragState(keepPlacing: true);
             return;
         }
 
-        // Lấy floor tương ứng
         if (!TryGetFloorFromRoot(floorRoot, out var floor) || floor == null)
         {
-            Debug.LogError("[CreateRoom] Không tìm ra Floor từ floorRoot → huỷ tạo phòng.");
+            Debug.LogError("[CreateRoom] Không tìm ra Floor từ floorRoot -> huỷ tạo phòng.");
             ResetDragState(keepPlacing: true);
             return;
         }
@@ -342,56 +429,59 @@ public class CreateRoomOnFloor : MonoBehaviour
         Vector3 v2_show = new(v2.x, v2.y + roomWallLift, v2.z);
         Vector3 v3_show = new(v3.x, v3.y + roomWallLift, v3.z);
 
-        // === Tạo room trên floor ===
-        var room = new Room(floor)   // constructor này sẽ gán room.floorID = floor.ID
+        // Tạo room
+        var room = new Room(floor)
         {
             checkpoints = new List<Vector2> { l0, l1, l2, l3 },
             extraCheckpoints = new List<Vector2>(),
             wallLines = new List<WallLine>
-        {
-            new WallLine(v0_show, v1_show, LineType.Wall),
-            new WallLine(v1_show, v2_show, LineType.Wall),
-            new WallLine(v2_show, v3_show, LineType.Wall),
-            new WallLine(v3_show, v0_show, LineType.Wall),
-        }
+            {
+                new WallLine(v0_show, v1_show, LineType.Wall),
+                new WallLine(v1_show, v2_show, LineType.Wall),
+                new WallLine(v2_show, v3_show, LineType.Wall),
+                new WallLine(v3_show, v0_show, LineType.Wall),
+            }
         };
 
-        room.center = GeoUtil.Centroid(room.checkpoints);
-        // Lưu storage
-        RoomStorage.UpdateOrAddRoom(room);
-        floor.RegisterRoom(room); // gắn room.ID vào floor.roomIDs
-        
-        GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
-        floorGO.transform.SetPositionAndRotation(new Vector3(0f, baseRoomY, 0f), Quaternion.identity);
-        var meshCtrl = floorGO.AddComponent<RoomMeshController>();
-        meshCtrl.Initialize(room.ID);
-        meshCtrl.GenerateMesh(room.checkpoints);
+        // Hướng mặc định Bắc
 
-        // Gắn vào CheckpointManager
+        checkPointManager.DrawWallLineByRoom(room);
+
+        room.center = GeoUtil.Centroid(room.checkpoints);
+        RoomStorage.UpdateOrAddRoom(room);
+        floor.RegisterRoom(room);
+
+        checkPointManager.CreateRoomMeshCtrl(room);
+        //GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
+        //floorGO.transform.SetPositionAndRotation(new Vector3(0f, baseRoomY, 0f), Quaternion.identity);
+        //var meshCtrl = floorGO.AddComponent<RoomMeshController>();
+        //meshCtrl.Initialize(room.ID);
+        //meshCtrl.GenerateMesh(room.checkpoints);
+
         if (checkPointManager != null)
         {
-            checkPointManager.RoomFloorMap ??= new Dictionary<string, GameObject>();
-            checkPointManager.RoomFloorMap[room.ID] = floorGO;
+            //checkPointManager.RoomFloorMap ??= new Dictionary<string, GameObject>();
+            //checkPointManager.RoomFloorMap[room.ID] = floorGO;
 
-            var loopGO = new List<GameObject>();
-            if (checkPointManager.checkpointPrefab != null)
-            {
-                loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v0_show, Quaternion.identity));
-                loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v1_show, Quaternion.identity));
-                loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v2_show, Quaternion.identity));
-                loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v3_show, Quaternion.identity));
-            }
+            //var loopGO = new List<GameObject>();
+            //if (checkPointManager.checkpointPrefab != null)
+            //{
+            //    loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v0_show, Quaternion.identity));
+            //    loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v1_show, Quaternion.identity));
+            //    loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v2_show, Quaternion.identity));
+            //    loopGO.Add(Instantiate(checkPointManager.checkpointPrefab, v3_show, Quaternion.identity));
+            //}
 
-            checkPointManager.loopMappings ??= new List<LoopMap>();
-            checkPointManager.loopMappings.Add(new LoopMap(room.ID, loopGO));
-            checkPointManager.AllCheckpoints.Add(loopGO);
 
+            //checkPointManager.loopMappings ??= new List<LoopMap>();
+            //checkPointManager.loopMappings.Add(new LoopMap(room.ID, loopGO));
+            //checkPointManager.AllCheckpoints.Add(loopGO);
+            checkPointManager.AddGameObjectCheckPointToGlobalVariable(room);
             checkPointManager.RedrawAllRooms();
         }
 
         Debug.Log($"[CreateRoom] Tạo room {room.ID} thuộc floor {floor.ID} | 4 đỉnh: {l0}, {l1}, {l2}, {l3}");
 
-        // Reset
         ResetDragState(keepPlacing: false);
         placingActive = false;
         if (CreateRoomButton != null)
@@ -400,6 +490,13 @@ public class CreateRoomOnFloor : MonoBehaviour
             colors.normalColor = Color.white;
             CreateRoomButton.colors = colors;
         }
+
+        UndoRedoController.Instance.AddToUndo(new CreateRoomCommand(room.ID));
+    }
+
+    public void CreateRoomByRoomData(Room room)
+    {
+        
     }
 
     private void ResetDragState(bool keepPlacing)
@@ -415,15 +512,10 @@ public class CreateRoomOnFloor : MonoBehaviour
         if (firstMarker) Destroy(firstMarker);
         firstMarker = null;
 
-        if (!keepPlacing)
-        {
-            // tắt preview hẳn
-            DestroyPreviewImmediate();
-        }
+        if (!keepPlacing) DestroyPreviewImmediate();
     }
 
     // ==================== Floor polygon-based checks ====================
-
     private Floor FindFloorByID(string id)
     {
         if (string.IsNullOrEmpty(id)) return null;
@@ -437,7 +529,6 @@ public class CreateRoomOnFloor : MonoBehaviour
         floor = null;
         if (!floorRoot) return false;
 
-        // Ưu tiên lấy từ FloorMeshController (đã có floorID)
         var fmc = floorRoot.GetComponent<FloorMeshController>() ?? floorRoot.GetComponentInChildren<FloorMeshController>();
         if (fmc != null && !string.IsNullOrEmpty(fmc.floorID))
         {
@@ -445,7 +536,6 @@ public class CreateRoomOnFloor : MonoBehaviour
             if (floor != null) return true;
         }
 
-        // ID từ tên "Floor_<ID>" hoặc "RoomFloor_<ID>"
         string name = floorRoot.name;
         int idx = name.LastIndexOf('_');
         if (idx >= 0 && idx + 1 < name.Length)
@@ -495,7 +585,6 @@ public class CreateRoomOnFloor : MonoBehaviour
         return false;
     }
 
-    // Kiểm tra 1 điểm world có thuộc Floor này không (dựa polygon), fallback raycast nếu thiếu dữ liệu
     private bool IsPointOnThisFloorRoot(Vector3 worldPoint, Transform floorRoot,
                                         float boundaryEps = 0.01f,
                                         float rayFallbackHeight = 3f)
@@ -509,7 +598,6 @@ public class CreateRoomOnFloor : MonoBehaviour
             return false;
         }
 
-        // Fallback: raycast xuống và kiểm ancestor = floorRoot
         Vector3 start = worldPoint + Vector3.up * rayFallbackHeight;
         var hits = Physics.RaycastAll(new Ray(start, Vector3.down), rayFallbackHeight * 2f, floorMask);
         for (int i = 0; i < hits.Length; i++)
@@ -519,5 +607,123 @@ public class CreateRoomOnFloor : MonoBehaviour
                 return true;
         }
         return false;
+    }
+
+    private bool TryGetMouseOnAnyFloorClamped(out Vector3 pClamped, out Transform floorRoot)
+    {
+        pClamped = default;
+        floorRoot = null;
+
+        var cam = Camera.main;
+        if (cam == null) return false;
+
+        if (!MouseToPlaneY(0f, out var onPlane)) return false;
+
+        var candidates = GameObject.FindGameObjectsWithTag("RoomFloor");
+        if (candidates == null || candidates.Length == 0) return false;
+
+        float bestScore = float.PositiveInfinity;
+        Transform bestRoot = null;
+        Vector3 bestP = default;
+
+        foreach (var go in candidates)
+        {
+            var root = go.transform;
+            float y = root.position.y;
+
+            var snapped = ClampPointToFloor(new Vector3(onPlane.x, y, onPlane.z), root, y);
+
+            float score = (new Vector2(onPlane.x, onPlane.z) - new Vector2(snapped.x, snapped.z)).sqrMagnitude;
+
+            if (score < bestScore)
+            {
+                bestScore = score;
+                bestRoot = root;
+                bestP = snapped;
+            }
+        }
+
+        if (bestRoot != null)
+        {
+            floorRoot = bestRoot;
+            pClamped = bestP;
+            return true;
+        }
+        return false;
+    }
+
+    private Vector3 ClampPointToFloor(Vector3 worldPoint, Transform floorRoot, float defaultY)
+    {
+        if (TryGetFloorFromRoot(floorRoot, out var floor) &&
+            floor.checkpoints != null && floor.checkpoints.Count >= 3)
+        {
+            Vector2 p = new Vector2(worldPoint.x, worldPoint.z);
+
+            if (PointInPolygon2D(p, floor.checkpoints) || OnBoundary2D(p, floor.checkpoints, 1e-4f))
+                return new Vector3(worldPoint.x, defaultY, worldPoint.z);
+
+            float bestDist2 = float.PositiveInfinity;
+            Vector2 best = p;
+
+            for (int i = 0, n = floor.checkpoints.Count; i < n; i++)
+            {
+                var a = floor.checkpoints[i];
+                var b = (i + 1 < n) ? floor.checkpoints[i + 1] : floor.checkpoints[0];
+
+                Vector2 ab = b - a;
+                float ab2 = Vector2.Dot(ab, ab);
+                Vector2 cand;
+                if (ab2 < 1e-10f)
+                {
+                    cand = a;
+                }
+                else
+                {
+                    float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab2);
+                    cand = a + t * ab;
+                }
+
+                float d2 = (p - cand).sqrMagnitude;
+                if (d2 < bestDist2)
+                {
+                    bestDist2 = d2;
+                    best = cand;
+                }
+            }
+
+            return new Vector3(best.x, defaultY, best.y);
+        }
+
+        var col = floorRoot ? (floorRoot.GetComponent<Collider>() ?? floorRoot.GetComponentInChildren<Collider>()) : null;
+        if (col != null)
+        {
+            var cp = col.ClosestPoint(worldPoint);
+            return new Vector3(cp.x, defaultY, cp.z);
+        }
+
+        return new Vector3(worldPoint.x, defaultY, worldPoint.z);
+    }
+
+    private bool MouseToPlaneY(float planeY, out Vector3 hit)
+    {
+        hit = default;
+        var cam = Camera.main; if (cam == null) return false;
+        var ray = cam.ScreenPointToRay(Input.mousePosition);
+        var plane = new Plane(Vector3.up, new Vector3(0f, planeY, 0f));
+        if (plane.Raycast(ray, out float t))
+        {
+            hit = ray.GetPoint(t);
+            return true;
+        }
+        return false;
+    }
+
+    // ===== util: set màu material (URP/Built-in) =====
+    static void SetMatColor(Material m, Color c)
+    {
+        if (!m) return;
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);   // URP/Lit/Unlit
+        else if (m.HasProperty("_Color")) m.SetColor("_Color", c);      // Built-in/Unlit
+        else if (m.HasProperty("_TintColor")) m.SetColor("_TintColor", c);
     }
 }

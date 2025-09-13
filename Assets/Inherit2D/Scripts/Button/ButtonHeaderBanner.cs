@@ -40,7 +40,7 @@ public class ButtonHeaderBanner : MonoBehaviour
         }
         else if (!gameManager.guiCanvasManager.configCanvas.activeSelf && gameManager.itemIndex == null)
         {
-            // Không có item nào được chọn ➜ Show ErrorPanel
+            // Không có item nào được chọn -> Show ErrorPanel
             if (ErrorPanel != null)
                 ErrorPanel.SetActive(true);
         }

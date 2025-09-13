@@ -1,4 +1,6 @@
+using DG.Tweening.Core.Easing;
 using iTextSharp.text.pdf;
+using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -17,14 +19,13 @@ public enum FurnitureState
     Select,
     UnSelect
 }
-
 public partial class FurnitureItem : MonoBehaviour
 {
     public static bool OnDragFurniture = false;
     public static bool OnDragPoint = false;
 
     private static Camera mainCam;
-
+    public static DrawingInstanced SnapShotTemp;
     // public const float LIMIT_SIZE = 0.5f;
     public float minSizeX
     {
@@ -35,7 +36,7 @@ public partial class FurnitureItem : MonoBehaviour
     {
         get => data.size.lengthMinMax.x / 2;
     }
-
+    [SerializeField] private Vector2 hitBoxSizeBuffer = Vector2.one;
     [Header("Cấu hình để phân biệt cửa/cửa sổ và đồ nội thất")]
     [SerializeField] private bool allowSnapToWall = false; // có thể gắn vào tường
     [SerializeField] private bool allowShowAllCheckPoint = false; // hiển thị 1 phần check point (chỉ bật cho cửa, cửa sổ )
@@ -46,7 +47,6 @@ public partial class FurnitureItem : MonoBehaviour
     public LineType lineType;
     [Header("References")]
     public DrawingInstanced data;
-
     public Transform modelContainer;
     public SpriteRenderer model2D;
     public Vector2 resizeRatio = Vector2.one;
@@ -69,7 +69,6 @@ public partial class FurnitureItem : MonoBehaviour
 
     [Header("Prefabs")]
     [SerializeField] private LineRenderer lineRendererPrefab;
-
     [SerializeField] private TextMeshPro textMeshProPrefab;
 
     public FurnitureMergeToWall furnitureMergeToWall;
@@ -175,8 +174,18 @@ public partial class FurnitureItem : MonoBehaviour
             bottomLeftPoint.gameObject,
             bottomRightPoint.gameObject);
 
-        var topTextDistance = new TextDistance(CreateTextMeshPro(), topLine);
-        var rightTextDistance = new TextDistance(CreateTextMeshPro(), rightLine);
+        TextDistance topTextDistance = null;
+        TextDistance rightTextDistance = null;
+        if (lineType == LineType.None)
+        {
+            topTextDistance = new TextDistance(CreateTextMeshPro(), topLine);
+            rightTextDistance = new TextDistance(CreateTextMeshPro(), rightLine);
+        }
+        else
+        {
+            topTextDistance = new TextDistance(CreateTextMeshPro(), topLine);
+        }
+
 
         IUpdateWhenMoves = new IUpdateWhenMove[]
             { topLine, leftLine, rightLine, bottomLine, topTextDistance, rightTextDistance };
@@ -240,19 +249,20 @@ public partial class FurnitureItem : MonoBehaviour
         // tính toán vị trí của check point dựa theo bound
         foreach (var item in pointsArray)
         {
-            furnitureVisuals.Recalculator(item.transform, item.checkpointType, bounds, new Vector3(0, 0.1f, 0));
+            furnitureVisuals.Recalculator(item.transform, item.checkpointType, bounds, new Vector3(0, 0, 0));
         }
 
         // Cập nhật point dùng để xoay object 
         float z = bounds.size.y * 3 * FurnitureManager.Instance.ScaleByCameraZoom.Offset;
         z = Mathf.Clamp(z, 0.25f, float.MaxValue);
-        Vector3 offset = new Vector3(0, 0.1f, -z);
+        Vector3 offset = new Vector3(0, 0, -z);
         furnitureVisuals.Recalculator(rotatePoint.transform, CheckpointType.Bottom, bounds, offset);
 
         // update line
         if (IUpdateWhenMoves == null) return;
         foreach (var item in IUpdateWhenMoves)
         {
+            if(item == null) continue;
             item.Update();
         }
     }
@@ -271,6 +281,7 @@ public partial class FurnitureItem : MonoBehaviour
         if (IUpdateWhenMoves == null) return;
         foreach (var item in IUpdateWhenMoves)
         {
+            if(item == null) continue;
             item.UpdateWhenCameraZoom();
         }
 
@@ -293,7 +304,7 @@ public partial class FurnitureItem : MonoBehaviour
         ResizeAxis resizeAxis = dragPoint.GetReSizeAxis();
         Quaternion rotation = Quaternion.Euler(0f, currentRotation.y, 0f);
         Vector3 originalCenter = bounds.center;
-
+        originalCenter.y = 5;
         // Chuyển vị trí drag và anchor về "local chưa xoay" (unrotated local space)
         Vector3 dragLocalUnrot = Quaternion.Inverse(rotation) * (localPoint - originalCenter);
         Vector3 anchorLocalUnrot = Quaternion.Inverse(rotation) * (anchorPoint.localPosition - originalCenter);
@@ -334,12 +345,11 @@ public partial class FurnitureItem : MonoBehaviour
         // --- Chuyển center trở về không gian local (có xoay) và cập nhật bounds ---
         bounds.center = originalCenter + rotation * centerLocalUnrot;
         bounds.size = sizeLocal;
-
         // cập nhật width/height nếu dùng chúng trực tiếp
         UpdateWorldSizeFromLocal();
 
         // Sau khi resize xong, cập nhật hiển thị / điểm:
-        modelContainer.transform.localPosition = bounds.center;
+        modelContainer.transform.localPosition = new Vector3(bounds.center.x, modelContainer.transform.localPosition.y, bounds.center.z);
         SetRotation(currentRotation.y);
     }
 
@@ -550,7 +560,6 @@ public partial class FurnitureItem : MonoBehaviour
     public void MoveAnchorToPositionWithoutChangeShape(CheckpointType type, Vector3 worldPosition)
     {
 
-
         var targetAnchor = GetFurniturePoint(type);
         var furnitureWorldPosition = GetWorldPosition();
         Vector3 anchorWorldPos = targetAnchor.transform.position;
@@ -565,14 +574,13 @@ public partial class FurnitureItem : MonoBehaviour
         Vector3 newCenterLocal = transform.InverseTransformPoint(newCenterWorld);
 
         var localPosition = newCenterLocal;
-        var debugPoint = FurnitureManager.Instance.debugPoint;
-        localPosition.y = modelContainer.transform.localPosition.y;
 
         if (isUsingCenterPosToSnap)
         {
-            localPosition = transform.InverseTransformPoint(worldPosition);
+            var convertPositon = transform.InverseTransformPoint(worldPosition);
+            localPosition = convertPositon;
         }
-
+        localPosition.y = 0;
         // debugPoint.transform.SetParent(modelContainer.transform.parent);
         // debugPoint.transform.localPosition = actualPosition;
 
@@ -596,11 +604,29 @@ public partial class FurnitureItem : MonoBehaviour
         bounds.size = size;
     }
 
+    public FurnitureItem InitClone()
+    {
+        //FurnitureManager.Instance.RemoveFromRuntime(this);
+        FurnitureManager.Instance.SelectFurniture(null);
+        Vector3 position = transform.position + new Vector3(length, 0, width);
+        var furniture = FurnitureManager.Instance.SpawnFurniture(this.data.itemTemplateID, position);
+        furniture.FetchData(this.data);
+        furniture.data.InitNewInstanceID();
+        return furniture;
+    }
+
     public void Destroy()
     {
         Debug.Log("Destroy furniture");
+
+
         FurnitureManager.Instance.RemoveFromRuntime(this);
         FurnitureManager.Instance.SelectFurniture(null);
         Destroy(gameObject);
+    }
+
+    public void CreareEditCommandBySnapShot()
+    {
+        UndoRedoController.Instance.AddToUndo(new EditItemCommand(SnapShotTemp));
     }
 }

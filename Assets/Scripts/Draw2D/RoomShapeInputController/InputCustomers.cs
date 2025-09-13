@@ -1,20 +1,23 @@
 using System.Globalization;
-using System.Collections;               
-using System.Reflection;   
+using System.Collections;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 
-public class DimensionOkHandler : MonoBehaviour
+public class InputCustomers : MonoBehaviour
 {
     [Header("Refs")]
     private RoomInfoDisplay roomInfoDisplay;
     private CheckpointManager checkpointManager;
     private DragFromButtonSpawnFloor spawnFloor;
-    [SerializeField] private TMP_InputField inputLength;
-    [SerializeField] private TMP_InputField inputWidth;
-    [SerializeField] private Button buttonOk;
+    TMP_InputField inputLength;
+    TMP_InputField inputWidth;
+    TMP_InputField thicknessInput;
+    //[SerializeField] private Button buttonOk;
+
+    [SerializeField] FloorSettingPanel floorSettingPanel;
 
     [Header("Rebuild Settings")]
     [Tooltip("Độ nhô của line/marker so với nền phòng khi rebuild (fallback nếu không tìm thấy CreateRoomOnFloor).")]
@@ -22,17 +25,33 @@ public class DimensionOkHandler : MonoBehaviour
 
     private void Awake()
     {
-        if (!roomInfoDisplay)    roomInfoDisplay   = FindFirstObjectByType<RoomInfoDisplay>();
-        if (!checkpointManager)  checkpointManager = FindFirstObjectByType<CheckpointManager>();
-        if (!spawnFloor)  spawnFloor = FindFirstObjectByType<DragFromButtonSpawnFloor>();
-        if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedRoom);
-        if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedFloor);
+        if (!roomInfoDisplay) roomInfoDisplay = FindFirstObjectByType<RoomInfoDisplay>();
+        if (!checkpointManager) checkpointManager = FindFirstObjectByType<CheckpointManager>();
+        if (!spawnFloor) spawnFloor = FindFirstObjectByType<DragFromButtonSpawnFloor>();
+        //if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedRoom);
+        //if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedFloor);
+
+        floorSettingPanel.OnApplyAction += ApplyDimensionsForSelectedRoom;
+        floorSettingPanel.OnApplyAction += ApplyDimensionsForSelectedFloor;
+
+    }
+    private void Start()
+    {
+        //Invoke(nameof(Find), 0.);
+        Find();
+    }
+
+    private void Find()
+    {
+        inputLength = floorSettingPanel.GetParameterInputField(IntParameterType.Height).InputField;
+        inputWidth = floorSettingPanel.GetParameterInputField(IntParameterType.Width).InputField;
+        thicknessInput = floorSettingPanel.GetParameterInputField(IntParameterType.Thickness).InputField;
     }
 
     private void OnDestroy()
     {
-        if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedRoom);
-        if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedFloor);
+        //if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedRoom);
+        //if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedFloor);
     }
 
     // ROOM đang chọn
@@ -66,25 +85,38 @@ public class DimensionOkHandler : MonoBehaviour
         Debug.Log($"[DimOK] Editing ROOM ID = {roomId}");
         RecreateRoomWithInputDims(roomId);
     }
-    
+    private (float, float, bool) GetWidthLengthFromInput()
+    {
+        if (inputLength == null || inputWidth == null)
+        {
+            Debug.LogWarning("[DimOK] Không tìm thấy input Length/Width trong FloorSettingPanel.");
+            return (0, 0, false);
+        }
+        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
+        {
+            Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng cho FLOOR.");
+            return (0, 0, false);
+        }
+        return (W, L, true);
+    }
+
+
     // Update dims cho ROOM
     private void RecreateRoomWithInputDims(string roomId)
     {
-        // Đọc L & W
-        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
-        {
-            Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng.");
-            return;
-        }
+        var (W, L, ok) = GetWidthLengthFromInput();
+        if (!ok) return;
 
         // Lấy room
         Room room = RoomStorage.GetRoomByID(roomId);
+        UndoRedoController.Instance.AddToUndo(new EditRoomCommand(new Room(room)));
         if (room == null)
         {
             Debug.LogWarning($"[DimOK] Không tìm thấy ROOM với ID={roomId}");
             return;
         }
-
+        float thickness = thicknessInput != null && TryParse(thicknessInput.text, out float t) ? t : room.thickness;
+        room.thickness = thickness;
         // Tính centroid hiện có
         Vector2 centroid = ComputeCentroid2D(room.checkpoints);
 
@@ -94,14 +126,14 @@ public class DimensionOkHandler : MonoBehaviour
         float baseY = 2f * layerStep;                        // index = 2
         float roomWallLift = (cr != null) ? cr.roomWallLift : fallbackRoomWallLift;
 
-        // Ghi lại polygon LxW quanh centroid (axis-aligned theo world)
+        // Ghi lại polygon LxW quanh centroid (GIỮ THỨ TỰ NHƯ KHI TẠO)
         float hx = L * 0.5f, hy = W * 0.5f;
         var rect = new List<Vector2>(4)
         {
-            new Vector2(centroid.x - hx, centroid.y - hy),
-            new Vector2(centroid.x + hx, centroid.y - hy),
-            new Vector2(centroid.x + hx, centroid.y + hy),
-            new Vector2(centroid.x - hx, centroid.y + hy)
+            new Vector2(centroid.x - hx, centroid.y - hy), // v0 
+            new Vector2(centroid.x - hx, centroid.y + hy), // v1 
+            new Vector2(centroid.x + hx, centroid.y + hy), // v2 
+            new Vector2(centroid.x + hx, centroid.y - hy)  // v3 
         };
         room.checkpoints = rect;
 
@@ -167,13 +199,17 @@ public class DimensionOkHandler : MonoBehaviour
             }
         }
 
+        
+
         // Redraw để line được vẽ lại theo wallLines mới
         checkpointManager.RedrawAllRooms();
         FurnitureManager.Instance.CheckWallLineValidInRoom();
         FurnitureManager.Instance.TrySnapToNearestWall();
         Debug.Log($"[DimOK] UPDATED room {roomId}: points+lines+mesh (index=2) -> {L}x{W}, baseY={baseY}, lift={roomWallLift}");
+        floorSettingPanel.ResetAllParameters();
+
     }
-    
+
     private List<GameObject> TryGetCheckpointListForRoom(string id)
     {
         if (checkpointManager == null || checkpointManager.loopMappings == null) return null;
@@ -213,14 +249,29 @@ public class DimensionOkHandler : MonoBehaviour
     // Update dims cho Floor
     private void RecreateFloorWithInputDims(string floorId)
     {
+        var target = FindFloor(floorId);
+        if (target == null) return;
+        var cloneOfTarget = Floor.Clone(target);
+        float prevousWidth = target.width;
+        float previousLength = target.length;
+        // chú ý: length = chiều dọc (Z), width = chiều ngang (X)
         // Đọc L & W
-        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
-        {
-            Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng cho FLOOR.");
-            return;
-        }
 
-        // Tìm Floor trong FloorStorage
+        var (W, L, ok) = GetWidthLengthFromInput();
+
+        if (!ok) return;
+
+        // W và L bị đảo ngươc4
+        if (TryUpdateFloor(target, L, W))
+        {
+            UndoRedoController.Instance.AddToUndo(new EditFloorCommand(cloneOfTarget));
+            floorSettingPanel.ResetAllParameters();
+        }
+    }
+
+
+    public Floor FindFloor(string floorId)
+    {
         Floor target = null;
         if (FloorStorage.floors != null)
         {
@@ -233,12 +284,21 @@ public class DimensionOkHandler : MonoBehaviour
         if (target == null)
         {
             Debug.LogWarning($"[DimOK] Không tìm thấy FLOOR với ID={floorId}");
-            return;
+            return null;
         }
+        return target;
+    }
+
+    public bool TryUpdateFloor(Floor target, float W, float L)
+    {
+        // Tìm Floor trong FloorStorage
+        string floorId = target.ID;
 
         // Tính centroid hiện có
         Vector2 centroid = ComputeCentroid2D(target.checkpoints);
-
+        // Input của hàm bị ngược lúc truyền vào S
+        target.width = L;
+        target.length = W;
         // Ghi lại polygon L×W (axis-aligned theo world) vào storage
         float hx = L * 0.5f, hy = W * 0.5f;
         target.checkpoints = new List<Vector2>(4)
@@ -258,8 +318,10 @@ public class DimensionOkHandler : MonoBehaviour
         {
             Debug.LogWarning("[DimOK] spawnFloor NULL — không thể vẽ lại points/line. Hãy đảm bảo DragFromButtonSpawnFloor có trong scene.");
         }
+        Debug.Log($"[DimOK] UPDATED FLOOR {floorId}: points + line + mesh -> {L}x{W}, area={L * W}");
+        CameraResizeByFloor.Instance.Resize(target.center, target.checkpoints);
 
-        Debug.Log($"[DimOK] UPDATED FLOOR {floorId}: points + line + mesh -> {L}x{W}, area={L*W}");
+        return true;
     }
 
     private static string TryReadStringId(object obj)
@@ -348,7 +410,7 @@ public class DimensionOkHandler : MonoBehaviour
             var p = poly[i];
             var q = poly[(i + 1) % n];
             float cr = p.x * q.y - q.x * p.y;
-            A  += cr;
+            A += cr;
             cx += (p.x + q.x) * cr;
             cy += (p.y + q.y) * cr;
         }

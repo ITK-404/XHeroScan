@@ -42,9 +42,9 @@ public static class AreaWallCalculator
     {
         switch (unit)
         {
-            case "cm": return area * 10000f;  // m² → cm²
-            case "inch": return area * 1550f;  // m² → inch²
-            case "ft": return area * 10.7639f; // m² → ft²
+            case "cm": return area * 10000f;  // m² -> cm²
+            case "inch": return area * 1550f;  // m² -> inch²
+            case "ft": return area * 10.7639f; // m² -> ft²
             case "m":
             default: return area; // Mặc định là mét vuông
         }

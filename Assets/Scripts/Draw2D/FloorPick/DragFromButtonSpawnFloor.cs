@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
 {
+    public static DragFromButtonSpawnFloor Instance;
     [Header("Placement params")]
     public float width = 20f;
     public float depth = 5f;
@@ -22,8 +23,12 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     public float layerStepY = 0.002f; // mỗi index lệch 2mm
     public float lineLift = 0.0005f; // line nổi hơn mesh 0.5mm
     public float labelLift = 0.01f;   // label nổi hơn mesh 1cm
+    
+[SerializeField] private GameObject ButtomPanel;
+[SerializeField] private bool requireExitPanelToActivate = true;
 
     private bool isDragging = false;
+    private bool dragActivated = false;
     private float yaw = 0f;
     private Vector3 lastHitPos = Vector3.zero;
 
@@ -56,6 +61,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     private GameObject[] edgeHandles = new GameObject[4]; // AB,BD,DE,EA
 
     private string currentFloorId;
+    [SerializeField]private bool autoSizeByDevice = true; // bật tắt chế độ tìm theo màn hình.
 
     // đánh dấu handle
     private class HandleTag : MonoBehaviour
@@ -67,12 +73,34 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     [Header("Flow")]
     public bool editAfterPlace = true;   // false: vẽ xong là dọn sạch
 
+    private Floor previousFloor;
+
     private float BaseY(int index) => index * layerStepY;
     // Mỗi floor một GO chứa preview/handles/labels
     private static readonly Dictionary<string, GameObject> s_floorVisuals = new();
 
+    private RectTransform _bottomPanelRect;
+    private Camera UiCamForPanel {
+        get {
+            var canvas = ButtomPanel ? ButtomPanel.GetComponentInParent<Canvas>() : null;
+            if (canvas == null) return null; // overlay => trả null là đúng
+            return canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null
+                : (canvas.worldCamera != null ? canvas.worldCamera : Camera.main);
+        }
+    }
+
+    private bool IsInsideBottomPanel(Vector2 screenPos, Camera eventCam = null)
+    {
+        if (!_bottomPanelRect) _bottomPanelRect = ButtomPanel ? ButtomPanel.GetComponent<RectTransform>() : null;
+        if (!_bottomPanelRect) return false;
+        // Ưu tiên camera từ event data nếu có, fallback UiCamForPanel
+        var cam = eventCam != null ? eventCam : UiCamForPanel;
+        return RectTransformUtility.RectangleContainsScreenPoint(_bottomPanelRect, screenPos, cam);
+    }
+
     private void Awake()
     {
+        Instance = this;
         // Camera tối thiểu
         if (Camera.main == null)
         {
@@ -149,7 +177,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         // bắt chọn handle
         if (!isMovingHandle && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
         {
-            TryPickHandleUnderMouse();
+            // TryPickHandleUnderMouse();
         }
 
         if (!isMovingHandle || !hasRect) return;
@@ -165,7 +193,6 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         if (!TryMouseOnGround(out Vector3 p)) return;
 
-        // đưa p về local
         Quaternion inv = Quaternion.Euler(0f, -rectYaw, 0f);
         Vector3 local = inv * (p - rectCenter);
         float minHalf = 0.05f;
@@ -193,19 +220,88 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         SyncLastFloorDataToCurrentRect();
     }
 
+    private void ApplySizeByDevice()
+    {
+        if (!autoSizeByDevice) return;
+
+        int w = Screen.width;
+        int h = Screen.height;
+
+        // chuẩn hóa: sw = cạnh ngắn, sh = cạnh dài
+        int sw = Mathf.Min(w, h);
+        int sh = Mathf.Max(w, h);
+
+        // match tuyệt đối
+        if ((sw == 1170 && sh == 2532) || (sw == 2532 && sh == 1170))
+        {
+            width = 5f; depth = 20f; return;
+        }
+        if ((sw == 1812 && sh == 2176) || (sw == 2176 && sh == 1812))
+        {
+            width = 20f; depth = 5f; return;
+        }
+
+        // match xấp xỉ (±4%)
+        float tol = 0.04f;
+        bool approxPhone1170x2532 =
+            Mathf.Abs(sw - 1170) / 1170f <= tol && Mathf.Abs(sh - 2532) / 2532f <= tol;
+        bool approxTablet2176x1812 =
+            Mathf.Abs(sw - 1812) / 1812f <= tol && Mathf.Abs(sh - 2176) / 2176f <= tol;
+
+        if (approxPhone1170x2532)
+        {
+            width = 5f; depth = 20f; return;
+        }
+        if (approxTablet2176x1812)
+        {
+            width = 20f; depth = 5f; return;
+        }
+
+        // Fallback tổng quát:
+        // - Màn rất “cao” (aspect >= 1.8) hoặc cạnh ngắn <= 1280 => coi như phone: 5x20
+        // - Còn lại coi như tablet/large: 20x5
+        float aspect = (float)sh / (float)sw;
+        if (aspect >= 1.8f || sw <= 1280)
+        {
+            width = 5f; depth = 20f;
+        }
+        else
+        {
+            width = 20f; depth = 5f;
+        }
+    }
+
     public void OnBeginDrag(PointerEventData eventData)
     {
+        ApplySizeByDevice();
+        // store previous
+        previousFloor = FloorStorage.floors.Count > 0 ? FloorStorage.floors[0] : null;
+
+        ResetSingleFloor();
+
         isDragging = true;
+        dragActivated = !requireExitPanelToActivate;
         yaw = 0f;
         lastHitPos = Vector3.zero;
 
-        // dọn cũ
+        if (dragActivated)
+        {
+            // Giữ nguyên phần bạn đang làm ở OnBeginDrag cũ:
+            ResetSingleFloor();
+            ClearHandles();
+            hasRect = false;
+
+            // tạo previewGO, previewLR, previewMF, previewMR...
+            EnsurePreviewObjects();
+            previewGO.SetActive(true);
+        }
+
         ClearHandles();
         hasRect = false;
 
         if (previewGO == null)
         {
-            previewGO = new GameObject("FloorPreview");
+            // previewGO = new GameObject("FloorPreview");
             previewGO.hideFlags = HideFlags.DontSave;
 
             previewLR = previewGO.AddComponent<LineRenderer>();
@@ -245,6 +341,26 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     {
         if (!isDragging) return;
 
+        if (!dragActivated && requireExitPanelToActivate)
+        {
+            // Còn đang ở trong panel => chưa cho kéo thật
+            if (IsInsideBottomPanel(eventData.position, eventData.pressEventCamera))
+                return;
+
+            // Vừa rời panel => kích hoạt kéo thật
+            dragActivated = true;
+
+            ResetSingleFloor();
+            ClearHandles();
+            hasRect = false;
+
+            EnsurePreviewObjects();
+            previewGO.SetActive(true);
+        }
+
+        // Nếu tới đây mà vẫn chưa activated (do option), thôi không xử lý
+        if (!dragActivated) return;
+
         var cam = Camera.main; if (cam == null) return;
         Ray ray = cam.ScreenPointToRay(Input.mousePosition);
         int mask = pickLayer.value == 0 ? Physics.DefaultRaycastLayers : pickLayer.value;
@@ -274,7 +390,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             float hd = depth * 0.5f;
 
             float baseY = BaseY(floorIndex);
-            Vector3 c = lastHitPos; c.y = baseY + lineLift; // line/preview nổi nhẹ
+            Vector3 c = lastHitPos; c.y = baseY + lineLift;
             Quaternion rot = Quaternion.Euler(0f, yaw, 0f);
 
             Vector3 a = c + rot * new Vector3(-hw, 0, -hd);
@@ -304,9 +420,18 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     public void OnEndDrag(PointerEventData eventData)
     {
         if (!isDragging) return;
+        if (!dragActivated && requireExitPanelToActivate)
+        {
+            isDragging = false;
+            
+            if (previewGO) previewGO.SetActive(false);
+            return;
+        }
 
         if (lastHitPos != Vector3.zero)
         {
+            Debug.Log("Trước khi tạo" + FloorStorage.floors.Count);
+
             float hw = width * 0.5f;
             float hd = depth * 0.5f;
 
@@ -326,10 +451,10 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             rectHalfD = hd;
             hasRect = true;
 
-            // Dữ liệu Floor (2D theo XZ)
             var floor = new Floor();
-            // (Nếu Floor có thuộc tính index/level, ghi luôn)
-            // floor.index = floorIndex; // <— bật nếu class Floor có field này
+
+            floor.width = width;
+            floor.length = depth;
 
             floor.checkpoints.Add(new Vector2(a.x, a.z));
             floor.checkpoints.Add(new Vector2(b.x, b.z));
@@ -346,17 +471,17 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             floor.center = GeoUtil.Centroid(floor.checkpoints);
             FloorStorage.floors.Add(floor);
             FloorStorage.UpdateOrAddFloor(floor);
-            currentFloorId = floor.ID;   
+            currentFloorId = floor.ID;
 
-    string id = floor.ID; // read-only, đã được Floor tự gán từ constructor / storage
+            string id = floor.ID; // read-only, đã được Floor tự gán từ constructor / storage
 
-    // Tạo parent mới cho floor này
-    // lastFloorGO = new GameObject($"Floor_{(string.IsNullOrEmpty(id) ? "NoID" : id)}");
-    lastFloorGO = new GameObject($"FloorVis_{(string.IsNullOrEmpty(id) ? "NoID" : id)}");
+            // Tạo parent mới cho floor này
+            // lastFloorGO = new GameObject($"Floor_{(string.IsNullOrEmpty(id) ? "NoID" : id)}");
+            lastFloorGO = new GameObject($"FloorVis_{(string.IsNullOrEmpty(id) ? "NoID" : id)}");
 
-    // Lưu vào registry nếu có id
-    if (!string.IsNullOrEmpty(id))
-    s_floorVisuals[id] = lastFloorGO;
+            // Lưu vào registry nếu có id
+            if (!string.IsNullOrEmpty(id))
+                s_floorVisuals[id] = lastFloorGO;
 
             // Đưa preview vào parent
             if (previewGO != null)
@@ -374,8 +499,10 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
             // Vẽ lại từ state (sẽ cập nhật mesh/line/label vị trí)
             RedrawRectangleFromState();
-        }
 
+            CameraResizeByFloor.Instance.Resize(floor.center, floor.checkpoints);
+
+        }
         isDragging = false;
 
         if (!editAfterPlace)
@@ -388,6 +515,12 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         {
             if (previewGO) previewGO.SetActive(true);
         }
+
+        UndoRedoController.Instance.AddToUndo(new EditFloorCommand(previousFloor));
+
+
+        Debug.Log("Trước khi tạo" + FloorStorage.floors.Count);
+        Debug.Log("Draggin xong, tạo sàn hoàn tấc");
     }
 
     // ==== Hiển thị độ dài cạnh ====
@@ -399,46 +532,69 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         if (distanceTextPrefab == null) return;
 
-        // Tâm hình chữ nhật
+        const float LABEL_TOWARD_INWARD = -0.5f; // đẩy theo hướng "vào tâm"
+        const float LABEL_LIFT_Y = 0.01f; // nâng khỏi sàn
+        const float LABEL_SHIFT_X = 0.18f; // lệch hai bên cho cạnh dọc
+        const float LABEL_SHIFT_Z = 0.18f; // lệch trên/dưới cho cạnh ngang
+        const float AXIS_EPS = 1e-5f; // ngưỡng so sánh
+
+        // --- tâm hình chữ nhật ---
         Vector3 center = (a + b + d + e) * 0.25f;
 
         (Vector3 p0, Vector3 p1)[] edges = new (Vector3, Vector3)[]
         {
-            (a, b), (b, d), (d, e), (e, a)
+        (a, b), (b, d), (d, e), (e, a)
         };
 
         for (int i = 0; i < edges.Length; i++)
         {
             var (p0, p1) = edges[i];
 
-            // Midpoint trên cạnh
+            // midpoint cạnh
             Vector3 mid = (p0 + p1) * 0.5f;
 
-            // Vector "vào tâm"
             Vector3 inward = center - mid;
             inward.y = 0f;
-            if (inward.sqrMagnitude < 1e-6f) inward = Vector3.forward; // fallback
+            if (inward.sqrMagnitude < AXIS_EPS) inward = Vector3.forward;
+            Vector3 inwardN = inward.normalized;
 
-            // Vị trí nhãn
-            Vector3 pos = mid + inward.normalized * -0.5f;
-            pos.y += 0.01f;
+            Vector3 pos = mid + inwardN * LABEL_TOWARD_INWARD;
+            pos.y += LABEL_LIFT_Y;
+            
+            float dxEdge = Mathf.Abs(p1.x - p0.x);
+            float dzEdge = Mathf.Abs(p1.z - p0.z);
 
-            // Parent ưu tiên Floor_<ID>, fallback previewGO
-            Transform parentTf = lastFloorGO != null ? lastFloorGO.transform : (previewGO != null ? previewGO.transform : null);
+            if (dzEdge > dxEdge) // trục Z
+            {
+                float signX = Mathf.Sign(mid.x - center.x);
+                if (Mathf.Abs(mid.x - center.x) < AXIS_EPS)
+                    signX = (inward.x >= 0f ? 1f : -1f);
+                pos.x += signX * LABEL_SHIFT_X;
+            }
+            else // trục X
+            {
+                float signZ = Mathf.Sign(mid.z - center.z);
+                if (Mathf.Abs(mid.z - center.z) < AXIS_EPS)
+                    signZ = (inward.z >= 0f ? 1f : -1f);
+                pos.z += signZ * LABEL_SHIFT_Z;
+            }
+            Transform parentTf = lastFloorGO != null
+                ? lastFloorGO.transform
+                : (previewGO != null ? previewGO.transform : null);
 
-            // Tạo nhãn
             GameObject label = Instantiate(distanceTextPrefab, pos, Quaternion.identity, parentTf);
             label.name = $"EdgeLength_{i}";
             edgeLabels.Add(label);
 
+            // text
             float len = Vector3.Distance(p0, p1);
-            string text = $"{len:0.##}";
+            string text = $"{len:0.##} m";
 
             var tmp = label.GetComponent<TMPro.TMP_Text>();
             if (tmp != null)
             {
                 tmp.text = text;
-                tmp.color = Color.black;
+                tmp.color = Color.red;
                 tmp.fontSize = 5f;
                 tmp.alignment = TMPro.TextAlignmentOptions.Center;
             }
@@ -452,14 +608,27 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
                 }
             }
 
-            float angleDeg = Mathf.Atan2(inward.z, inward.x) * Mathf.Rad2Deg - 90f;
-            label.transform.rotation = Quaternion.Euler(90f, 0f, -angleDeg);
+            Vector3 tangent = p1 - p0;
+            tangent.y = 0f;
+            if (tangent.sqrMagnitude < 1e-6f) tangent = Vector3.right;
+            tangent.Normalize();
+
+            Quaternion rot = Quaternion.LookRotation(-Vector3.up, -inwardN);
+
+            Vector3 rightNow = Vector3.Cross(inwardN, -Vector3.up).normalized;
+
+            if (Vector3.Dot(rightNow, tangent) < 0f)
+            {
+                rot = Quaternion.AngleAxis(180f, inwardN) * rot;
+            }
+
+            label.transform.rotation = rot;
         }
     }
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        TryPickHandleUnderMouse();
+        // TryPickHandleUnderMouse();
     }
 
     private void TryPickHandleUnderMouse()
@@ -495,18 +664,24 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
         if (Physics.Raycast(ray, out var hit, 3000f, mask)) { point = hit.point; return true; }
         Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
-        if (groundPlane.Raycast(ray, out float enter)) { point = ray.GetPoint(enter); return true; } 
+        if (groundPlane.Raycast(ray, out float enter)) { point = ray.GetPoint(enter); return true; }
         return false;
     }
 
     private void SyncLastFloorDataToCurrentRect()
     {
-        if (!hasRect || FloorStorage.floors.Count == 0) return;
+        if (!hasRect || string.IsNullOrEmpty(currentFloorId)) return;
 
-        var floor = FloorStorage.floors[FloorStorage.floors.Count - 1];
+        Floor floor = null;
+        if (FloorStorage.floors != null)
+        {
+            foreach (var f in FloorStorage.floors)
+                if (f != null && f.ID == currentFloorId) { floor = f; break; }
+        }
+        if (floor == null) return;
 
         Quaternion rot = Quaternion.Euler(0f, rectYaw, 0f);
-        Vector3 c = rectCenter; // đã ở baseY của floor
+        Vector3 c = rectCenter;
 
         Vector3 a = c + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
         Vector3 b = c + rot * new Vector3(rectHalfW, 0, -rectHalfD);
@@ -532,7 +707,6 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             floor.heights.Clear();
             for (int i = 0; i < 4; i++) floor.heights.Add(0.1f);
         }
-        
         FloorStorage.UpdateOrAddFloor(floor);
     }
 
@@ -680,8 +854,8 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         previewLR.numCornerVertices = 4;
         previewLR.sortingOrder = floorIndex;
 
-        previewMF   = previewGO.AddComponent<MeshFilter>();
-        previewMR   = previewGO.AddComponent<MeshRenderer>();
+        previewMF = previewGO.AddComponent<MeshFilter>();
+        previewMR = previewGO.AddComponent<MeshRenderer>();
         previewMesh = new Mesh { name = "FloorPreviewMesh" };
         previewMF.sharedMesh = previewMesh;
 
@@ -696,7 +870,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         fillMat.renderQueue = 3000;
         fillMat.color = new Color(0.2f, 0.6f, 1f, 0.15f);
         previewMR.sharedMaterial = fillMat;
-        previewMR.sortingOrder   = floorIndex;
+        previewMR.sortingOrder = floorIndex;
     }
 
     // === NẠP STATE THEO ID (set hasRect, tạo preview/handles, vẽ, và GHI ĐÈ floor theo ID) ===
@@ -777,9 +951,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         Vector3 c3 = rectCenter;
 
         Vector3 a3 = c3 + rot * new Vector3(-rectHalfW, 0, -rectHalfD);
-        Vector3 b3 = c3 + rot * new Vector3( rectHalfW, 0, -rectHalfD);
-        Vector3 d3 = c3 + rot * new Vector3( rectHalfW, 0,  rectHalfD);
-        Vector3 e3 = c3 + rot * new Vector3(-rectHalfW, 0,  rectHalfD);
+        Vector3 b3 = c3 + rot * new Vector3(rectHalfW, 0, -rectHalfD);
+        Vector3 d3 = c3 + rot * new Vector3(rectHalfW, 0, rectHalfD);
+        Vector3 e3 = c3 + rot * new Vector3(-rectHalfW, 0, rectHalfD);
 
         // XÓA sạch & ghi lại 4 điểm
         f.checkpoints.Clear();
@@ -794,9 +968,47 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         f.floorLine.Add(new FloorLine(f.checkpoints[2], f.checkpoints[3]));
         f.floorLine.Add(new FloorLine(f.checkpoints[3], f.checkpoints[0]));
 
-        f.center = GeoUtil.Centroid(f.checkpoints); 
+        f.center = GeoUtil.Centroid(f.checkpoints);
 
         f.heights.Clear();
         for (int i = 0; i < 4; i++) f.heights.Add(0.1f);
     }
+    // gọi để quay về trạng thái chỉ còn 1 floor (xoá hết data + visuals cũ)
+    public void ResetSingleFloor()
+    {
+        // Nếu preview đang nằm trong lastFloorGO, tách ra trước khi phá parent
+        if (previewGO && lastFloorGO && previewGO.transform.IsChildOf(lastFloorGO.transform))
+            previewGO.transform.SetParent(null, true);
+
+        // xoá visuals các floor cũ
+        foreach (var kv in s_floorVisuals)
+            if (kv.Value) Destroy(kv.Value);
+        s_floorVisuals.Clear();
+
+        // xoá toàn bộ mesh floor đã dựng bởi PlacementManager (nếu có)
+        PlacementManager.Instance?.DestroyAllFloors();
+
+        // xoá dữ liệu floor trong storage
+        if (FloorStorage.floors != null) FloorStorage.floors.Clear();
+
+        // dọn handle + label
+        ClearHandles();
+
+        // reset state
+        hasRect = false;
+        isMovingHandle = false;
+        activeIndex = -1;
+        currentFloorId = null;
+
+        // xoá parent cũ nếu còn
+        if (lastFloorGO) { Destroy(lastFloorGO); lastFloorGO = null; }
+
+        // XOÁ preview hoàn toàn để lần sau tạo lại mới
+        if (previewGO) { Destroy(previewGO); }
+        previewGO = null;
+        previewLR = null; previewMF = null; previewMR = null; previewMesh = null;
+
+        InteractionFlags.IsFloorHandleDragging = false;
+    }
+
 }

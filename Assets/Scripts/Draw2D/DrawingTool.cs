@@ -58,7 +58,7 @@ public class DrawingTool : MonoBehaviour
         }
     }
 
-    public void DrawLineAndDistance(Vector3 start, Vector3 end)
+    public void DrawLineAndDistance(Vector3 start, Vector3 end, float width)
     {
         // GameObject go = Instantiate(linePrefab);
         // LineRenderer lr = go.GetComponent<LineRenderer>();
@@ -67,7 +67,7 @@ public class DrawingTool : MonoBehaviour
         lr.SetPosition(1, end);
 
         // Đảm bảo LineRenderer setup chuẩn để tile texture hoạt động tốt
-        SetupLine(lr);
+        SetupLine(lr, width);
         // Lấy chiều dài đoạn
         float len = Vector3.Distance(start, end);
 
@@ -127,7 +127,7 @@ public class DrawingTool : MonoBehaviour
         Vector3 aux1End = start + perpendicular * auxiliaryLineLength / 2;
         Vector3 aux2End = end + perpendicular * auxiliaryLineLength / 2;
 
-        tmp.text = $"{distanceInM:F2}";
+        tmp.text = $"{distanceInM:F2} m";
 
         Vector3 textPosition = (aux1End + aux2End) / 2;
 
@@ -139,13 +139,13 @@ public class DrawingTool : MonoBehaviour
     }
 
 
-    public void SetupLine(LineRenderer lr)
+    public void SetupLine(LineRenderer lr, float width = 0.2f)
     {
         if (lr == null) return;
         lr.textureMode = LineTextureMode.Tile;
         lr.alignment = LineAlignment.View; // Quan trọng: để line luôn xoay đúng góc nhìn
         lr.numCapVertices = 0;
-        lr.widthMultiplier = 0.04f;
+        lr.widthMultiplier = width;
         lr.positionCount = 2;
     }
 
@@ -170,11 +170,11 @@ public class DrawingTool : MonoBehaviour
         switch (lineType)
         {
             case LineType.Wall:
-                return Color.black;
-            case LineType.Door:
                 return Color.red;
-            case LineType.Window:
+            case LineType.Door:
                 return Color.blue;
+            case LineType.Window:
+                return Color.green;
             default:
                 throw new ArgumentOutOfRangeException(nameof(lineType), lineType, null);
         }
@@ -197,7 +197,7 @@ public class DrawingTool : MonoBehaviour
         const int BASE_ORDER = 0;        // nếu bạn đang dùng order nào khác, đổi ở đây
         const int PREVIEW_OFFSET = 99;   // “+99” như yêu cầu        
         int previewOrder = BASE_ORDER + PREVIEW_OFFSET;
-    
+
         // Kiểm tra xem đã có previewLine chưa
         if (previewLine == null)
         {
@@ -241,7 +241,7 @@ public class DrawingTool : MonoBehaviour
 
         // Hiển thị text
         previewText.gameObject.SetActive(true);
-        previewText.text = $"{distanceInM:F2}";
+        previewText.text = $"{distanceInM:F2} m";
 
         Vector3 textPos = (start + end) / 2 + new Vector3(0, 0.05f, 0); // Đẩy lên cao một chút
         previewText.transform.position = textPos + previewText.transform.up * wallTextOffset;
@@ -281,7 +281,7 @@ public class DrawingTool : MonoBehaviour
         linePool.Add(newLine);
         return newLine;
     }
-    
+
     private TextMeshPro GetOrCreateText()
     {
         foreach (var text in textPool)
@@ -402,7 +402,7 @@ public class DrawingTool : MonoBehaviour
         {
             foreach (WallLine wall in room.wallLines)
             {
-                DrawLineAndDistance(wall.start, wall.end);
+                DrawLineAndDistance(wall.start, wall.end, room.thickness);
             }
         }
     }

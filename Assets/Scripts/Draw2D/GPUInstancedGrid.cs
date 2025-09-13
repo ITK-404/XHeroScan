@@ -200,7 +200,7 @@ public class GPUInstancedGrid : MonoBehaviour
             }
             else
             {
-                break; // vì mảng tăng dần → nếu x > target, thì không còn x nào phù hợp nữa
+                break; // vì mảng tăng dần -> nếu x > target, thì không còn x nào phù hợp nữa
             }
         }
 

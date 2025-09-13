@@ -87,7 +87,7 @@ public class RoomMeshController : MonoBehaviour
 
         if (IsClickingOnBackgroundBlackUI(Input.mousePosition))
         {
-            Debug.Log("Đang nhấn Background Black ➜ Không move Mesh");
+            Debug.Log("Đang nhấn Background Black -> Không move Mesh");
             return;
         }
 
@@ -166,7 +166,7 @@ public class RoomMeshController : MonoBehaviour
                     }
                 }
             }
-        }
+        } 
     }
 
     public void Initialize(string roomID, Color color = default)
@@ -362,7 +362,7 @@ public class RoomMeshController : MonoBehaviour
         moveObject.CurrentCheckPointPos = SaveCheckPointPosition(RoomID);
         
         var command = new MoveRectangularUndoRedoCommand(moveObject);
-        UndoRedoController.Instance.AddToUndo(command);
+        //UndoRedoController.Instance.AddToUndo(command);
     }
 
     // === Hàm ko cho move trên UI
@@ -380,7 +380,7 @@ public class RoomMeshController : MonoBehaviour
         {
             if (result.gameObject.name == "Background Black")
             {
-                Debug.Log("Click UI trên Background Black ➜ Không cho move point");
+                Debug.Log("Click UI trên Background Black -> Không cho move point");
                 return true;
             }
         }
