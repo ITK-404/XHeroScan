@@ -7,27 +7,22 @@ public class CompassRoomManager : MonoBehaviour
     public GameObject compassLabelPrefab2;
     public GameObject distanceTextPrefab;
 
-    public void OnSetCompassDirectionForCurrentRoom()
-    {
-        Debug.Log(">>> Button clicked: gan huong phong");
+public void OnSetCompassDirectionForCurrentRoom()
+{
+    if (RoomStorage.rooms == null || RoomStorage.rooms.Count == 0) return;
 
-        if (RoomStorage.rooms == null || RoomStorage.rooms.Count == 0)
-        {
-            Debug.LogWarning("Button clicked: no room in RoomStorage.");
-            return;
-        }
+    int idx = RoomStorage.rooms.Count - 1;
+    var room = RoomStorage.rooms[idx];          // <- copy
+    float heading = CompassManager.Instance.GetCurrentHeading();
 
-        Room currentRoom = RoomStorage.rooms[RoomStorage.rooms.Count - 1];
-        float heading = CompassManager.Instance.GetCurrentHeading(); // lấy từ compass mượt
+    room.headingCompass = heading;              // sửa trên copy
+    RoomStorage.rooms[idx] = room;              // commit ngược vào list
 
-        currentRoom.headingCompass = heading;
-        Debug.Log($"[Set Heading] {heading:0.0}° for room");
-        // In ra hướng và vị trí hiện tại đã lưu
-        Debug.Log($"[Room Info] Compass Heading: {currentRoom.headingCompass:0.0}, Position: {currentRoom.Compass}");
+    Debug.Log($"[Set Heading] idx={idx} heading={heading:0.0}°");
+    Debug.Log($"[Verify] list value now = {RoomStorage.rooms[idx].headingCompass:0.0}°");
+    CreateCompassLabel(heading);
+}
 
-        // Tạo nhãn hoặc mũi tên hướng
-        CreateCompassLabel(heading);
-    }
     
 private void CreateCompassLabel(float heading)
 {
@@ -36,26 +31,31 @@ private void CreateCompassLabel(float heading)
         Debug.LogWarning("Chưa gán compassLabelPrefab!");
         return;
     }
-
     Camera cam = Camera.main != null ? Camera.main : (Camera.allCameras.Length > 0 ? Camera.allCameras[0] : null);
     if (cam == null)
     {
         Debug.LogError("Không tìm thấy Camera.main");
         return;
     }
-
     if (RoomStorage.rooms == null || RoomStorage.rooms.Count == 0)
     {
         Debug.LogWarning("RoomStorage trống.");
         return;
     }
+
     Room currentRoom = RoomStorage.rooms[RoomStorage.rooms.Count - 1];
+
+    // === Tính yaw của camera theo world và offset quy đổi world→true ===
+    float camYaw = Mathf.Atan2(cam.transform.forward.x, cam.transform.forward.z) * Mathf.Rad2Deg;
+    camYaw = (camYaw + 360f) % 360f;
+
+    // Mọi góc đo theo world muốn quy về Bắc thật thì + northOffset
+    // float northOffset = (heading - camYaw + 360f) % 360f;
 
     // --- Xác định vị trí spawn ---
     Vector3 camPos = cam.transform.position;
     Ray ray = new Ray(camPos, Vector3.down);
     Vector3 spawnPosition;
-
     if (Physics.Raycast(ray, out RaycastHit hit, 10f))
     {
         spawnPosition = hit.point + Vector3.up * 0.1f;
@@ -78,7 +78,6 @@ private void CreateCompassLabel(float heading)
     {
         Vector3 closest = ClosestPointOnLine(wall.start, wall.end, spawnPosition);
         float dist = Vector3.Distance(spawnPosition, closest);
-
         if (dist < minDistance)
         {
             minDistance = dist;
@@ -89,32 +88,28 @@ private void CreateCompassLabel(float heading)
 
     if (nearestWall != null)
     {
-        // --- TÍNH & GÁN HƯỚNG THỰC ĐỊA CHO TƯỜNG GẦN NHẤT ---
-        Vector3 dir = nearestWall.end - nearestWall.start;
-        dir.y = 0f;
-        float angleToNorth = 0f;
+        // Góc tường theo WORLD
+        Vector3 dir = nearestWall.end - nearestWall.start; dir.y = 0f;
+        float angleWorld = 0f;
         if (dir.sqrMagnitude > 1e-9f)
         {
-            angleToNorth = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-            angleToNorth = (angleToNorth + 360f) % 360f;
+            angleWorld = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+            angleWorld = (angleWorld + 360f) % 360f;
         }
 
-        // Quy chiếu sang Bắc thật bằng heading của phòng
-        float wallTrueHeading = (angleToNorth + currentRoom.headingCompass) % 360f;
-        nearestWall.headingCompass = wallTrueHeading;
-
-        Debug.Log($"[WallDir] Nearest wall {nearestWall.start} -> {nearestWall.end} " +
-                  $"local={angleToNorth:0.0}°, true={wallTrueHeading:0.0}° (roomHeading={currentRoom.headingCompass:0.0}°)");
+        // 👉 Quy về BẮC THẬT bằng offset world→true
+        // float wallTrueHeading = (angleWorld + northOffset) % 360f;
+        nearestWall.headingCompass = heading;
 
         // --- Xoá các nhãn cũ ---
         foreach (Transform child in transform)
             if (child.name.Contains("CompassLabel")) Destroy(child.gameObject);
         foreach (Transform child in transform)
             if (child.name.Contains("CompassLabel2")) Destroy(child.gameObject);
+            
+        float yawForNorthWorld = (camYaw - heading + 360f) % 360f;
 
-        // --- Tạo nhãn/mũi tên theo hướng la bàn hiện tại ---
-        Quaternion lookRotation = Quaternion.Euler(90f, heading, 135f); // quay theo Bắc thật
-        Debug.Log("[CompassArrow] rotation euler = " + lookRotation.eulerAngles);
+        Quaternion lookRotation = Quaternion.Euler(90f, yawForNorthWorld, 135f);
 
         GameObject label = Instantiate(
             compassLabelPrefab,
@@ -124,22 +119,23 @@ private void CreateCompassLabel(float heading)
         );
         label.name = "CompassLabel";
 
-        GameObject label2 = Instantiate(
-            compassLabelPrefab2,
-            spawnPosition,
-            lookRotation,
-            transform
-        );
-        label2.name = "CompassLabel2";
-
-        SetLayerRecursively(label2, LayerMask.NameToLayer("PreviewModel"));
+        if (compassLabelPrefab2 != null)
+        {
+            GameObject label2 = Instantiate(
+                compassLabelPrefab2,
+                spawnPosition,
+                lookRotation,
+                transform
+            );
+            label2.name = "CompassLabel2";
+            SetLayerRecursively(label2, LayerMask.NameToLayer("PreviewModel"));
+        }
     }
     else
     {
         Debug.LogWarning("Không tìm thấy tường gần nhất để hướng mũi tên.");
     }
 }
-
 
     // Hàm bổ trợ tìm điểm gần nhất trên đoạn thẳng
     private Vector3 ClosestPointOnLine(Vector3 a, Vector3 b, Vector3 p)

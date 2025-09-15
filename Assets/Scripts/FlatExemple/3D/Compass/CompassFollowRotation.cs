@@ -19,17 +19,19 @@ public class CompassFollowRotation : MonoBehaviour
     {
         List<Room> rooms = RoomStorage.rooms;
 
-        UpdateWallDirections(rooms[0]);
-
+        // ✅ Sửa thứ tự kiểm tra để tránh rooms[0] khi rỗng
         if (rooms == null || rooms.Count == 0)
         {
             Debug.LogWarning("Không có Room nào trong RoomStorage.");
             return;
         }
 
-        // Giả sử roomModel ứng với phòng đầu tiên — có thể thay đổi logic này nếu cần
         currentRoom = rooms[0];
-        originalRotation = compassImage.rectTransform.rotation;
+        if (compassImage != null)
+            originalRotation = compassImage.rectTransform.rotation;
+
+        // ✅ Tính và LƯU hướng thực địa cho tất cả tường ngay lúc khởi động
+        UpdateWallDirections(currentRoom);
     }
 
     void Update()
@@ -40,41 +42,90 @@ public class CompassFollowRotation : MonoBehaviour
         WallLine facingWall = GetMostFacingWall(currentRoom);
         if (facingWall != null)
         {
-            Vector3 dir = (facingWall.end - facingWall.start).normalized;
-            float angleToNorth = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-            float realWorldAngle = (angleToNorth + currentRoom.headingCompass + 360f) % 360f;
+            // ——— Tính hướng thực địa của tường đang "đối diện" (và LƯU lại) ———
+            Vector3 dir = (facingWall.end - facingWall.start);
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 1e-8f)
+            {
+                float angleToNorth = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg; // yaw world
+                float realWorldAngle = (angleToNorth + currentRoom.headingCompass + 360f) % 360f;
 
+                // ✅ LƯU vào wallLine tương ứng
+                facingWall.headingCompass = realWorldAngle;
+            }
+
+            // ——— Xoay kim la bàn dựa trên offset ban đầu và yaw của model ———
             float yRotation = NormalizeAngle(roomModel.eulerAngles.y);
-            // Debug.Log("Y rotation: " + yRotation);
 
             if (!hasSetInitialOffset)
             {
-                // Lưu offset ban đầu giữa yRotation và realWorldAngle
-                initialOffsetAngle = yRotation - realWorldAngle;
+                // Lưu offset ban đầu giữa yRotation và realWorldAngle của tường facing (nếu cần)
+                // Nếu muốn kim độc lập tường, bạn có thể thay bằng công thức northYawWorld - yRotation
+                // nhưng ở đây giữ nguyên logic sẵn có của bạn.
+                Vector3 dir0 = (facingWall.end - facingWall.start); dir0.y = 0f;
+                float angleToNorth0 = Mathf.Atan2(dir0.x, dir0.z) * Mathf.Rad2Deg;
+                float realWorldAngle0 = (angleToNorth0 + currentRoom.headingCompass + 360f) % 360f;
+
+                initialOffsetAngle = yRotation - realWorldAngle0;
                 hasSetInitialOffset = true;
             }
 
-            // Tính lại góc xoay cho kim la bàn mỗi frame
             float compassAngle = yRotation - initialOffsetAngle;
-            Debug.Log("Z rotation: " + yRotation);
 
-            // compassImage.rectTransform.rotation = originalRotation * Quaternion.Euler(0f, 0f, -compassAngle);
-            compassImage.rectTransform.localRotation = Quaternion.AngleAxis(-compassAngle, Vector3.forward);
+            if (compassImage != null)
+                compassImage.rectTransform.localRotation = Quaternion.AngleAxis(-compassAngle, Vector3.forward);
 
-            // Lấy góc hiển thị hiện tại
-            // float currentZ = compassImage.rectTransform.rotation.eulerAngles.z;
-            float normalized = (360f - compassAngle + 360f) % 360f;  // Đảo lại vì UI Z ngược
-
+            float normalized = (360f - compassAngle + 360f) % 360f; // đảo vì UI Z ngược
             string label = AngleToDirectionLabel(normalized);
-            compassText.text = $"{normalized:F1}° ({label})";
+            if (compassText != null)
+                compassText.text = $"{normalized:F1}° ({label})";
         }
         else
         {
-            compassText.text = "N/A";
+            if (compassText != null)
+                compassText.text = "N/A";
         }
     }
 
-    WallLine GetMostFacingWall(Room room)
+    /// <summary>
+    /// ✅ Tính và LƯU bearing thực địa cho TẤT CẢ wallLines của room.
+    /// Gọi hàm này sau khi hiệu chuẩn heading phòng hoặc sau khi thay đổi hình học tường.
+    /// </summary>
+    private void UpdateWallDirections(Room room)
+    {
+        if (room == null || room.wallLines == null) return;
+
+        foreach (WallLine line in room.wallLines)
+        {
+            Vector3 dir = (line.end - line.start);
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 1e-8f)
+            {
+                line.headingCompass = 0f; // hoặc giữ nguyên nếu muốn
+                continue;
+            }
+
+            // Góc hình học so với trục Z+ của thế giới (0°=Z+)
+            float angleToNorth = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+
+            // Cộng offset phòng để ra "hướng thực địa" (0°=Bắc, 90°=Đông, ...)
+            float realWorldAngle = (angleToNorth + room.headingCompass + 360f) % 360f;
+
+            // ✅ LƯU vào wallLine
+            line.headingCompass = realWorldAngle;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            string directionLabel = AngleToDirectionLabel(realWorldAngle);
+            Debug.Log($"[WallDir] {line.start} -> {line.end} = {realWorldAngle:0.0}° ({directionLabel})");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Tìm tường có "hướng nhìn" gần với hướng camera nhất (xấp xỉ).
+    /// (Giữ nguyên logic hiện có, nếu muốn chính xác hơn dùng pháp tuyến tường.)
+    /// </summary>
+    private WallLine GetMostFacingWall(Room room)
     {
         if (Camera.main == null || room.wallLines == null || room.wallLines.Count == 0)
             return null;
@@ -88,9 +139,12 @@ public class CompassFollowRotation : MonoBehaviour
 
         foreach (var wall in room.wallLines)
         {
-            Vector3 wallDir = (wall.end - wall.start).normalized;
+            Vector3 wallDir = (wall.end - wall.start);
             wallDir.y = 0;
-            float dot = Vector3.Dot(-wallDir, cameraForward);  // Cosine góc giữa hướng tường và camera
+            if (wallDir.sqrMagnitude < 1e-8f) continue;
+
+            wallDir.Normalize();
+            float dot = Vector3.Dot(-wallDir, cameraForward); // gần "đối diện"
 
             if (dot > maxDot)
             {
@@ -100,28 +154,11 @@ public class CompassFollowRotation : MonoBehaviour
         }
         return bestWall;
     }
-    float NormalizeAngle(float angle)
+
+    private float NormalizeAngle(float angle)
     {
-        angle = angle % 360f;
+        angle %= 360f;
         return angle < 0f ? angle + 360f : angle;
-    }
-    private void UpdateWallDirections(Room room)
-    {
-        foreach (WallLine line in room.wallLines)
-        {
-            Vector3 dir = (line.end - line.start).normalized;
-
-            // Góc so với trục Z (Bắc)
-            float angleToNorth = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-
-            // Cộng với góc chuẩn la bàn
-            float realWorldAngle = (angleToNorth + room.headingCompass + 360f) % 360f;
-
-            // Gợi ý hướng chữ
-            string directionLabel = AngleToDirectionLabel(realWorldAngle);
-
-            Debug.Log($"[list][WallDir] 2 {line.start} -> {line.end} = {realWorldAngle:0.0}° ({directionLabel})");
-        }
     }
 
     private string AngleToDirectionLabel(float degree)
@@ -152,5 +189,12 @@ public class CompassFollowRotation : MonoBehaviour
         if (degree < 322.5f) return "Tây Bắc";
         if (degree < 337.5f) return "Tây Bắc";
         return "Bắc";
+    }
+
+    // —————— (tùy chọn) ——————
+    // Nếu bạn muốn bên ngoài gọi lại để cập nhật toàn bộ khi offset phòng thay đổi:
+    public void RefreshAllWallHeadings()
+    {
+        if (currentRoom != null) UpdateWallDirections(currentRoom);
     }
 }

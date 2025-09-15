@@ -80,6 +80,7 @@ public class Model3D : MonoBehaviour
             // Lần đầu tiên, vẽ TẤT CẢ các đoạn ngoại trừ các đoạn cuối đặc biệt
             foreach (WallLine line in room.wallLines)
             {
+                StampLineHeading(room, line);
                 if (line.type == LineType.Wall)
                 {
                     // Nếu có một Door/Window nào có cùng start-end (hoặc đảo ngược), thì bỏ qua Wall này
@@ -664,7 +665,7 @@ public class Model3D : MonoBehaviour
     {
         WallLine refWall = FindNearestWall(referencePoint, room.wallLines);
 
-        if (refWall == null) 
+        if (refWall == null)
         {
             Debug.LogWarning("[Heading] Khong tim thay tuong chuan!");
             return;
@@ -690,4 +691,22 @@ public class Model3D : MonoBehaviour
         Debug.Log($"[Heading] Tuong chuan: {refWall.start} to {refWall.end}");
         Debug.Log($"[Heading] Huong mong muon: {desiredDirection}, final headingCompass = {finalHeading:0.0}");
     }
+    // Tính góc thực địa (0..360) cho 1 line
+private static float RealWorldAngleForLine(WallLine line, float roomHeadingCompass)
+{
+    Vector3 d = (line.end - line.start);
+    d.y = 0f;
+    if (d.sqrMagnitude < 1e-6f) return 0f;
+
+    float angleLocal = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;        // so với trục Z+
+    float realWorldAngle = (angleLocal + roomHeadingCompass + 360f) % 360f;
+    return realWorldAngle;
+}
+
+// Ghi heading vào chính line (để lưu trong data)
+private void StampLineHeading(Room room, WallLine line)
+{
+    float angle = RealWorldAngleForLine(line, room.headingCompass);
+    line.headingCompass = angle;
+}
 }

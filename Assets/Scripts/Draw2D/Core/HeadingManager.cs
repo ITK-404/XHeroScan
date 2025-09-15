@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// tạm thời đúng 2D
+
 public static class HeadingManager
 {
     public const float EPS = 1e-8f;
