@@ -35,8 +35,9 @@ public class RoomInfoDisplay : MonoBehaviour
     [SerializeField] private float popupX = 0.2f;
     [SerializeField] private float popupZ = 0.2f;
 
-    private enum SelectionKind { None, Room, Floor, Furniture }
+    public enum SelectionKind { None, Room, Floor, Furniture }
     private SelectionKind selectionKind = SelectionKind.None;
+    public SelectionKind SelectionItem => selectionKind;
     private string selectedRoomID = "";
     private string selectedFloorID = "";
     private string highlightedID = "";

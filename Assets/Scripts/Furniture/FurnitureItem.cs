@@ -350,7 +350,7 @@ public partial class FurnitureItem : MonoBehaviour
 
         // Sau khi resize xong, cập nhật hiển thị / điểm:
         modelContainer.transform.localPosition = new Vector3(bounds.center.x, modelContainer.transform.localPosition.y, bounds.center.z);
-        SetRotation(currentRotation.y);
+        RefreshRotation();
     }
 
 
@@ -514,7 +514,7 @@ public partial class FurnitureItem : MonoBehaviour
         SetWorldPosition(data.worldPosition);
         modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
 
-        SetRotation(currentRotation.y);
+        RefreshRotation();
         // Cập nhật bounds
         bounds.center = modelContainer.transform.localPosition;
         bounds.size = new Vector3(width, 1, length);
@@ -541,9 +541,17 @@ public partial class FurnitureItem : MonoBehaviour
         return null;
     }
 
+    public void RefreshRotation()
+    {
+        SetRotation(currentRotation.y);
+    }
+
     public void SetRotation(float yRotation)
     {
-        modelContainer.transform.localRotation = Quaternion.Euler(90, yRotation, 0);
+        var flipOffset = 0;
+        //flipOffset = data.isFlipVertical ? 180 : 0;
+
+        modelContainer.transform.localRotation = Quaternion.Euler(90, yRotation + flipOffset, 0);
         data.size.rotation.y = yRotation;
     }
 
@@ -608,7 +616,13 @@ public partial class FurnitureItem : MonoBehaviour
     {
         //FurnitureManager.Instance.RemoveFromRuntime(this);
         FurnitureManager.Instance.SelectFurniture(null);
-        Vector3 position = transform.position + new Vector3(length, 0, width);
+        
+        Vector3 worldPostion = GetWorldPosition();
+        Vector3 position = worldPostion + new Vector3(length, 0, width);
+        
+        Debug.Log("World Position: " + worldPostion);
+        Debug.Log("Spawn Position: " + position);
+
         var furniture = FurnitureManager.Instance.SpawnFurniture(this.data.itemTemplateID, position);
         furniture.FetchData(this.data);
         furniture.data.InitNewInstanceID();

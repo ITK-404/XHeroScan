@@ -17,7 +17,7 @@ public class WallLine
 
     public WallLine()
     {
-        Debug.Log("[WallLine] Init no parameter");
+        Debug.Log("[WallLine] Init no parameter");  
     }
     public bool isVisible = true;
 

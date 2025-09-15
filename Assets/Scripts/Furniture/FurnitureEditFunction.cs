@@ -17,28 +17,46 @@ public class FurnitureEditFunction : MonoBehaviour
 
     private FurnitureItem currentFurniture => furnitureManager.CurrentFurnitureItem();
 
-    private TMP_InputField thicknessInputField;
-    private TMP_InputField widthInputField;
-    private TMP_InputField lengthInputField;
-    private Button buttonOk;
+    private ParameterInputField thicknessInputField;
+    private ParameterInputField widthInputField;
+    private ParameterInputField lengthInputField;
+    private ParameterInputField distanceFromGroundInputField;
 
     private ModularPopupEdit popupEdit;
+    private FloorSettingPanel settingPanel;
+    private BottomSheetInputUI BottomSheetInputUI;
+
+    private ToggleFlipGroup toggleFlipGroup;
+
     private void Start()
     {
         furnitureManager = FurnitureManager.Instance;
 
-        var elementHandler = bottomSheetUI.GetComponent<ElementUIHandler>();
-        buttonOk = elementHandler.GetItemByFiler<Button>("okBtn");
-        thicknessInputField = elementHandler.GetItemByFiler<TMP_InputField>("thickness");
-        widthInputField = elementHandler.GetItemByFiler<TMP_InputField>("width");
-        lengthInputField = elementHandler.GetItemByFiler<TMP_InputField>("length");
+        settingPanel = bottomSheetUI.GetComponent<FloorSettingPanel>();
+        BottomSheetInputUI = bottomSheetUI.GetComponent<BottomSheetInputUI>();
+        toggleFlipGroup = settingPanel.toggleFlipGroup;
         
-        buttonOk.onClick.AddListener(OnChangeSize);
+        thicknessInputField = settingPanel.GetParameterInputField(IntParameterType.Thickness);
+        widthInputField = settingPanel.GetParameterInputField(IntParameterType.Width);
+        lengthInputField = settingPanel.GetParameterInputField(IntParameterType.Height);
+        distanceFromGroundInputField = settingPanel.GetParameterInputField(IntParameterType.DistanceFromGround);
+
+        settingPanel.OnApplyAction += OnChangeSize;
 
         popupEdit = currentPopup.GetComponent<ModularPopupEdit>();
+        popupEdit.editBtn.onClick.AddListener(() => BottomSheetInputUI.Open());
         popupEdit.deleteBtn.onClick.AddListener(DeleteFurniture);
         popupEdit.doubleBtn.onClick.AddListener(DoubleFurniture);
-        popupEdit.flipBtn.onClick.AddListener(FlipToggle);
+
+        bottomSheetUI.OnStartShowAnim.AddListener(OnRefreshValue);
+
+    }
+
+    private void OnDestroy()
+    {
+        if (settingPanel == null) return;
+        settingPanel.OnApplyAction -= OnChangeSize;
+        bottomSheetUI.OnStartShowAnim.RemoveListener(OnRefreshValue);
     }
 
     private void FlipToggle()
@@ -46,7 +64,7 @@ public class FurnitureEditFunction : MonoBehaviour
         if(currentFurniture != null)
         {
             FurnitureItem.SnapShotTemp = currentFurniture.data;
-            currentFurniture.data.isFlip = !currentFurniture.data.isFlip;
+            currentFurniture.data.isFlipVertical = !currentFurniture.data.isFlipVertical;
             currentFurniture.CreareEditCommandBySnapShot();
         }
     }
@@ -58,14 +76,6 @@ public class FurnitureEditFunction : MonoBehaviour
             var furniture = currentFurniture.InitClone();
             UndoRedoController.Instance.AddToUndo(new CreateItemCommand(furniture.data.instanceID));
 
-        }
-    }
-
-    private void OnDestroy()
-    {
-        if (buttonOk)
-        {
-            buttonOk.onClick.RemoveListener(OnChangeSize);
         }
     }
 
@@ -88,32 +98,40 @@ public class FurnitureEditFunction : MonoBehaviour
             FurnitureItem.SnapShotTemp = data;
             currentFurniture.CreareEditCommandBySnapShot();
 
-            float width = TryParse(widthInputField, data.size.width);
-            float length = TryParse(lengthInputField, data.size.length);
+            float width = TryParse(widthInputField.InputField);
+            float length = TryParse(lengthInputField.InputField);
+            float distanceFromGround = TryParse(distanceFromGroundInputField.InputField);
             float higherValue = 0;
             // Xử lý để furniture tạo thành hình vuông nếu
-            // if (currentFurniture.alwayMakeSquare)
+            Debug.Log($"Giá trị từ input field {width} {length}");
+
+            currentFurniture.data.size.distanceFromGround = distanceFromGround;
+
+            if (currentFurniture.alwayMakeSquare)
             {
                 higherValue = Mathf.Max(width, length);
                 width = length = higherValue;
             }
-
+            Debug.Log($"Giá trị mới {width} {length}");
             currentFurniture.data.size.width = width;
             currentFurniture.data.size.length = length;
             currentFurniture.SyncWithBounds();
             currentFurniture.data.size.ClampSize();
 
             currentFurniture.RefreshCheckPointsByBounds();
+            
+            widthInputField.ResetValue();
+            lengthInputField.ResetValue();
         }
     }
 
-    private float TryParse(TMP_InputField inputField, float defaultValue)
+    private float TryParse(TMP_InputField inputField)
     {
         if(float.TryParse(inputField.text,out var result))
         {
             return result;
         }
-        return defaultValue;
+        return default;
     }
 
     private void Update()
@@ -132,8 +150,7 @@ public class FurnitureEditFunction : MonoBehaviour
 
 
             // handle when furniture is door
-            bool canShowFlipBtn = currentFurniture.lineType == LineType.Door && currentFurniture.furnitureMergeToWall.IsInWall();
-            popupEdit.flipBtn.gameObject.SetActive(canShowFlipBtn);
+
             // maybe create world space canvas
         }
         currentPopup.gameObject.SetActive(currentFurniture);
@@ -150,5 +167,31 @@ public class FurnitureEditFunction : MonoBehaviour
         //{
         //    flipToggle.DeSelectect();
         //}
+        HandleInputFields();
+    }
+
+    private void HandleInputFields()
+    {
+        if(currentFurniture != null)
+        {
+
+            var lineType = currentFurniture.lineType;
+            bool isNormalFurniture = currentFurniture.lineType == LineType.None;
+            widthInputField.gameObject.SetActive(true);
+            lengthInputField.gameObject.SetActive(isNormalFurniture);
+
+            toggleFlipGroup.gameObject.SetActive(lineType == LineType.Door);
+            distanceFromGroundInputField.gameObject.SetActive(lineType == LineType.Window);
+
+            //toggleFlipGroup.SetInteractable(currentFurniture.furnitureMergeToWall.IsInWall());
+        }
+    }
+
+    private void OnRefreshValue()
+    {
+        Debug.Log("On Refresh Value");
+        widthInputField.SetValue(currentFurniture.width);
+        lengthInputField.SetValue(currentFurniture.length);
+        distanceFromGroundInputField.SetValue(currentFurniture.data.size.distanceFromGround);
     }
 }

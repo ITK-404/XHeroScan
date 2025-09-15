@@ -9,6 +9,16 @@ public class CameraResizeByFloor : MonoBehaviour
     private Camera mainCamera;
     private Tween moveTween;
     private Tween sizeTween;
+
+    public bool isLandscape = false;
+
+    private void Awake()
+    {
+        Instance = this;
+        mainCamera = Camera.main;
+    }
+
+
     public void Resize(Vector2 center, List<Vector2> checkPoints)
     {
         moveTween?.Kill();
@@ -20,20 +30,8 @@ public class CameraResizeByFloor : MonoBehaviour
         {
             bounds.Encapsulate(item);
         }
-
-        float aspect = (float)Screen.width / (float)Screen.height;
-
-        // cần cover theo chiều cao
-        float sizeByHeight = bounds.size.y * 0.5f;
-
-        // cần cover theo chiều ngang
-        float sizeByWidth = (bounds.size.x * 0.5f) / aspect;
-
-        // chọn size lớn hơn để đảm bảo cover đủ
-        float targetSize = Mathf.Max(sizeByHeight, sizeByWidth);
-
-        // thêm padding 15%
-        targetSize *= 1.15f;
+        // tỉ lệ màn hình
+        float targetSize = GetTargetSize(bounds);
 
         moveTween = DOVirtual.Float(mainCamera.orthographicSize, targetSize, 0.4f, (x) =>
         {
@@ -42,10 +40,32 @@ public class CameraResizeByFloor : MonoBehaviour
         sizeTween = mainCamera.transform.DOMove(newCenter, 0.4f);
     }
 
-    private void Awake()
+    private float GetTargetSize(Bounds bounds)
     {
-        Instance = this;
-        mainCamera = Camera.main;
-    }
+        // Kiểm tra nên match width hay height theo độ lớn của size X và size Y
+        isLandscape = bounds.size.x > bounds.size.y;
+        // tỉ lệ màn hình
+        float screenAspect = (float)Screen.width / (float)Screen.height;
 
+        float width = bounds.size.x;
+        float height = bounds.size.y;
+        
+        width = width * 0.5f;
+        height = height * 0.5f;
+
+        float sizeByHeight = height, sizeByWidth;
+        
+        if (isLandscape)
+        {
+            sizeByWidth = width / screenAspect;
+        }
+        else
+        {
+            sizeByWidth = width * screenAspect;
+        }
+        float offsetRatio = isLandscape ? 1.15f : 1.40f;
+        float targetSize = Mathf.Max(sizeByHeight, sizeByWidth) * offsetRatio;
+
+        return targetSize;
+    }
 }
