@@ -37,8 +37,7 @@ public class InputCustomers : MonoBehaviour
     }
     private void Start()
     {
-        //Invoke(nameof(Find), 0.);
-        Find();
+        Invoke(nameof(Find), 0.5f);
     }
 
     private void Find()

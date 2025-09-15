@@ -6,7 +6,6 @@ using UnityEngine;
 [Serializable]
 public class FurnitureMergeToWall
 {
-    private float flipOffset;
     public float ratio;
     private FurnitureItem furnitureItem;
 
@@ -220,8 +219,8 @@ public class FurnitureMergeToWall
 
     private void RotationToWallLine()
     {
-        
-        flipOffset = furnitureItem.data.isFlip ? 180 : 0;
+        var flipOffset = 0;
+        //flipOffset = furnitureItem.data.isFlipVertical ? 180 : 0;
         Vector3 dir = attachedWallLine.end - attachedWallLine.start;
         dir.y = 0;
         float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;

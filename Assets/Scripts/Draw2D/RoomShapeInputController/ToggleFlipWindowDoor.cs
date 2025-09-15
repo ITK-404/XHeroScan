@@ -13,12 +13,12 @@ public class ToggleFlipWindowDoor : MonoBehaviour
     private void ToggleChanged(bool state)
     {
         if (furnitureItem == null) return;
-        furnitureItem.data.isFlip = state;
+        furnitureItem.data.isFlipVertical = state;
     }
 
     public void SelectFurniture()
     {
-        toggleSwitch.ToggleWithoutAnimation(furnitureItem.data.isFlip);
+        toggleSwitch.ToggleWithoutAnimation(furnitureItem.data.isFlipVertical);
         toggleSwitch.gameObject.SetActive(true);
     }
 

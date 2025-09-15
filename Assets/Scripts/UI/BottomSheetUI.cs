@@ -71,4 +71,9 @@ public class BottomSheetUI : BaseAnimUI
     protected virtual void Update()
     {
     }
+
+    public bool IsOpen()
+    {
+        return container.gameObject.activeSelf;
+    }
 }
