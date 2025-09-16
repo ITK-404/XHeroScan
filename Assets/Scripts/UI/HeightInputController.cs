@@ -50,6 +50,12 @@ public class HeightInputController : MonoBehaviour
 
     void OnHeightInputChanged(string input)
     {
+        if(string.IsNullOrEmpty(input))
+        {
+            currentHeight = 0;
+            inputField.text = currentHeight.ToString(CultureInfo.InvariantCulture);
+            return;
+        }
         if (int.TryParse(input, out int newHeight))
         {
             currentHeight = Mathf.Clamp(newHeight, minHeight, maxHeight);
