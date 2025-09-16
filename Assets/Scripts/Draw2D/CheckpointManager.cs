@@ -430,7 +430,7 @@ public class CheckpointManager : MonoBehaviour
 
     public void CreateCommandHere()
     {
-        editRoomCommand.CreateUndoCommand();
+        editRoomCommand.CreateAndAddUndoList();
     }
 
     public Vector3 GetWorldPositionFromScreen(Vector3 screenPosition)

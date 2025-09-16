@@ -55,7 +55,9 @@ public class LoadRoomScan : MonoBehaviour
                     // save furniture
 
                     FurnitureManager.Instance.SaveRuntimesToTemp();
-                    UndoRedoController.Instance.CreateTempUndoList();
+                    UndoRedoController.EditRoomCommandCreator = new();
+                    UndoRedoController.EditRoomCommandCreator.TryAddChangedRoomID(capturedID);
+                    UndoRedoController.Instance.CreateTempUndoListToScanAR();
                     PlayerPrefs.SetString("SelectedRoomID", capturedID);
                     SceneManager.LoadScene("AR");
                     // btnByCam.Instance.OnMeasureClicked();

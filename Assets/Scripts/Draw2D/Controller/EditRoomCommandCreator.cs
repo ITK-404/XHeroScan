@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class EditRoomCommandCreator
@@ -9,6 +9,7 @@ public class EditRoomCommandCreator
 
     public EditRoomCommandCreator()
     {
+        // store all data
         foreach (var room in RoomStorage.rooms)
         {
             snapShotRoomData.Add(new Room(room));
@@ -22,9 +23,9 @@ public class EditRoomCommandCreator
         }
     }
 
-    public void CreateUndoCommand()
+    public MovePointRoomCommand CreateUndoCommand()
     {
-        if (roomIDChanged.Count == 0) return;
+        if (roomIDChanged.Count == 0) return null;
 
         foreach (var item in roomIDChanged)
         {
@@ -32,7 +33,7 @@ public class EditRoomCommandCreator
         }
         List<Room> currentRoomData = new();
         List<DrawingInstanced> currentChangedList = new();
-
+        // just save room that changed
         foreach (var item in snapShotRoomData)
         {
             if (roomIDChanged.Contains(item.ID))
@@ -40,6 +41,7 @@ public class EditRoomCommandCreator
                 currentRoomData.Add(item);
             }
         }
+        // just save furniture inside room changed
         foreach (var item in furnitureInsideRoom)
         {
             if (roomIDChanged.Contains(item.roomID))
@@ -47,12 +49,29 @@ public class EditRoomCommandCreator
                 currentChangedList.Add(item);
             }
         }
-        UndoRedoController.Instance.AddToUndo(new MovePointRoomCommand(currentRoomData, currentChangedList));
+        return new MovePointRoomCommand(currentRoomData, currentChangedList);
+    }
 
+    public void CreateAndAddUndoList()
+    {
+        var command = CreateUndoCommand();
+        if (command == null) return;
+        UndoRedoController.Instance.AddToUndo(command);
+    }
+
+    public void CreateAndAddScanARList()
+    {
+        Debug.Log($"Add to scan AR List");
+        // tạo và thêm command vào list scanAR
+        // lệnh này dùng trong scene scan AR, đảm bảo sau khi quay lại scene draw có thể hoàn tác được room
+        var command = CreateUndoCommand();
+        if (command == null) return;
+        UndoRedoController.scanARTempList.Add(command);
     }
 
     public void TryAddChangedRoomID(string roomID)
     {
+        // add room changed ID to save
         if (!string.IsNullOrEmpty(roomID) && !roomIDChanged.Contains(roomID))
             roomIDChanged.Add(roomID);
     }

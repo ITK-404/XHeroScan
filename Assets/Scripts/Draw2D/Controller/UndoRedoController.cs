@@ -4,12 +4,14 @@ using UnityEngine;
 public class UndoRedoController : MonoBehaviour
 {
     public static UndoRedoController Instance;
-    public static List<IUndoRedoCommand> tempUndoList = new();
+    public static List<IUndoRedoCommand> scanARTempList = new();
 
     [SerializeField] private int maxStackCount = 20;
     
     private List<IUndoRedoCommand> undoList;
     private List<IUndoRedoCommand> redoList;
+
+    public static EditRoomCommandCreator EditRoomCommandCreator;
     
     private void Awake()
     {
@@ -18,17 +20,17 @@ public class UndoRedoController : MonoBehaviour
         undoList = new List<IUndoRedoCommand>();
         redoList = new List<IUndoRedoCommand>();
         // dùng biến static để lưu object data khi load sang scene khác
-        if(tempUndoList.Count > 0)
+        if(scanARTempList.Count > 0)
         {
-            undoList = new List<IUndoRedoCommand>(tempUndoList);
+            undoList = new List<IUndoRedoCommand>(scanARTempList);
         }
         // sau khi load xong thì clear đi
-        tempUndoList.Clear();
+        scanARTempList.Clear();
     }
 
-    public void CreateTempUndoList()
+    public void CreateTempUndoListToScanAR()
     {
-        tempUndoList = new List<IUndoRedoCommand>(undoList);
+        scanARTempList = new List<IUndoRedoCommand>(undoList);
     }
 #if UNITY_EDITOR
     private void Update()
