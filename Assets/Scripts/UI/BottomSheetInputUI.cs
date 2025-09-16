@@ -30,7 +30,7 @@ public class BottomSheetInputUI : BottomSheetUI
         float scaleHeight = height * ((RectTransform)rectContainer.parent).rect.height / Screen.height;
         Vector3 lerpPosition = Vector3.Lerp(rectContainer.anchoredPosition, openPos + new Vector2(0, scaleHeight), Time.deltaTime * 10);
         rectContainer.anchoredPosition = lerpPosition;
-        Debug.Log($"On Show Keyboard: {TouchScreenKeyboard.visible} {TouchScreenKeyboard.area}");
+        //Debug.Log($"On Show Keyboard: {TouchScreenKeyboard.visible} {TouchScreenKeyboard.area}");
     }
 
     public void OnInputFocus()

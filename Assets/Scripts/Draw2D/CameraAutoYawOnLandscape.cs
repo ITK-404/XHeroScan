@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-public class CameraKeepUpright2D : MonoBehaviour
+public class CameraAutoYawOnLandscape : MonoBehaviour
 {
     [Header("Camera để xoay (2D)")]
     public Camera targetCam;

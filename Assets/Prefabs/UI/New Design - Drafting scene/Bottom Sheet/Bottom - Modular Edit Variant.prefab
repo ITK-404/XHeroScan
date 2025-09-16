@@ -1285,8 +1285,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1635721368256820213}
   m_HandleRect: {fileID: 8463856698298857223}
   m_Direction: 2
-  m_Value: -0.00000031819894
-  m_Size: 0.4753198
+  m_Value: 1
+  m_Size: 0.78979343
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1465,7 +1465,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 154.37105}
+  m_SizeDelta: {x: 0, y: 165}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &8615852922758115680
 MonoBehaviour:
@@ -1553,7 +1553,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 127}
+  m_SizeDelta: {x: 0, y: 143}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &698604001523387484
 MonoBehaviour:
@@ -2347,7 +2347,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 15, y: 751.3711}
+  m_AnchoredPosition: {x: 15, y: 670.024}
   m_SizeDelta: {x: -15, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &26495352861823740
@@ -2811,7 +2811,7 @@ PrefabInstance:
     - target: {fileID: 2039014522735626302, guid: 787005dc4e5ae4a4389350a0c652a944,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 150
+      value: 165
       objectReference: {fileID: 0}
     - target: {fileID: 2039014522735626302, guid: 787005dc4e5ae4a4389350a0c652a944,
         type: 3}
@@ -3005,7 +3005,7 @@ PrefabInstance:
     - target: {fileID: 2039014522735626302, guid: 787005dc4e5ae4a4389350a0c652a944,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 150
+      value: 165
       objectReference: {fileID: 0}
     - target: {fileID: 2039014522735626302, guid: 787005dc4e5ae4a4389350a0c652a944,
         type: 3}
@@ -3729,7 +3729,7 @@ PrefabInstance:
     - target: {fileID: 2039014522735626302, guid: 787005dc4e5ae4a4389350a0c652a944,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 150
+      value: 165
       objectReference: {fileID: 0}
     - target: {fileID: 2039014522735626302, guid: 787005dc4e5ae4a4389350a0c652a944,
         type: 3}
