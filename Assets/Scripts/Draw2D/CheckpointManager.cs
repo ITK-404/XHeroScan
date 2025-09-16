@@ -454,9 +454,9 @@ public class CheckpointManager : MonoBehaviour
     void LoadPointsFromStorage()
     {
 
-
+        var floors = FloorStorage.floors;
         // ====== FLOOR ======
-        foreach (var floor in FloorStorage.floors)
+        foreach (var floor in floors)
         {
             if (floor == null || floor.checkpoints == null || floor.checkpoints.Count < 3) continue;
 
@@ -560,6 +560,12 @@ public class CheckpointManager : MonoBehaviour
 
                 marker.name = $"FloorPoint_{i}";
             }
+        }
+        if(FloorStorage.floors.Count > 0)
+        {
+            // Resize lại camera khi load
+            var floor = floors[0];
+            CameraResizeByFloor.Instance.Resize(floor.center, floor.checkpoints);
         }
 
         // ROOMS
