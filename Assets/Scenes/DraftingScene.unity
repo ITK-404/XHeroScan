@@ -8025,6 +8025,12 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!224 &896473063 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 2395308079622421421, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+    type: 3}
+  m_PrefabInstance: {fileID: 4492018900371189173}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &906156679
 GameObject:
   m_ObjectHideFlags: 0
@@ -15953,6 +15959,12 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1913381022}
   m_CullTransparentMesh: 1
+--- !u!224 &1923381715 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 8266508222565108072, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+    type: 3}
+  m_PrefabInstance: {fileID: 4492018900371189173}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1952285340
 GameObject:
   m_ObjectHideFlags: 0
@@ -19184,6 +19196,21 @@ PrefabInstance:
       propertyPath: drawingTool
       value: 
       objectReference: {fileID: 667801198}
+    - target: {fileID: 7595238954075170666, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: actionsList.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7595238954075170666, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: 'actionsList.Array.data[0]'
+      value: 
+      objectReference: {fileID: 1923381715}
+    - target: {fileID: 7595238954075170666, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: 'actionsList.Array.data[1]'
+      value: 
+      objectReference: {fileID: 896473063}
     - target: {fileID: 7641520883724477749, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -19277,7 +19304,7 @@ PrefabInstance:
     - target: {fileID: 8556240370596885310, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 770.7241
+      value: 920.3
       objectReference: {fileID: 0}
     - target: {fileID: 8640374401235794372, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}

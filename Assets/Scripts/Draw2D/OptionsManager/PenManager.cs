@@ -175,7 +175,7 @@ public class PenManager : MonoBehaviour
         if (plane.Raycast(ray, out float enter)) return ray.GetPoint(enter);
         return Vector3.zero;
     }
-    [SerializeField] private RectTransform bottomSheet;
+    [SerializeField] private List<RectTransform> actionsList = new();
     private bool IsPointerInActionSpace(Vector2 screenPosition)
     {
         if (ActionSpace == null) return false;
@@ -186,8 +186,18 @@ public class PenManager : MonoBehaviour
         Camera cam = (canvas != null && canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : mainCamera;
 
         bool isInActionSpace = RectTransformUtility.RectangleContainsScreenPoint(rt, screenPosition, cam);
-        //bool isInBoottomSpace = RectTransformUtility.RectangleContainsScreenPoint(rt, screenPosition, cam);
-        return isInActionSpace;
+        bool isInBoottomSpace =  false;
+
+        foreach(var item in actionsList)
+        {
+            if(!RectTransformUtility.RectangleContainsScreenPoint(item, screenPosition, cam))
+            {
+                isInBoottomSpace = false;
+                break;
+            }
+        }
+
+        return isInActionSpace && isInBoottomSpace;
     }
 
     private bool IsClickingOnBackgroundBlackUI(Vector2 screenPosition)
