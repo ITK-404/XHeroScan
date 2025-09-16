@@ -55,7 +55,7 @@
                 float2 uv = i.uv;
                 fixed4 color = fixed4(0, 0, 0, 0);
 
-                // ✅ Hiệu ứng Blur
+                // Hiệu ứng Blur
                 int samples = 5;
                 float totalWeight = 0.0;
 
@@ -72,12 +72,12 @@
 
                 color /= totalWeight;
 
-                // ✅ Hiệu ứng Gradient
+                // Hiệu ứng Gradient
                 float gradientFactor = (_GradientDirection == 0.0) ? uv.x : uv.y;
                 fixed4 gradientColor = lerp(_GradientStartColor, _GradientEndColor, gradientFactor);
                 color *= gradientColor;
 
-                // ✅ Mặt nạ bo tròn hai đầu (giữ lại độ mờ dần)
+                // Mặt nạ bo tròn hai đầu (giữ lại độ mờ dần)
                 float edgeMask = 1.0;
                 float roundness = _Roundness * 0.5; // Giới hạn bo tròn
 
@@ -94,7 +94,7 @@
                     edgeMask = min(bottomMask, topMask);
                 }
 
-                // ✅ Kết hợp mặt nạ với alpha (giữ lại hiệu ứng blur)
+                // Kết hợp mặt nạ với alpha (giữ lại hiệu ứng blur)
                 color.a *= edgeMask;
 
                 return color;
