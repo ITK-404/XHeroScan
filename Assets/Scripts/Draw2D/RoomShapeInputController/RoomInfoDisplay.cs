@@ -292,8 +292,10 @@ public class RoomInfoDisplay : MonoBehaviour
 
         if (popupWS && popupWS.activeSelf)
         {
+            float camYaw = Camera.main ? Camera.main.transform.eulerAngles.y : 0f;
+            // popupWS.transform.localRotation = Quaternion.Euler(0f, camYaw, 0f);
             popupWS.transform.position = worldPos;
-            popupWS.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            popupWS.transform.rotation = Quaternion.Euler(90f, camYaw, 0f);
         }
     }
 
