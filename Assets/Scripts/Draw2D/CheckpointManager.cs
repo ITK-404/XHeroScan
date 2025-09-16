@@ -909,19 +909,36 @@ public class CheckpointManager : MonoBehaviour
 
     public void DrawWallLineByRoom(Room room)
     {
-        room.headingCompass = 0f;
-        room.Compass = new Vector2(0f, 1f);
+        // room.headingCompass = 0f;
+        // room.Compass = new Vector2(0f, 1f);
         foreach (var wl in room.wallLines)
         {
-            wl.headingCompass = HeadingManager.HeadingDeg(wl.start, wl.end);
+            // Gắn heading cho line nếu chưa có (0f = unset)
+            EnsureLineHeading2D(room, wl);
 
             var s = new Vector3(wl.start.x, roomIndexY + lineLift, wl.start.z);
             var e = new Vector3(wl.end.x, roomIndexY + lineLift, wl.end.z);
-            // Vẽ đoạn tường gốc như cũ
+
             DrawingTool.currentLineType = wl.type;
             DrawingTool.DrawLineAndDistance(s, e, room.thickness);
         }
     }
+// --- Helpers cho heading (0f = unset) ---
+private static bool HasHeading(float h) => h != 0f;
+private static float RealWorldAngleForLine(Vector3 start, Vector3 end, float roomHeadingCompass)
+{
+    Vector3 d = end - start; d.y = 0f;
+    if (d.sqrMagnitude < 1e-6f) return 360f; // tránh 0 = "unset"
+    float angleLocal = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg; // so với Z+
+    float real = (angleLocal + roomHeadingCompass + 360f) % 360f;
+    if (Mathf.Approximately(real, 0f)) real = 360f; // map 0° -> 360° để không nhầm "unset"
+    return real;
+}
+private static void EnsureLineHeading2D(Room room, WallLine wl)
+{
+    if (!HasHeading(wl.headingCompass))
+        wl.headingCompass = RealWorldAngleForLine(wl.start, wl.end, room.headingCompass);
+}
 
     private List<GameObject> GetLoopByRoomID(string roomID)
     {
