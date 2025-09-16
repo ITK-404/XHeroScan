@@ -1,11 +1,15 @@
-﻿using TMPro;
+﻿using iTextSharp.text;
+using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UIElements;
 
 public class TMP_InputFieldCustom : TMP_InputField
 {
-    protected bool isDragging = false;
+    private bool isDragging = false;
     private Vector2 pointerDownPos;
+
     public override void OnPointerDown(PointerEventData eventData)
     {
         // Ghi lại vị trí khi bắt đầu chạm
@@ -24,9 +28,8 @@ public class TMP_InputFieldCustom : TMP_InputField
         }
     }
 
-    public override void OnDrag(PointerEventData eventData)
+    public void OnDrag(PointerEventData eventData)
     {
-        base.OnDrag(eventData);
         if (Vector2.Distance(eventData.position, pointerDownPos) > 10f)
         {
             isDragging = true; // vượt ngưỡng, coi là scroll
