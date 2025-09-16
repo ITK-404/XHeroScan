@@ -99,10 +99,14 @@ public class CompassMenu : MonoBehaviour
         DirectionRotationCalculator = new();
         DirectionRotationCalculator.circleDirection = new()
         {
-            Direction.South, // 0
-            Direction.East, // 90
-            Direction.North, // 180
-            Direction.West // 270
+            // Direction.South, // 0
+            // Direction.East, // 90
+            // Direction.North, // 180
+            // Direction.West // 270
+            Direction.North, // 0
+            Direction.West, // 270
+            Direction.South, // 180
+            Direction.East // 90
         };
         DirectionRotationCalculator.Init();
     }

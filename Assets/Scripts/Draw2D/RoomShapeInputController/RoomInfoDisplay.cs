@@ -826,6 +826,7 @@ public class RoomInfoDisplay : MonoBehaviour
 
             var cv = popupWS.GetComponentInChildren<Canvas>(true) ?? popupWS.AddComponent<Canvas>();
             cv.renderMode = RenderMode.WorldSpace;
+            cv.sortingOrder = 100;
             if (!cv.worldCamera) cv.worldCamera = Camera.main;
             if (!popupWS.GetComponentInChildren<UnityEngine.UI.GraphicRaycaster>())
                 popupWS.AddComponent<UnityEngine.UI.GraphicRaycaster>();

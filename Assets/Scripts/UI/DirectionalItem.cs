@@ -53,10 +53,14 @@ public static class DirectionAnchorMapping
     {
         return dir switch
         {
-            Direction.North => AnchorPosition.MiddleTop,
-            Direction.South => AnchorPosition.MiddleBottom,
-            Direction.East  => AnchorPosition.MiddleRight,
-            Direction.West  => AnchorPosition.MiddleLeft,
+            // Direction.North => AnchorPosition.MiddleTop,
+            // Direction.South => AnchorPosition.MiddleBottom,
+            // Direction.East  => AnchorPosition.MiddleRight,
+            // Direction.West  => AnchorPosition.MiddleLeft,
+            Direction.North => AnchorPosition.MiddleBottom,
+            Direction.South => AnchorPosition.MiddleTop,
+            Direction.East  => AnchorPosition.MiddleLeft,
+            Direction.West  => AnchorPosition.MiddleRight,
             _ => AnchorPosition.Center
         };
     }
