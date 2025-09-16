@@ -416,60 +416,21 @@ public class CheckpointManager : MonoBehaviour
         selectedCheckpoint = null;
         isMovingCheckpoint = false;
     }
-    private List<string> roomIDChanged = new();
-    private List<Room> snapShotRoomData = new();
-    private List<DrawingInstanced> furnitureInsideRoom = new();
+ 
+    private EditRoomCommandCreator editRoomCommand;
     public void InitAndClearData()
     {
-        roomIDChanged.Clear();
-        snapShotRoomData.Clear();
-        furnitureInsideRoom.Clear();
-        foreach (var room in RoomStorage.rooms)
-        {
-            snapShotRoomData.Add(new Room(room));
-        }
-
-        var runtimeFurnitures = FurnitureManager.Instance.GetAllFurniture();
-        foreach (var furniture in runtimeFurnitures)
-        {
-            if (furniture == null || string.IsNullOrEmpty(furniture.data.roomID)) continue;
-            furnitureInsideRoom.Add(furniture.data);
-        }
+        editRoomCommand = new();
     }
     
     public void TryAddChangedRoomID(string roomID)
     {
-        if (!string.IsNullOrEmpty(roomID) && !roomIDChanged.Contains(roomID))
-            roomIDChanged.Add(roomID);
+        editRoomCommand.TryAddChangedRoomID(roomID);
     }
 
     public void CreateCommandHere()
     {
-        if(roomIDChanged.Count == 0) return;
-    
-        foreach (var item in roomIDChanged)
-        {
-            Debug.Log("Room ID changed: " + item);
-        }
-        List<Room> currentRoomData = new();
-        List<DrawingInstanced> currentChangedList = new();
-
-        foreach (var item in snapShotRoomData)
-        {
-            if (roomIDChanged.Contains(item.ID))
-            {
-                currentRoomData.Add(item);
-            }
-        }
-        foreach(var item in furnitureInsideRoom)
-        {
-            if (roomIDChanged.Contains(item.roomID))
-            {
-                currentChangedList.Add(item);
-            }
-        }
-        UndoRedoController.Instance.AddToUndo(new MovePointRoomCommand(currentRoomData, currentChangedList));
-
+        editRoomCommand.CreateAndAddUndoList();
     }
 
     public Vector3 GetWorldPositionFromScreen(Vector3 screenPosition)
@@ -493,9 +454,9 @@ public class CheckpointManager : MonoBehaviour
     void LoadPointsFromStorage()
     {
 
-
+        var floors = FloorStorage.floors;
         // ====== FLOOR ======
-        foreach (var floor in FloorStorage.floors)
+        foreach (var floor in floors)
         {
             if (floor == null || floor.checkpoints == null || floor.checkpoints.Count < 3) continue;
 
@@ -600,10 +561,17 @@ public class CheckpointManager : MonoBehaviour
                 marker.name = $"FloorPoint_{i}";
             }
         }
-// ROOMS
-foreach (var room in RoomStorage.rooms)
-{
-    if (room == null || room.checkpoints == null || room.checkpoints.Count < 3) continue;
+        if(FloorStorage.floors.Count > 0)
+        {
+            // Resize lại camera khi load
+            var floor = floors[0];
+            CameraResizeByFloor.Instance.Resize(floor.center, floor.checkpoints);
+        }
+
+        // ROOMS
+        foreach (var room in RoomStorage.rooms)
+        {
+            if (room == null || room.checkpoints == null || room.checkpoints.Count < 3) continue;
 
     AddGameObjectCheckPointToGlobalVariable(room);
     CreateRoomMeshCtrl(room);

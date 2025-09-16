@@ -192,12 +192,6 @@ public class ClearAllRoomsButton : MonoBehaviour
         var roomMeshes = GameObject.FindObjectsByType<RoomMeshController>(FindObjectsSortMode.None);
         foreach (var rm in roomMeshes)
         {
-            if (isCreateCommand)
-            {
-                var srcRoom = RoomStorage.GetRoomByID(rm.RoomID);
-                var data = new Delete_RoomData(new Room(srcRoom), rm.transform.position);
-                deleteAllRoomDataList.Add(data);
-            }
             Destroy(rm.gameObject); // xoá RoomFloor_<roomId> (mesh phòng)
         }
 
