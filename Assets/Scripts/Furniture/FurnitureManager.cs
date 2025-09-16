@@ -7,6 +7,7 @@ public class FurnitureManager : MonoBehaviour
 {
     public static FurnitureManager Instance;
     public static List<DrawingInstanced> tempSaveDataFurnitureDatas = new List<DrawingInstanced>();
+    private static List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
 
     public FurnitureItem furnitureItemPrefab;
     public ScaleByCameraZoom ScaleByCameraZoom;
@@ -20,7 +21,6 @@ public class FurnitureManager : MonoBehaviour
     private FurnitureItem tempDragItem;
     private FurnitureItem currentFurniture;
     [Header("Rotate")]
-    private static List<FurnitureItem> runtimeFurnitures = new List<FurnitureItem>();
     private List<float> snapAngles = new List<float> { -90, 90f, 180f, 0 };
 
     private Camera mainCam;
@@ -42,26 +42,38 @@ public class FurnitureManager : MonoBehaviour
             Debug.LogWarning("No furniture data to load.");
             return;
         }
-        // clear before run
         runtimeFurnitures.Clear();
 
-        foreach (var data in tempSaveDataFurnitureDatas)
+        // clear before run
+        if (tempSaveDataFurnitureDatas.Count > 0)
         {
-            var prefab = Instance.GetFurniturePrefabByID(data.itemTemplateID);
-            if (prefab == null) continue;
-            var item = GameObject.Instantiate(prefab);
-            item.FetchData(data);
-            item.InitLineAndText();
-            if(item.lineType == LineType.Door || item.lineType == LineType.Window)
+            foreach (var data in tempSaveDataFurnitureDatas)
             {
-                item.furnitureMergeToWall.ForceSnapToWall();
+                var prefab = Instance.GetFurniturePrefabByID(data.itemTemplateID);
+                if (prefab == null) continue;
+                var item = GameObject.Instantiate(prefab);
+                item.FetchData(data);
+                item.InitLineAndText();
+                if (item.lineType == LineType.Door || item.lineType == LineType.Window)
+                {
+                    item.furnitureMergeToWall.ForceSnapToWall();
+                }
+                runtimeFurnitures.Add(item);
             }
-            runtimeFurnitures.Add(item);
-        }
 
-        // clear after using
-        tempSaveDataFurnitureDatas.Clear();
+        }
         Debug.Log("Loading furniture data: " + tempSaveDataFurnitureDatas.Count);
+        Debug.Log("Loading Runtime data: " + runtimeFurnitures.Count);
+        tempSaveDataFurnitureDatas.Clear();
+    }
+
+    public void SaveRuntimesToTemp()
+    {
+        Debug.Log("Loading furniture data: " + tempSaveDataFurnitureDatas.Count);
+        Debug.Log("Loading Runtime data: " + runtimeFurnitures.Count);
+        tempSaveDataFurnitureDatas.Clear();
+        tempSaveDataFurnitureDatas = GetAllFurnitureData();
+        runtimeFurnitures.Clear();
     }
 
     public void RemoveFromRuntime(FurnitureItem furnitureItem)
@@ -202,6 +214,7 @@ public class FurnitureManager : MonoBehaviour
         }
 
         runtimeFurnitures.Clear();
+        tempSaveDataFurnitureDatas.Clear();
     }
 
 
@@ -402,4 +415,6 @@ public class FurnitureManager : MonoBehaviour
     {
         return runtimeFurnitures;
     }
+
+    
 }

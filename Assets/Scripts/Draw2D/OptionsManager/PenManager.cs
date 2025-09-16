@@ -186,18 +186,8 @@ public class PenManager : MonoBehaviour
         Camera cam = (canvas != null && canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : mainCamera;
 
         bool isInActionSpace = RectTransformUtility.RectangleContainsScreenPoint(rt, screenPosition, cam);
-        bool isInBoottomSpace =  false;
-
-        foreach(var item in actionsList)
-        {
-            if(!RectTransformUtility.RectangleContainsScreenPoint(item, screenPosition, cam))
-            {
-                isInBoottomSpace = false;
-                break;
-            }
-        }
-
-        return isInActionSpace && isInBoottomSpace;
+  
+        return isInActionSpace;
     }
 
     private bool IsClickingOnBackgroundBlackUI(Vector2 screenPosition)

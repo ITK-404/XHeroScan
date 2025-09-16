@@ -52,6 +52,10 @@ public class LoadRoomScan : MonoBehaviour
                 string capturedID = room.ID; // tránh closure
                 btn.onClick.AddListener(() =>
                 {
+                    // save furniture
+
+                    FurnitureManager.Instance.SaveRuntimesToTemp();
+
                     PlayerPrefs.SetString("SelectedRoomID", capturedID);
                     SceneManager.LoadScene("AR");
                     // btnByCam.Instance.OnMeasureClicked();
