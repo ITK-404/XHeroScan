@@ -45,6 +45,7 @@ public class BackFromDraw2DButton : MonoBehaviour
         BackButton.OnClickYes();
         SceneHistoryManager.LoadPreviousScene();
         SaveLoadManager.Clear();
+        FurnitureManager.Instance.ClearAllFurnitures();
     }
 
     private void OpenSavePanel()
