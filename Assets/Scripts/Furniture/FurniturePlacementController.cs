@@ -59,29 +59,21 @@ public partial class FurnitureManager : MonoBehaviour
         private void TryDropFurniture()
         {
             BottomSheetPageManager.Instance.blockTouchImage.raycastTarget = true;
-
+            // Khởi tạo các biến cần thiết
+            var worldPosition = tempDragItem.furnitureMergeToWall.GetCenterPosition();
             var tempFurniture = tempDragItem;
+            var firstDoorPoint = Vector3.zero;
+
             bool isOverUI = IsOverUI();
             bool isNormalFurniture = tempFurniture.lineType == LineType.None;
-            float minDis = float.MaxValue;
-            Vector3 firstDoorPoint = Vector3.zero;
-            WallLine wallLine = null;
+            bool canMergeToWall = tempFurniture.furnitureMergeToWall.IsDragPosCanMerge(worldPosition, ref firstDoorPoint);
 
-            if (isNormalFurniture == false)
-            {
-                foreach (var room in RoomStorage.rooms)
-                {
-                    tempFurniture.furnitureMergeToWall.
-                        FindNearestWallLine(room, tempFurniture.GetWorldPosition(), 0.2f, ref minDis, ref wallLine, ref firstDoorPoint);
-                }
-            }
-
-            Debug.Log($"Is Over UI {isOverUI} WL not null {wallLine != null} normal {isNormalFurniture}");
+            Debug.Log($"Is Over UI {isOverUI} WL not null {canMergeToWall} normal {isNormalFurniture}");
             if (isNormalFurniture)
             {
                 DropDragItem();
             }
-            else if (isOverUI == false && wallLine != null && isNormalFurniture == false)
+            else if (!isOverUI && !isNormalFurniture && canMergeToWall)
             {
                 DropDragItem();
                 tempFurniture.SetWorldPosition(firstDoorPoint);
@@ -91,7 +83,7 @@ public partial class FurnitureManager : MonoBehaviour
             {
                 ClearDragItem();
             }
-            FurnitureItem.OnDragFurniture = true;
+            FurnitureItem.OnDragFurniture = false;
         }
 
         public bool IsDragTempFurniture()

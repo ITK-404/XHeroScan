@@ -56,7 +56,7 @@ public class HeightInputController : MonoBehaviour
             inputField.text = currentHeight.ToString(CultureInfo.InvariantCulture);
             return;
         }
-        if (int.TryParse(input, out int newHeight))
+        if (float.TryParse(input, out float newHeight))
         {
             currentHeight = Mathf.Clamp(newHeight, minHeight, maxHeight);
             inputField.text = currentHeight.ToString(CultureInfo.InvariantCulture);

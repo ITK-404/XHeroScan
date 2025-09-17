@@ -60,7 +60,6 @@ public class PenManager : MonoBehaviour
         if (ConnectManager.isConnectActive) return;
         if (FurnitureItem.OnDragFurniture) return;
         if (FurnitureItem.OnDragPoint) return;
-
         // KHÔNG bật zoom/pan nếu đang kéo room HOẶC đang kéo point floor
         bool blockZoomPan = InteractionFlags.IsRoomFloorDragging || InteractionFlags.IsFloorHandleDragging;
 

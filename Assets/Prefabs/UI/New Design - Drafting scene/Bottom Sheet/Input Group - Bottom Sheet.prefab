@@ -59,7 +59,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -277,7 +277,6 @@ GameObject:
   - component: {fileID: 2197583267113020974}
   - component: {fileID: 322238102885520301}
   - component: {fileID: 7634956322481271603}
-  - component: {fileID: 2329678586985063563}
   - component: {fileID: 3919836449892629063}
   m_Layer: 5
   m_Name: Name Input Text
@@ -394,14 +393,14 @@ MonoBehaviour:
   m_VerticalScrollbarEventHandler: {fileID: 0}
   m_LayoutGroup: {fileID: 0}
   m_ScrollSensitivity: 1
-  m_ContentType: 3
+  m_ContentType: 9
   m_InputType: 0
   m_AsteriskChar: 42
-  m_KeyboardType: 2
+  m_KeyboardType: 11
   m_LineType: 0
   m_HideMobileInput: 0
   m_HideSoftKeyboard: 0
-  m_CharacterValidation: 3
+  m_CharacterValidation: 8
   m_RegexValue: 
   m_GlobalPointSize: 14
   m_CharacterLimit: 10
@@ -445,7 +444,7 @@ MonoBehaviour:
   m_isRichTextEditingAllowed: 0
   m_LineLimit: 0
   isAlert: 0
-  m_InputValidator: {fileID: 0}
+  m_InputValidator: {fileID: 11400000, guid: 161c8219b4f9f104a885025f1f9e1f1c, type: 2}
   m_ShouldActivateOnSelect: 0
 --- !u!114 &7634956322481271603
 MonoBehaviour:
@@ -461,19 +460,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Type: 5
   ID: length
---- !u!114 &2329678586985063563
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4611726590485312028}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3457befc48d5e4d44845cadb0d9d7aa6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  tmpInputField: {fileID: 322238102885520301}
 --- !u!114 &3919836449892629063
 MonoBehaviour:
   m_ObjectHideFlags: 0

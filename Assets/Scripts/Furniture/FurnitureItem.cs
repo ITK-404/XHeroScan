@@ -373,7 +373,7 @@ public partial class FurnitureItem : MonoBehaviour
         width = bounds.size.x;
         length = bounds.size.z;
     }
-
+    public Vector3 correctPosition;
     /// <summary>
     /// Kéo furniture theo delta của mouse, không dựa vào vị trí của mouse
     /// </summary>
@@ -382,13 +382,16 @@ public partial class FurnitureItem : MonoBehaviour
     {
         var currentPos = GetWorldMousePosition();
         var delta = currentPos - startPos;
-
+        this.correctPosition = correctPosition;
         //dragTransform.localPosition += delta;
-
         SetWorldPosition(correctPosition);
+
         if (allowSnapToWall)
         {
             furnitureMergeToWall.StartSnap();
+        }
+        else
+        {
         }
 
         startPos = currentPos;
