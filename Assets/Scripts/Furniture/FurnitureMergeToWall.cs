@@ -23,6 +23,7 @@ public class FurnitureMergeToWall
         this.furnitureItem = furnitureItem;
 
         typedWallLine = new WallLine();
+        typedWallLine.type = furnitureItem.lineType;
     }
 
     public void SetupAnchor(CheckpointType leftPoint, CheckpointType rightPoint)

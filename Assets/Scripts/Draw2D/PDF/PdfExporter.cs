@@ -1,11 +1,12 @@
 using iTextSharp.text;
 using iTextSharp.text.pdf;
-using UnityEngine;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections;
-using System;
+using Unity.VisualScripting;
+using UnityEngine;
 
 
 public class PdfExporter
@@ -262,6 +263,7 @@ public class PdfExporter
                         // Truyền tọa độ gốc, convert nội bộ sau
                         DrawSymbol(cb, Convert, start2D, end2D, wall.type.ToString().ToLower());
                     }
+          
                 }
 
                 // Sau khi tính xong shift, scale, offsetX/Y:

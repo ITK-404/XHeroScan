@@ -200,7 +200,7 @@ public class FurnitureManager : MonoBehaviour
 
     public void SelectFurniture(FurnitureItem furniture)
     {
-        if (tempDragItem == furniture) return;
+        //if (tempDragItem == furniture) return;
 
         if (currentFurniture == null)
         {
@@ -377,6 +377,7 @@ public class FurnitureManager : MonoBehaviour
                 exportList.Add(item.furnitureMergeToWall.PDFWallLine);
             }
         }
+        //Debug.Log("Xuất PDF: furniture Count" + exportList.Count);
         return exportList;
     }
 

@@ -18,6 +18,7 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
 
         // UI này nằm trong BottomSheetPageManager
         BottomSheetPageManager.Instance.blockTouchImage.raycastTarget = false;
+        BottomSheetPageManager.Instance.CloseAll();
     }
 
     public void OnEndDrag(PointerEventData eventData)

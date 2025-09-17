@@ -29,7 +29,7 @@ public partial class BottomSheetPageManager : MonoBehaviour
         closeAllBtn.onClick.AddListener(CloseAll);
     }
 
-    private void CloseAll()
+    public void CloseAll()
     {
         Debug.Log("Close All");
         foreach (var page in GetComponentsInChildren<BaseAnimUI>())
