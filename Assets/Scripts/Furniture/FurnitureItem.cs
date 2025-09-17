@@ -373,25 +373,29 @@ public partial class FurnitureItem : MonoBehaviour
         width = bounds.size.x;
         length = bounds.size.z;
     }
-
+    public Vector3 correctPosition;
     /// <summary>
     /// Kéo furniture theo delta của mouse, không dựa vào vị trí của mouse
     /// </summary>
     /// <param name="dragTransform"></param>
-    public void Dragging(Transform dragTransform)
+    public void Dragging(Vector3 correctPosition)
     {
         var currentPos = GetWorldMousePosition();
         var delta = currentPos - startPos;
-
-        dragTransform.localPosition += delta;
+        this.correctPosition = correctPosition;
+        //dragTransform.localPosition += delta;
+        SetWorldPosition(correctPosition);
 
         if (allowSnapToWall)
         {
             furnitureMergeToWall.StartSnap();
         }
+        else
+        {
+        }
 
         startPos = currentPos;
-        bounds.center = dragTransform.localPosition;
+        //bounds.center = dragTransform.localPosition;
 
         RefreshCheckPointsByBounds();
         UpdateWorldSizeFromLocal();
@@ -413,7 +417,7 @@ public partial class FurnitureItem : MonoBehaviour
     /// Lấy vị trí chuột ở world 
     /// </summary>
     /// <returns></returns>
-    private Vector3 GetWorldMousePosition()
+    public Vector3 GetWorldMousePosition()
     {
         float distance = Vector3.Distance(mainCam.transform.position, FurnitureManager.Instance.transform.position);
 
@@ -421,7 +425,7 @@ public partial class FurnitureItem : MonoBehaviour
         Vector3 worldMousePosition = mainCam.ScreenToWorldPoint(
             new Vector3(Input.mousePosition.x, Input.mousePosition.y, distance)
         );
-        return worldMousePosition;
+        return new Vector3(worldMousePosition.x,FurnitureManager.SpawnHeight,worldMousePosition.z);
     }
 
     /// <summary>
