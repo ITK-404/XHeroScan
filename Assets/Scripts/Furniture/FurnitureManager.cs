@@ -176,8 +176,10 @@ public partial class FurnitureManager : MonoBehaviour
 
     public void SelectFurniture(FurnitureItem furniture)
     {
-        //if (tempDragItem == furniture) return;
-
+        if (placementController.IsDragTempFurniture())
+        {
+            return;
+        }
         if (currentFurniture == null)
         {
             currentFurniture = furniture;
@@ -212,7 +214,7 @@ public partial class FurnitureManager : MonoBehaviour
 
         return null;
     }
-
+    [SerializeField] private Vector3 offset = Vector3.zero;
     private Vector3 GetWorldMousePosition()
     {
         float distance = Vector3.Distance(mainCam.transform.position, transform.position);
@@ -221,7 +223,7 @@ public partial class FurnitureManager : MonoBehaviour
         Vector3 worldMousePosition = mainCam.ScreenToWorldPoint(
             new Vector3(Input.mousePosition.x, Input.mousePosition.y, distance)
         );
-        return worldMousePosition;
+        return worldMousePosition + offset;
     }
 
     public bool IsSelectFurniture(FurnitureItem furnitureItem)

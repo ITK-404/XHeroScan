@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.EventSystems;
 public partial class FurnitureManager : MonoBehaviour
 {
@@ -88,6 +89,11 @@ public partial class FurnitureManager : MonoBehaviour
                 ClearDragItem();
             }
             FurnitureItem.OnDragFurniture = true;
+        }
+
+        public bool IsDragTempFurniture()
+        {
+            return tempDragItem != null;
         }
     }
 

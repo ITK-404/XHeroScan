@@ -12437,6 +12437,7 @@ MonoBehaviour:
   - {fileID: 898799737760612049, guid: c4474c67873df0f499dd1ee1d28c631f, type: 3}
   - {fileID: 898799737760612049, guid: 00e26fcba28ebdd4f8bc5c0899720bb2, type: 3}
   IsSnapRotation: 1
+  offset: {x: 0, y: 0, z: 1}
   furnitureLayerMask:
     serializedVersion: 2
     m_Bits: 512
@@ -20086,12 +20087,12 @@ PrefabInstance:
     - target: {fileID: 6736452305859043714, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchorMax.x
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6736452305859043714, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6825924296243766035, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
