@@ -115,7 +115,7 @@ public class FurnitureMergeToWall
         foundPoint = firstDoorPoint;
     }
 
-    private void FindNearestWallLine(Room room, Vector3 centerPosition, float minDistance, ref float minDist, ref WallLine wallLine, ref Vector3 firstDoorPoint)
+    public void FindNearestWallLine(Room room, Vector3 centerPosition, float minDistanceValid, ref float minDist, ref WallLine wallLine, ref Vector3 firstDoorPoint)
     {
         foreach (var wl in room.wallLines)
         {
@@ -126,7 +126,7 @@ public class FurnitureMergeToWall
             centerPosition.y = projected.y;
             float dist = Vector3.Distance(centerPosition, projected);
 
-            bool isObjectNearLine = IsWithinDistance(centerPosition, projected, minDistance);
+            bool isObjectNearLine = IsWithinDistance(centerPosition, projected, minDistanceValid);
 
             if (dist < minDist && isObjectNearLine)
             {

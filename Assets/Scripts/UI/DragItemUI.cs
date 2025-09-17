@@ -3,7 +3,7 @@ using UnityEngine.EventSystems;
 
 public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
 {
-    [SerializeField] private string ItemID;
+    [SerializeField,Dropdown(typeof(FurnitureName))] private string ItemID;
     public void OnDrag(PointerEventData eventData)
     {
         Debug.Log("On Drag UI: over gameobject: " + IsOverUI());
@@ -18,8 +18,9 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
 
     public void OnEndDrag(PointerEventData eventData)
     {
-
-        if (IsOverUI())
+        bool isOverUI = IsOverUI();
+        bool isNormalFurniture = FurnitureManager.Instance.IsTempNeedWallToSpawn();
+        if (isOverUI)
         {
             FurnitureManager.Instance.ClearDragItem();
         }
@@ -32,6 +33,8 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
 
     private bool IsOverUI()
     {
-        return EventSystem.current.IsPointerOverGameObject();
+        bool isOverUI = EventSystem.current.IsPointerOverGameObject();
+        Debug.Log("is Over UI: " + isOverUI);
+        return isOverUI;
     }
 }

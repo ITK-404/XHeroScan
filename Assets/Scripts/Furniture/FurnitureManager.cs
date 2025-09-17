@@ -27,7 +27,7 @@ public class FurnitureManager : MonoBehaviour
     public FurnitureItem CurrentFurnitureItem() => currentFurniture;
     public const float SpawnHeight = 5;
 
-
+    public FurnitureItem TempDragItem => tempDragItem;
     private void Awake()
     {
         Instance = this;
@@ -140,7 +140,7 @@ public class FurnitureManager : MonoBehaviour
     public FurnitureItem SpawnFurniture(string itemID, Vector3 position)
     {
         var furniture = InitItemByID(itemID);
-        
+
         if (!furniture) return null;
 
         furniture.transform.position = position;
@@ -154,16 +154,10 @@ public class FurnitureManager : MonoBehaviour
 
     private void Update()
     {
-        //if(currentFurniture != null)
-        //{
-        //    Debug.Log("[Furniture] World Position: " + currentFurniture.transform.position);
-        //    Debug.Log(("[Furniture] world model positioon: " + currentFurniture.modelContainer.transform.position));
-        //}
-
 
         if (tempDragItem)
         {
-            tempDragItem.transform.position = GetWorldMousePosition();
+            tempDragItem.transform.position = new Vector3(GetWorldMousePosition().x, SpawnHeight, GetWorldMousePosition().z);
         }
 
         if (Input.touchCount >= 2)
@@ -185,20 +179,6 @@ public class FurnitureManager : MonoBehaviour
                 SelectFurniture(null);
             }
         }
-        // for testing 
-        //if (currentFurniture && Input.GetKeyDown(KeyCode.A))
-        //{
-        //    var roomID = CheckpointManager.Instance.FindRoomIDByPoint(currentFurniture.GetWorldPosition());
-        //    if (string.IsNullOrEmpty(roomID))
-        //    {
-        //        Debug.LogWarning("No room found for the current furniture position.");
-        //        currentFurniture.data.roomID = null;
-        //        return;
-        //    }
-
-        //    Debug.Log("Is in room: " + roomID);
-        //    currentFurniture.data.roomID = roomID;
-        //}
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -220,6 +200,8 @@ public class FurnitureManager : MonoBehaviour
 
     public void SelectFurniture(FurnitureItem furniture)
     {
+        if (tempDragItem == furniture) return;
+
         if (currentFurniture == null)
         {
             currentFurniture = furniture;
@@ -238,13 +220,13 @@ public class FurnitureManager : MonoBehaviour
             currentFurniture = furniture;
             currentFurniture?.EnableCheckPoint();
         }
-  
+
     }
 
     public FurnitureItem GetFurnitureByInstanceID(string instanceID)
     {
         Debug.Log("Instance: ID" + instanceID);
-        foreach(var item in runtimeFurnitures)
+        foreach (var item in runtimeFurnitures)
         {
             if (item.data.instanceID.Equals(instanceID))
             {
@@ -400,8 +382,8 @@ public class FurnitureManager : MonoBehaviour
 
     public List<DrawingInstanced> GetFurnitureInsideRoom(string iD)
     {
-       List<DrawingInstanced> furnitures = new List<DrawingInstanced>();
-        foreach(var item in runtimeFurnitures)
+        List<DrawingInstanced> furnitures = new List<DrawingInstanced>();
+        foreach (var item in runtimeFurnitures)
         {
             if (item.data.roomID == iD)
             {
@@ -415,6 +397,4 @@ public class FurnitureManager : MonoBehaviour
     {
         return runtimeFurnitures;
     }
-
-    
 }
