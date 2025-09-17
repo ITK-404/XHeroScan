@@ -77,8 +77,11 @@ public partial class FurnitureManager : MonoBehaviour
             }
 
             Debug.Log($"Is Over UI {isOverUI} WL not null {wallLine != null} normal {isNormalFurniture}");
-
-            if (isOverUI == false && wallLine != null && isNormalFurniture == false)
+            if (isNormalFurniture)
+            {
+                DropDragItem();
+            }
+            else if (isOverUI == false && wallLine != null && isNormalFurniture == false)
             {
                 DropDragItem();
                 tempFurniture.SetWorldPosition(firstDoorPoint);
