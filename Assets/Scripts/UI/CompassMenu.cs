@@ -91,10 +91,17 @@ public class CompassMenu : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        // var dir = Direction.East;
+        // dir.ToAnchor();
+        Refresh();
+    }
     private List<DirectionalItem> itemList = new();
 
     private void InitRotationCalculator()
     {
+        var current = Camera.main ? Camera.main.transform.eulerAngles.y : 0f;
         // góc mà UI nằm
         DirectionRotationCalculator = new();
         DirectionRotationCalculator.circleDirection = new()
