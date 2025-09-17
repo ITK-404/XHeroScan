@@ -350,6 +350,7 @@ public partial class FurnitureManager : MonoBehaviour
         {
             if (item.lineType == LineType.Door || item.lineType == LineType.Window)
             {
+                if (item.furnitureMergeToWall.IsInWall() == false) continue;
                 exportList.Add(item.furnitureMergeToWall.PDFWallLine);
             }
         }

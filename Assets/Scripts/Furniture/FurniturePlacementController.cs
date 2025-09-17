@@ -33,10 +33,10 @@ public partial class FurnitureManager : MonoBehaviour
 
         public void DropDragItem()
         {
-            tempDragItem?.InitLineAndText();
+            UndoRedoController.Instance.AddToUndo(new CreateItemCommand(tempDragItem.data.instanceID));
             runtimeFurnitures.Add(tempDragItem);
+            tempDragItem?.InitLineAndText();
             tempDragItem = null;
-
             SaveLoadManager.MakeDirty();
         }
 

@@ -20,6 +20,7 @@ public class OpenPageButton : MonoBehaviour
 
     private void OnOpenPage()
     {
+        if (pageType == PageType.None) return;
         manager.Open(pageType);
     }
 }
