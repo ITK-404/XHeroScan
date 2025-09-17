@@ -262,7 +262,8 @@ public class Model3D : MonoBehaviour
         }
 
         // Giá trị mặc định nếu không có thông tin chiều cao
-        return 3.0f; // Giả định chiều cao tường mặc định là 3 mét
+        // return 3.0f; // Giả định chiều cao tường mặc định là 3 mét
+        return 0.1f;
     }
 
     // Hàm tạo sàn từ các điểm checkpoint
