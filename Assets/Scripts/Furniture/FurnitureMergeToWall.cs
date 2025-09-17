@@ -125,11 +125,12 @@ public class FurnitureMergeToWall
                 CheckpointManager.Instance.ProjectPointOnLineSegment(wl.start, wl.end, centerPosition);
             centerPosition.y = projected.y;
             float dist = Vector3.Distance(centerPosition, projected);
-
+            Debug.Log($"Distance from center to line: " + dist);
             bool isObjectNearLine = IsWithinDistance(centerPosition, projected, minDistanceValid);
 
             if (dist < minDist && isObjectNearLine)
             {
+                Debug.Log("Đã tìm thấy wall line ngắn");
                 minDist = dist;
                 wallLine = wl;
                 firstDoorPoint = projected;

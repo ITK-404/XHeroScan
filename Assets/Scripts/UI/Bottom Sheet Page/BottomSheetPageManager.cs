@@ -4,8 +4,10 @@ using UnityEngine.UI;
 
 public partial class BottomSheetPageManager : MonoBehaviour
 {
+    public static BottomSheetPageManager Instance;
     private BottomSheetPage[] bottomSheetPages;
     [SerializeField] private Button closeAllBtn;
+    public Image blockTouchImage;
     public enum PageType
     {
         None,
@@ -17,6 +19,7 @@ public partial class BottomSheetPageManager : MonoBehaviour
     }
     private void Awake()
     {
+        Instance = this;
         bottomSheetPages = GetComponentsInChildren<BottomSheetPage>();
         foreach (var closePageBtn in bottomSheetPages)
         {
