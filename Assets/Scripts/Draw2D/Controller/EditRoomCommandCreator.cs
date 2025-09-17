@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 public class EditRoomCommandCreator
@@ -15,6 +16,8 @@ public class EditRoomCommandCreator
             snapShotRoomData.Add(new Room(room));
         }
 
+        if(FurnitureManager.Instance == null) return;
+
         var runtimeFurnitures = FurnitureManager.Instance.GetAllFurniture();
         foreach (var furniture in runtimeFurnitures)
         {
@@ -25,6 +28,7 @@ public class EditRoomCommandCreator
 
     public MovePointRoomCommand CreateUndoCommand()
     {
+        if(roomIDChanged == null) return null;
         if (roomIDChanged.Count == 0) return null;
 
         foreach (var item in roomIDChanged)
@@ -42,6 +46,7 @@ public class EditRoomCommandCreator
             }
         }
         // just save furniture inside room changed
+        if(furnitureInsideRoom == null) return null;
         foreach (var item in furnitureInsideRoom)
         {
             if (roomIDChanged.Contains(item.roomID))
@@ -66,6 +71,7 @@ public class EditRoomCommandCreator
         // lệnh này dùng trong scene scan AR, đảm bảo sau khi quay lại scene draw có thể hoàn tác được room
         var command = CreateUndoCommand();
         if (command == null) return;
+        if (UndoRedoController.scanARTempList == null) return;
         UndoRedoController.scanARTempList.Add(command);
     }
 
