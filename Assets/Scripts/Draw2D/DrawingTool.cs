@@ -31,6 +31,10 @@ public class DrawingTool : MonoBehaviour
     public List<LineRenderer> lines = new List<LineRenderer>();
     public List<TextMeshPro> distanceTexts = new List<TextMeshPro>();
 
+    public float layerStepY = 0.002f;
+public int previewIndex = 2;
+
+
     private LineRenderer previewLine = null; // Dùng cho đường preview
     private TextMeshPro previewText = null; // Dùng cho khoảng cách preview
 
@@ -188,69 +192,61 @@ public class DrawingTool : MonoBehaviour
             return;
         }
 
-        if (Vector3.Distance(start, end) < 0.001f) // Tránh vẽ đoạn quá nhỏ
+        if (Vector3.Distance(start, end) < 0.001f)
         {
             Debug.LogWarning("khoang cach qua nho, khong ve duoc!");
             return;
         }
 
-        const int BASE_ORDER = 0;        // nếu bạn đang dùng order nào khác, đổi ở đây
-        const int PREVIEW_OFFSET = 99;   // “+99” như yêu cầu        
+        const int BASE_ORDER = 0;
+        const int PREVIEW_OFFSET = 99;
         int previewOrder = BASE_ORDER + PREVIEW_OFFSET;
 
-        // Kiểm tra xem đã có previewLine chưa
         if (previewLine == null)
         {
             previewLine = Instantiate(linePrefab).GetComponent<LineRenderer>();
             previewLine.gameObject.name = "PreviewLine";
         }
 
-        // Hiển thị line
-        previewLine.gameObject.SetActive(true);
-        previewLine.SetPosition(0, start);
-        previewLine.SetPosition(1, end);
+        // ==== nâng Y theo index ====
+        float liftY = previewIndex * layerStepY;
+        Vector3 p0 = new Vector3(start.x, start.y + liftY, start.z);
+        Vector3 p1 = new Vector3(end.x, end.y + liftY, end.z);
 
-        // đảm bảo render trên cùng
+        previewLine.gameObject.SetActive(true);
+        previewLine.SetPosition(0, p0);
+        previewLine.SetPosition(1, p1);
+
         var lineRenderer = previewLine.GetComponent<Renderer>();
         if (lineRenderer != null)
         {
-            // Sorting Layer giữ "Default" (hoặc layer bạn đang dùng)
-            // lineRenderer.sortingLayerName = "Default";
             lineRenderer.sortingOrder = previewOrder;
-
-            // đẩy renderQueue cao để vẽ sau cùng (overlay)
-            if (lineRenderer.material != null) lineRenderer.material.renderQueue = 5000;
+            if (lineRenderer.material != null)
+                lineRenderer.material.renderQueue = 5000; // Overlay
         }
 
         // TEXT
-        float distanceInM = Vector3.Distance(start, end) * 1f;
-
-        // Kiểm tra xem đã có previewText chưa
+        float distanceInM = Vector3.Distance(start, end);
         if (previewText == null)
         {
             previewText = Instantiate(distanceTextPrefab).GetComponent<TextMeshPro>();
             previewText.gameObject.name = "PreviewText";
-
-            // Bật MeshRenderer nếu bị tắt
             MeshRenderer textRenderer = previewText.GetComponent<MeshRenderer>();
             if (textRenderer != null) textRenderer.enabled = true;
-
-            previewText.fontSize = 2.5f; // Tăng font size
+            previewText.fontSize = 2.5f;
             previewText.alignment = TextAlignmentOptions.Center;
         }
 
-        // Hiển thị text
         previewText.gameObject.SetActive(true);
         previewText.text = $"{distanceInM:F2} m";
 
-        Vector3 textPos = (start + end) / 2 + new Vector3(0, 0.05f, 0); // Đẩy lên cao một chút
+        Vector3 textPos = (p0 + p1) / 2 + new Vector3(0, 0.05f, 0);
         previewText.transform.position = textPos + previewText.transform.up * wallTextOffset;
-        // Xoay text luôn hướng về camera
+
         if (Camera.main != null)
         {
-            Vector3 dir = (end - start).normalized;
-            // Xoay text để luôn song song line
-            float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg; // Tính góc từ trục X
+            Vector3 dir = (p1 - p0).normalized;
+            float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
             previewText.transform.rotation = Quaternion.Euler(90, 0, angle);
         }
     }

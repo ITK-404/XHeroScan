@@ -186,7 +186,7 @@ public class PenManager : MonoBehaviour
         Camera cam = (canvas != null && canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : mainCamera;
 
         bool isInActionSpace = RectTransformUtility.RectangleContainsScreenPoint(rt, screenPosition, cam);
-  
+
         return isInActionSpace;
     }
 
