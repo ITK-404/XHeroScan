@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
-
-public class FurnitureManager : MonoBehaviour
+public partial class FurnitureManager : MonoBehaviour
 {
     public static FurnitureManager Instance;
     public static List<DrawingInstanced> tempSaveDataFurnitureDatas = new List<DrawingInstanced>();
@@ -18,7 +18,6 @@ public class FurnitureManager : MonoBehaviour
     public bool IsSnapRotation;
 
     [Header("Drag")]
-    private FurnitureItem tempDragItem;
     private FurnitureItem currentFurniture;
     [Header("Rotate")]
     private List<float> snapAngles = new List<float> { -90, 90f, 180f, 0 };
@@ -27,10 +26,12 @@ public class FurnitureManager : MonoBehaviour
     public FurnitureItem CurrentFurnitureItem() => currentFurniture;
     public const float SpawnHeight = 5;
 
-    public FurnitureItem TempDragItem => tempDragItem;
+    public FurnitureItem TempDragItem => placementController.tempDragItem;
+    public FurniturePlacementController placementController;
     private void Awake()
     {
         Instance = this;
+        placementController = new FurniturePlacementController(this);
         mainCam = Camera.main;
         ScaleByCameraZoom = GetComponent<ScaleByCameraZoom>();
     }
@@ -83,15 +84,7 @@ public class FurnitureManager : MonoBehaviour
 
     public void StartDragItem(string ItemID)
     {
-        tempDragItem = InitItemByID(ItemID);
-
-        if (tempDragItem == null)
-        {
-            Debug.LogWarning("Furniture item with ID " + ItemID + " not found.");
-            return;
-        }
-
-        SelectFurniture(tempDragItem);
+        placementController.StartDrag(ItemID);
     }
 
     private FurnitureItem InitItemByID(string ItemID)
@@ -113,20 +106,6 @@ public class FurnitureManager : MonoBehaviour
         return furnitureItems.Find(item => item.data.itemTemplateID == itemID);
     }
 
-    public void ClearDragItem()
-    {
-        Destroy(tempDragItem.gameObject);
-        tempDragItem = null;
-    }
-
-    public void DropDragItem()
-    {
-        tempDragItem?.InitLineAndText();
-        runtimeFurnitures.Add(tempDragItem);
-        tempDragItem = null;
-
-        SaveLoadManager.MakeDirty();
-    }
 
     public void SpawnFurnitureCenterScreen(string itemID)
     {
@@ -155,10 +134,7 @@ public class FurnitureManager : MonoBehaviour
     private void Update()
     {
 
-        if (tempDragItem)
-        {
-            tempDragItem.transform.position = new Vector3(GetWorldMousePosition().x, SpawnHeight, GetWorldMousePosition().z);
-        }
+        placementController.Update();
 
         if (Input.touchCount >= 2)
         {

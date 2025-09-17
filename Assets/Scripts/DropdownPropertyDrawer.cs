@@ -83,6 +83,7 @@ public class DropdownPropertyDrawer : PropertyDrawer
 #endif
 public static class FurnitureName
 {
+    public const string Empty = "empty";
     public const string WindowOneWing = "window_1";
     public const string WindowTwoWing = "window_2";
     public const string WindowFourWing = "window_4";
