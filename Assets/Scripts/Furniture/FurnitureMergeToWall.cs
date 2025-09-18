@@ -256,7 +256,7 @@ public class FurnitureMergeToWall
         WallLine wallLine = null;
         foreach (var room in RoomStorage.rooms)
         {
-            FindNearestWallLine(room, dragPosition, 0.2f, ref minDis, ref wallLine, ref firstDoorPoint);
+            FindNearestWallLine(room, dragPosition, 1, ref minDis, ref wallLine, ref firstDoorPoint);
         }
 
         return wallLine != null;

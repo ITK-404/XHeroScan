@@ -53,6 +53,38 @@ public class InputCustomers : MonoBehaviour
         //if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedFloor);
     }
 
+    public void LoadDataWhenShow()
+    {
+        if (!roomInfoDisplay.TryGetSelection(out RoomInfoDisplay.SelType kind, out string roomId))
+        {
+            Debug.LogWarning("[DimOK] Không có mục nào đang được chọn -> không áp dụng.");
+            return;
+        }
+
+        if (kind != RoomInfoDisplay.SelType.Room || string.IsNullOrEmpty(roomId))
+        {
+            Debug.LogWarning($"[DimOK] Đang chọn {kind}, không phải ROOM hoặc ID rỗng -> không áp dụng.");
+            return;
+        }
+        var room = RoomStorage.GetRoomByID(roomId);
+        thicknessInput.text = room.thickness.ToString();
+
+        UpdateInputWhenShow(room.center, room.checkpoints);
+    }
+
+    private void UpdateInputWhenShow(Vector3 center, List<Vector2> checkPoints)
+    {
+        Bounds bounds = new();
+        bounds.center = center;
+        foreach (var item in checkPoints)
+        {
+            bounds.Encapsulate(item);
+        }
+
+        inputLength.text = bounds.size.x.ToString();
+        inputWidth.text = bounds.size.y.ToString();
+    }
+
     // ROOM đang chọn
     private void ApplyDimensionsForSelectedRoom()
     {
@@ -98,7 +130,6 @@ public class InputCustomers : MonoBehaviour
         }
         return (W, L, true);
     }
-
 
     // Update dims cho ROOM
     private void RecreateRoomWithInputDims(string roomId)
@@ -198,7 +229,7 @@ public class InputCustomers : MonoBehaviour
             }
         }
 
-        
+
 
         // Redraw để line được vẽ lại theo wallLines mới
         checkpointManager.RedrawAllRooms();

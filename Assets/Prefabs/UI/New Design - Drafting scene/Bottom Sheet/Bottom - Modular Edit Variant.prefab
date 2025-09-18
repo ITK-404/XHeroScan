@@ -1285,8 +1285,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1635721368256820213}
   m_HandleRect: {fileID: 8463856698298857223}
   m_Direction: 2
-  m_Value: 0.99999976
-  m_Size: 0
+  m_Value: 1.0000004
+  m_Size: 0.814124
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1596,7 +1596,6 @@ MonoBehaviour:
   inputField: {fileID: 3657182334742569461}
   minusBtn: {fileID: 5391697479703177493}
   plusBtn: {fileID: 2337199498711100580}
-  minHeight: 0
   maxHeight: 300
   currentHeight: 0
 --- !u!114 &3479794083989592369
@@ -2347,7 +2346,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 15, y: 559.55664}
+  m_AnchoredPosition: {x: 15, y: 670.024}
   m_SizeDelta: {x: -15, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &26495352861823740
@@ -3820,6 +3819,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: "Input Group - Kho\u1EA3ng c\xE1ch t\u1EDBi m\u1EB7t \u0111\u1EA5t"
+      objectReference: {fileID: 0}
+    - target: {fileID: 5127501094466533489, guid: 787005dc4e5ae4a4389350a0c652a944,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7517411006881424009, guid: 787005dc4e5ae4a4389350a0c652a944,
         type: 3}
