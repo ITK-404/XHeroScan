@@ -1,10 +1,12 @@
-using System.Globalization;
 using System.Collections;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Globalization;
 using System.Reflection;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using System.Collections.Generic;
 
 public class InputCustomers : MonoBehaviour
 {
@@ -69,7 +71,7 @@ public class InputCustomers : MonoBehaviour
         var room = RoomStorage.GetRoomByID(roomId);
         thicknessInput.text = room.thickness.ToString();
 
-        UpdateInputWhenShow(room.center, room.checkpoints);
+        UpdateInputWhenShow(room.center,room.checkpoints);
     }
 
     private void UpdateInputWhenShow(Vector3 center, List<Vector2> checkPoints)
@@ -81,8 +83,8 @@ public class InputCustomers : MonoBehaviour
             bounds.Encapsulate(item);
         }
 
-        inputLength.text = bounds.size.x.ToString();
-        inputWidth.text = bounds.size.y.ToString();
+        inputWidth.text = bounds.size.x.ToString();
+        inputLength.text = bounds.size.y.ToString();
     }
 
     // ROOM đang chọn
@@ -130,7 +132,17 @@ public class InputCustomers : MonoBehaviour
         }
         return (W, L, true);
     }
-
+    private Vector2 GetWidthAndHeight(Room room)
+    {
+        Bounds bounds = new();
+        bounds.center = room.center;
+        foreach (var item in room.checkpoints)
+        {
+            Debug.Log("Encapsulate");
+            bounds.Encapsulate(item);
+        }
+        return bounds.size;
+    }
     // Update dims cho ROOM
     private void RecreateRoomWithInputDims(string roomId)
     {
@@ -139,6 +151,14 @@ public class InputCustomers : MonoBehaviour
 
         // Lấy room
         Room room = RoomStorage.GetRoomByID(roomId);
+        var size = GetWidthAndHeight(room);
+        Debug.Log($"Size from input {W} {L} : Size from room{size}");
+        if(size.x == W && size.y == L)
+        {
+            Debug.Log("This is same, does not create it againt");
+            return;
+        }
+
         UndoRedoController.Instance.AddToUndo(new EditRoomCommand(new Room(room)));
         if (room == null)
         {
@@ -149,7 +169,7 @@ public class InputCustomers : MonoBehaviour
         room.thickness = thickness;
         // Tính centroid hiện có
         Vector2 centroid = ComputeCentroid2D(room.checkpoints);
-
+        room.center = centroid;
         // Force index = 2
         var cr = FindFirstObjectByType<CreateRoomOnFloor>();
         float layerStep = (cr != null) ? cr.layerStepY : 0.002f; // fallback 2mm
@@ -157,7 +177,7 @@ public class InputCustomers : MonoBehaviour
         float roomWallLift = (cr != null) ? cr.roomWallLift : fallbackRoomWallLift;
 
         // Ghi lại polygon LxW quanh centroid (GIỮ THỨ TỰ NHƯ KHI TẠO)
-        float hx = L * 0.5f, hy = W * 0.5f;
+        float hx = W * 0.5f, hy = L * 0.5f;
         var rect = new List<Vector2>(4)
         {
             new Vector2(centroid.x - hx, centroid.y - hy), // v0 

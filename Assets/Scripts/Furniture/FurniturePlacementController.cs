@@ -7,7 +7,7 @@ public partial class FurnitureManager : MonoBehaviour
     {
         public FurnitureItem tempDragItem;
         private FurnitureManager furnitureManager;
-        
+
         public FurniturePlacementController(FurnitureManager furnitureManager)
         {
             this.furnitureManager = furnitureManager;
@@ -77,7 +77,7 @@ public partial class FurnitureManager : MonoBehaviour
             else if (!isOverUI && !isNormalFurniture && canMergeToWall)
             {
                 DropDragItem();
-                tempFurniture.SetWorldPosition(firstDoorPoint);
+                tempFurniture.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, firstDoorPoint);
                 tempFurniture.furnitureMergeToWall.ForceSnapToWall();
             }
             else

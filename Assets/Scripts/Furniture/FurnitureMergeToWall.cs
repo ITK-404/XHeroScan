@@ -189,8 +189,7 @@ public class FurnitureMergeToWall
             }
         }
     }
-
-
+  
     float GetPointRatio(Vector3 start, Vector3 end, Vector3 point)
     {
         Vector3 ab = end - start;

@@ -26,8 +26,9 @@ public class ToggleFlipGroup : MonoBehaviour
     {
         if (currentFurniture != null)
         {
+            FurnitureItem.SnapShotTemp = currentFurniture.data;
             currentFurniture.data.isFlipVertical = !currentFurniture.data.isFlipVertical;
-            currentFurniture.RefreshRotation();
+            UpdateByData();
         }
     }
 
@@ -35,8 +36,17 @@ public class ToggleFlipGroup : MonoBehaviour
     {
         if (currentFurniture != null)
         {
+            FurnitureItem.SnapShotTemp = currentFurniture.data;
             currentFurniture.data.isFlipHorizontal = !currentFurniture.data.isFlipHorizontal;
-            currentFurniture.RefreshRotation();
+            UpdateByData();
+
         }
+    }
+
+    private void UpdateByData()
+    {
+        currentFurniture.RefreshRotation();
+        currentFurniture.RefreshCheckPointsByBounds();
+        currentFurniture.CreareEditCommandBySnapShot();
     }
 }
