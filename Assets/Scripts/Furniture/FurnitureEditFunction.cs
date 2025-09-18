@@ -8,7 +8,7 @@ public class FurnitureEditFunction : MonoBehaviour
 {
     public ToggleFlipWindowDoor flipToggle;
 
-
+    [SerializeField] private TextMeshProUGUI popupName;
     [SerializeField] private GameObject currentPopup;
     [SerializeField] private BottomSheetUI bottomSheetUI;
     [SerializeField] private float offsetX;
@@ -181,9 +181,18 @@ public class FurnitureEditFunction : MonoBehaviour
             lengthInputField.gameObject.SetActive(isNormalFurniture);
 
             toggleFlipGroup.gameObject.SetActive(lineType == LineType.Door);
-            distanceFromGroundInputField.gameObject.SetActive(lineType == LineType.Window);
+            //distanceFromGroundInputField.gameObject.SetActive(lineType == LineType.Window);
 
             //toggleFlipGroup.SetInteractable(currentFurniture.furnitureMergeToWall.IsInWall());
+        
+            if(currentFurniture.lineType == LineType.Door)
+            {
+                popupName.text = "thông số cửa";
+            }
+            else
+            {
+                popupName.text = "thông số cửa sổ";
+            }
         }
     }
 

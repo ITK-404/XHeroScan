@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,18 +10,16 @@ public class HeightInputController : MonoBehaviour
     [SerializeField] private Button minusBtn;
     [SerializeField] private Button plusBtn;
 
-    [SerializeField] private float minHeight = 0;
     [SerializeField] private float maxHeight = 300;
-
     [SerializeField] private float currentHeight;
 
+    private float minHeight = 0.1f;
 
     private void Awake()
     {
         minusBtn.onClick.AddListener(DecreaseHeight);
         plusBtn.onClick.AddListener(IncreaseHeight);
 
-        inputField.onValueChanged.AddListener(OnHeightInputChanged);
     }
 
     private void OnDestroy()
@@ -28,8 +27,30 @@ public class HeightInputController : MonoBehaviour
         minusBtn.onClick.RemoveListener(DecreaseHeight);
         plusBtn.onClick.RemoveListener(IncreaseHeight);
 
-        inputField.onValueChanged.RemoveListener(OnHeightInputChanged);
+        inputField.onValidateInput = ValidateChar;
     }
+
+    private char ValidateChar(string text, int charIndex, char addedChar)
+    {
+        // Ví dụ: chỉ cho nhập số và dấu chấm
+        if (char.IsDigit(addedChar) || addedChar == '.')
+            return addedChar;
+
+        if (addedChar == '.' && text.Contains("."))
+            return '\0';
+
+        int dotIndex = text.IndexOf('.');
+        if (dotIndex >= 0 && char.IsDigit(addedChar))
+        {
+            int decimals = text.Length - dotIndex - 1;
+            if (charIndex > dotIndex && decimals >= 2)
+                return '\0';
+        }
+
+        // Nếu không hợp lệ, trả về '\0' (ký tự null) => TMP bỏ qua
+        return '\0';
+    }
+
 
     private void IncreaseHeight()
     {
@@ -45,25 +66,6 @@ public class HeightInputController : MonoBehaviour
     {
         currentHeight += value;
         currentHeight = Mathf.Clamp(currentHeight, minHeight, maxHeight);
-        inputField.text = currentHeight.ToString(CultureInfo.InvariantCulture);
-    }
-
-    void OnHeightInputChanged(string input)
-    {
-        if(string.IsNullOrEmpty(input))
-        {
-            currentHeight = 0;
-            inputField.text = currentHeight.ToString(CultureInfo.InvariantCulture);
-            return;
-        }
-        if (float.TryParse(input, out float newHeight))
-        {
-            currentHeight = Mathf.Clamp(newHeight, minHeight, maxHeight);
-            inputField.text = currentHeight.ToString(CultureInfo.InvariantCulture);
-        }
-        else
-        {
-            inputField.text = currentHeight.ToString(CultureInfo.InvariantCulture);
-        }
+        inputField.text = $"{currentHeight:F1}";
     }
 }

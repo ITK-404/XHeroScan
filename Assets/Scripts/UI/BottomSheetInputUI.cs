@@ -5,6 +5,7 @@ public class BottomSheetInputUI : BottomSheetUI
 {
     private float prevousHeight;
     private float timer;
+    
     protected override void Update()
     {
         base.Update();

@@ -206,6 +206,11 @@ public class PenManager : MonoBehaviour
                 Debug.Log("Click UI trên Background Black -> Không cho pan/zoom");
                 return true;
             }
+
+            foreach(var item in actionsList)
+            {
+
+            }
         }
 
         return false;

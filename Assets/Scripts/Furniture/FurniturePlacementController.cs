@@ -58,6 +58,7 @@ public partial class FurnitureManager : MonoBehaviour
 
         private void TryDropFurniture()
         {
+            Debug.Log($"BottomSheetPageManager.Instance.blockTouchImage.raycastTarget: {BottomSheetPageManager.Instance.blockTouchImage != null}");
             BottomSheetPageManager.Instance.blockTouchImage.raycastTarget = true;
             // Khởi tạo các biến cần thiết
             var worldPosition = tempDragItem.furnitureMergeToWall.GetCenterPosition();

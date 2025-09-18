@@ -6,7 +6,7 @@ public partial class BottomSheetPageManager : MonoBehaviour
 {
     public static BottomSheetPageManager Instance;
     private BottomSheetPage[] bottomSheetPages;
-    [SerializeField] private Button closeAllBtn;
+    public BlockPopupBackground blockpopup;
     public Image blockTouchImage;
     public enum PageType
     {
@@ -26,7 +26,12 @@ public partial class BottomSheetPageManager : MonoBehaviour
             closePageBtn.hideButton.onClick.AddListener(OpenMenu);
             closePageBtn.closeAllBtn.onClick.AddListener(CloseAll);
         }
-        closeAllBtn.onClick.AddListener(CloseAll);
+        blockpopup.OnClickBackgroundEvent += CloseAll;
+    }
+
+    private void OnDestroy()
+    {
+        blockpopup.OnClickBackgroundEvent -= CloseAll;
     }
 
     public void CloseAll()
@@ -36,7 +41,6 @@ public partial class BottomSheetPageManager : MonoBehaviour
         {
             page.Close();
         }
-        closeAllBtn.gameObject.SetActive(false);
     }
 
     public void Open(PageType pageType)
