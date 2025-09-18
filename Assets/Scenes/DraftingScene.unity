@@ -19444,7 +19444,7 @@ PrefabInstance:
     - target: {fileID: 6943439551855547025, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.00006890297
+      value: 0.00002002716
       objectReference: {fileID: 0}
     - target: {fileID: 6958884702670208778, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
@@ -19789,7 +19789,7 @@ PrefabInstance:
     - target: {fileID: 8556240370596885310, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 770.72406
+      value: 770.7238
       objectReference: {fileID: 0}
     - target: {fileID: 8640374401235794372, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
@@ -19883,9 +19883,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4984522014272248505, guid: 3714c6f9abf74fc469066e9fe76ecfbf, type: 3}
+    - {fileID: 8893054902582522336, guid: 3714c6f9abf74fc469066e9fe76ecfbf, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8439050237768798310, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4492018900371189179}
     - targetCorrespondingSourceObject: {fileID: 566103327325684309, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       insertIndex: -1
@@ -19927,6 +19932,26 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 4492018900371189173}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &4492018900371189178 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8439050237768798310, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+    type: 3}
+  m_PrefabInstance: {fileID: 4492018900371189173}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4492018900371189179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4492018900371189178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 663e9cb1012649e4598b624f3a27626f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  IsFloorHandleDragging: 1
+  IsRoomFloorDragging: 1
 --- !u!114 &4492018900371189182 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5634098231044348441, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
