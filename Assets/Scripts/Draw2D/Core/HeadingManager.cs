@@ -8,14 +8,17 @@ public static class HeadingManager
     public const float EPS = 1e-8f;
 
     /// <summary>
-    /// Tính heading theo mặt phẳng XZ: 0° = Bắc (Z+), 90° = Đông (X+), [0,360)
+    /// Tính heading theo mặt phẳng XZ: 
+    /// 0° = Nam (Z−), 90° = Đông (X+), 180° = Bắc (Z+), 270° = Tây (X−)
     /// </summary>
     public static float HeadingDeg(Vector3 from, Vector3 to)
     {
         Vector3 dir = to - from;
         dir.y = 0f; // chỉ xét XZ
         if (dir.sqrMagnitude < EPS) return 0f;
-        float angle = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg; // 0° khi trỏ Z+
+
+        // Atan2(dx, -dz) để 0° = Z−
+        float angle = Mathf.Atan2(dir.x, -dir.z) * Mathf.Rad2Deg;
         if (angle < 0f) angle += 360f;
         return angle;
     }
@@ -64,7 +67,9 @@ public static class HeadingManager
             UpdateWallHeading(wl, roomOffsetDeg);
 
         room.headingCompass = Wrap360(roomOffsetDeg);
-        room.Compass = new Vector2(0f, 1f); // (X=0,Y=1) ~ Z+ là Bắc
+
+        // Vì 0° bây giờ là Nam (Z−), vector compass = (0, -1)
+        // room.Compass = new Vector2(0f, -1f);
     }
 
     /// <summary>
@@ -86,7 +91,7 @@ public static class HeadingManager
 
     /// <summary>
     /// Hiệu chỉnh heading cả room dựa vào một đo đạc AR:
-    /// - measuredHeadingDeg: hướng la bàn đo được (0°=Bắc).
+    /// - measuredHeadingDeg: hướng la bàn đo được (0°=Nam).
     /// - arPointWorld: điểm tham chiếu (gần tường nào thì dùng tường đó làm chuẩn).
     /// - snap90: nếu true sẽ “bắt” offset về bội số 90° (đẹp cho phòng vuông).
     /// </summary>

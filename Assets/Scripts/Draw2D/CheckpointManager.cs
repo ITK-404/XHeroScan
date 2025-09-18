@@ -472,7 +472,7 @@ public class CheckpointManager : MonoBehaviour
     // 0° = +Z (Bắc), +90° = +X (Đông)
     private static Vector3 DirFromHeading(float deg)
     {
-        return (Quaternion.Euler(0f, deg, 0f) * Vector3.forward).normalized;
+        return (Quaternion.Euler(0f, deg, 0f) * Vector3.back).normalized;
     }
 
     private float InferYawFromWalls(Room room, out int usedCount, bool ignoreManual = true, float minLen = 0.05f)
@@ -535,8 +535,8 @@ public class CheckpointManager : MonoBehaviour
             return;
         }
 
-        // 3) Quay về hướng thực (+phi), rồi thêm 180° để Bắc
-        Quaternion R = Quaternion.Euler(0f, phi + 180f + 90f, 0f);
+        // 3) Quay tâm theo phi
+        Quaternion R = Quaternion.Euler(0f, phi + 90f, 0f);
 
         // 4) Quay checkpoints quanh tâm
         for (int i = 0; i < room.checkpoints.Count; i++)
@@ -601,7 +601,7 @@ public class CheckpointManager : MonoBehaviour
         // room.Compass = new Vector2(0f, 1f);
         foreach (var wl in room.wallLines)
         {
-            wl.headingCompass = HeadingManager.HeadingDeg(wl.start, wl.end);
+            // wl.headingCompass = HeadingManager.HeadingDeg(wl.start, wl.end);
 
             var s = new Vector3(wl.start.x, roomIndexY + lineLift, wl.start.z);
             var e = new Vector3(wl.end.x, roomIndexY + lineLift, wl.end.z);

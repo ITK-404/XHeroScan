@@ -234,6 +234,11 @@ public void OnEndDrag(PointerEventData eventData)
         };
 
         room.center = GeoUtil.Centroid(room.checkpoints);
+
+        // GẮN HƯỚNG MẶC ĐỊNH CHO TẤT CẢ WALLLINE (0° = Nam/Z−)
+        // HeadingManager.UpdateAllWallHeadings(room, 0f);
+        HeadingManager.HeadingDeg(room.checkpoints[0], room.checkpoints[1]);
+
         RoomStorage.UpdateOrAddRoom(room);
 
         if (checkPointManager != null)
