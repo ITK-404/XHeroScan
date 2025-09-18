@@ -262,7 +262,7 @@ public partial class FurnitureItem : MonoBehaviour
         if (IUpdateWhenMoves == null) return;
         foreach (var item in IUpdateWhenMoves)
         {
-            if(item == null) continue;
+            if (item == null) continue;
             item.Update();
         }
     }
@@ -281,7 +281,7 @@ public partial class FurnitureItem : MonoBehaviour
         if (IUpdateWhenMoves == null) return;
         foreach (var item in IUpdateWhenMoves)
         {
-            if(item == null) continue;
+            if (item == null) continue;
             item.UpdateWhenCameraZoom();
         }
 
@@ -289,6 +289,7 @@ public partial class FurnitureItem : MonoBehaviour
         {
             furnitureMergeToWall.Update();
         }
+        model2D.flipX = data.isFlipHorizontal;
     }
     /// <summary>
     /// Hàm này được gọi khi người dùng muốn điều chỉnh kích thước bằng tay
@@ -425,7 +426,7 @@ public partial class FurnitureItem : MonoBehaviour
         Vector3 worldMousePosition = mainCam.ScreenToWorldPoint(
             new Vector3(Input.mousePosition.x, Input.mousePosition.y, distance)
         );
-        return new Vector3(worldMousePosition.x,FurnitureManager.SpawnHeight,worldMousePosition.z);
+        return new Vector3(worldMousePosition.x, FurnitureManager.SpawnHeight, worldMousePosition.z);
     }
 
     /// <summary>
@@ -620,15 +621,18 @@ public partial class FurnitureItem : MonoBehaviour
     {
         //FurnitureManager.Instance.RemoveFromRuntime(this);
         FurnitureManager.Instance.SelectFurniture(null);
-        
+
         Vector3 worldPostion = GetWorldPosition();
         Vector3 position = worldPostion + new Vector3(length, 0, width);
-        
+
         Debug.Log("World Position: " + worldPostion);
         Debug.Log("Spawn Position: " + position);
 
         var furniture = FurnitureManager.Instance.SpawnFurniture(this.data.itemTemplateID, position);
-        furniture.FetchData(this.data);
+        var cloneData = data;
+        cloneData.worldPosition = position;
+
+        furniture.FetchData(cloneData);
         furniture.data.InitNewInstanceID();
         return furniture;
     }
@@ -645,6 +649,11 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void CreareEditCommandBySnapShot()
     {
+        if (data.Equals(SnapShotTemp))
+        {
+            Debug.Log("This data is same, does not create commnad for that");
+            return;
+        }
         UndoRedoController.Instance.AddToUndo(new EditItemCommand(SnapShotTemp));
     }
 }
