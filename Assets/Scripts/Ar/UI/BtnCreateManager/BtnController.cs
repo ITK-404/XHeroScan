@@ -1143,7 +1143,10 @@ public class BtnController : MonoBehaviour
             if (!string.IsNullOrEmpty(selectedID))
             {
                 room.SetID(selectedID); // Gán lại ID để overwrite
-                UndoRedoController.EditRoomCommandCreator?.CreateAndAddScanARList();
+                if(UndoRedoController.loadFromScanAR)
+                {
+                    UndoRedoController.EditRoomCommandCreator.CreateAndAddScanARList();
+                }
             }
             room.wallLines.AddRange(segmentWallLines);
             Debug.Log("Done 1: " + segmentWallLines.Count);

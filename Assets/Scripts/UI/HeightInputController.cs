@@ -17,22 +17,23 @@ public class HeightInputController : MonoBehaviour
 
     private void Awake()
     {
+        inputField.onValidateInput = ValidateChar;
         minusBtn.onClick.AddListener(DecreaseHeight);
         plusBtn.onClick.AddListener(IncreaseHeight);
-
+        inputField.onValueChanged.AddListener(OnChangedInput);
     }
 
     private void OnDestroy()
     {
         minusBtn.onClick.RemoveListener(DecreaseHeight);
         plusBtn.onClick.RemoveListener(IncreaseHeight);
-
-        inputField.onValidateInput = ValidateChar;
+        inputField.onValueChanged.AddListener(OnChangedInput);
     }
 
     private char ValidateChar(string text, int charIndex, char addedChar)
     {
         // Ví dụ: chỉ cho nhập số và dấu chấm
+
         if (char.IsDigit(addedChar) || addedChar == '.')
             return addedChar;
 
@@ -62,6 +63,17 @@ public class HeightInputController : MonoBehaviour
         ChangeHeight(-0.1f);
     }
 
+    private void OnChangedInput(string value)
+    {
+        if (float.TryParse(value, out var result))
+        {
+            if (result < 0.1f)
+            {
+                currentHeight = Mathf.Clamp(result, minHeight, maxHeight);
+                inputField.text = $"{currentHeight:F1}";
+            }
+        }
+    }
     private void ChangeHeight(float value)
     {
         currentHeight += value;

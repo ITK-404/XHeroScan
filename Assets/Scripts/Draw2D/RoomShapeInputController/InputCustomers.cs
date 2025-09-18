@@ -53,7 +53,7 @@ public class InputCustomers : MonoBehaviour
         //if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedFloor);
     }
 
-    private void OnEnable()
+    public void LoadDataWhenShow()
     {
         if (!roomInfoDisplay.TryGetSelection(out RoomInfoDisplay.SelType kind, out string roomId))
         {

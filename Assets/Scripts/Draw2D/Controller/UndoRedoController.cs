@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 public class UndoRedoController : MonoBehaviour
 {
+    public static bool loadFromScanAR = false;
     public static UndoRedoController Instance;
     public static List<IUndoRedoCommand> scanARTempList = new();
 
@@ -26,11 +27,13 @@ public class UndoRedoController : MonoBehaviour
         }
         // sau khi load xong thì clear đi
         scanARTempList.Clear();
+        loadFromScanAR = false;
     }
 
     public void CreateTempUndoListToScanAR()
     {
         scanARTempList = new List<IUndoRedoCommand>(undoList);
+        loadFromScanAR = true;
     }
 #if UNITY_EDITOR
     private void Update()

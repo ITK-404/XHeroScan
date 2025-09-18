@@ -1811,7 +1811,7 @@ MonoBehaviour:
   m_AsteriskChar: 42
   m_KeyboardType: 0
   m_LineType: 0
-  m_HideMobileInput: 0
+  m_HideMobileInput: 1
   m_HideSoftKeyboard: 0
   m_CharacterValidation: 0
   m_RegexValue: 
@@ -2317,6 +2317,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4960568309085514380, guid: c192c740f856bc04a830c15060e21b08,
+        type: 3}
+      propertyPath: m_HideMobileInput
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7737475985604472449, guid: c192c740f856bc04a830c15060e21b08,
         type: 3}
       propertyPath: m_Pivot.x
@@ -2578,7 +2583,7 @@ MonoBehaviour:
   m_AsteriskChar: 42
   m_KeyboardType: 0
   m_LineType: 0
-  m_HideMobileInput: 0
+  m_HideMobileInput: 1
   m_HideSoftKeyboard: 0
   m_CharacterValidation: 0
   m_RegexValue: 
@@ -7695,6 +7700,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_text
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3009659224921191503, guid: cf3facaec86343d41b78772b002c96e9,
+        type: 3}
+      propertyPath: m_HideMobileInput
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3540913866414387407, guid: cf3facaec86343d41b78772b002c96e9,
         type: 3}
