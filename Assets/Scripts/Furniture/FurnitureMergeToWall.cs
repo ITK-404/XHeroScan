@@ -224,8 +224,8 @@ public class FurnitureMergeToWall
 
     private void RotationToWallLine()
     {
-        var flipOffset = 0;
-        //flipOffset = furnitureItem.data.isFlipVertical ? 180 : 0;
+        //var flipOffset = 0;
+        var flipOffset = furnitureItem.data.isFlipVertical ? 180 : 0;
         Vector3 dir = attachedWallLine.end - attachedWallLine.start;
         dir.y = 0;
         float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
