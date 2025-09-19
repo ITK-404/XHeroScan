@@ -276,6 +276,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1187a795b804dd40a411a676a838340, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hitBoxSizeBuffer: {x: 1, y: 1}
   allowSnapToWall: 0
   allowShowAllCheckPoint: 1
   allowRotationByCheckPoint: 1
@@ -292,15 +293,18 @@ MonoBehaviour:
     currentItemType: 0
     size:
       width: 1
-      height: 1
+      height: 2
       length: 0.5
       rotation: {x: 0, y: 0.8870109, z: 0, w: 0.4617486}
       widthMinMax: {x: 0.5, y: 5000}
       heightMinMax: {x: 1, y: 5000}
       lengthMinMax: {x: 0.5, y: 5000}
-      offsetY: 0
+      distanceFromGround: 0
+    isFlipVertical: 0
+    isFlipHorizontal: 0
   modelContainer: {fileID: 5386840937885300725}
   model2D: {fileID: 3354348105385316814}
+  resizeRatio: {x: 1, y: 1}
   checkPointParent: {fileID: 9142053234481993226}
   leftPoint: {fileID: 3946280342027712294}
   rightPoint: {fileID: 4280884400013859840}
@@ -319,8 +323,9 @@ MonoBehaviour:
   textMeshProPrefab: {fileID: 4512470224821213514, guid: 3af0173042a2bfd468e70f9011b7fdb0,
     type: 3}
   furnitureMergeToWall:
-    offset: 0
     ratio: 0
+  textContainer: {fileID: 0}
+  correctPosition: {x: 0, y: 0, z: 0}
 --- !u!114 &5451159717796942090
 MonoBehaviour:
   m_ObjectHideFlags: 0

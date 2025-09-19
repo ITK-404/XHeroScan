@@ -20,6 +20,7 @@ public class FurnitureEditFunction : MonoBehaviour
     private ParameterInputField thicknessInputField;
     private ParameterInputField widthInputField;
     private ParameterInputField lengthInputField;
+    private ParameterInputField heightInputField;
     private ParameterInputField distanceFromGroundInputField;
 
     private ModularPopupEdit popupEdit;
@@ -37,9 +38,12 @@ public class FurnitureEditFunction : MonoBehaviour
         toggleFlipGroup = settingPanel.toggleFlipGroup;
         
         thicknessInputField = settingPanel.GetParameterInputField(IntParameterType.Thickness);
-        widthInputField = settingPanel.GetParameterInputField(IntParameterType.Width);
-        lengthInputField = settingPanel.GetParameterInputField(IntParameterType.Height);
         distanceFromGroundInputField = settingPanel.GetParameterInputField(IntParameterType.DistanceFromGround);
+        
+        widthInputField = settingPanel.GetParameterInputField(IntParameterType.Width);
+        lengthInputField = settingPanel.GetParameterInputField(IntParameterType.Length);
+        heightInputField = settingPanel.GetParameterInputField(IntParameterType.Height);
+
 
         settingPanel.OnApplyAction += OnChangeSize;
 
@@ -97,11 +101,14 @@ public class FurnitureEditFunction : MonoBehaviour
             var data = currentFurniture.data;
             FurnitureItem.SnapShotTemp = data;
             currentFurniture.CreareEditCommandBySnapShot();
+            float previousWidth = data.size.width;
+            float previousLength = data.size.length;
+            float previousHeight = data.size.height;
 
             float width = TryParse(widthInputField.InputField);
             float length = TryParse(lengthInputField.InputField);
+            float height = TryParse(heightInputField.InputField);
             float distanceFromGround = TryParse(distanceFromGroundInputField.InputField);
-            float higherValue = 0;
             // Xử lý để furniture tạo thành hình vuông nếu
             Debug.Log($"Giá trị từ input field {width} {length}");
 
@@ -109,12 +116,31 @@ public class FurnitureEditFunction : MonoBehaviour
 
             if (currentFurniture.alwayMakeSquare)
             {
-                higherValue = Mathf.Max(width, length);
-                width = length = higherValue;
+                bool isLengthChanged = previousLength != length;
+                bool isWidthChanged = previousWidth != width;
+                Vector2 resizeRatio = currentFurniture.resizeRatio;
+
+                if (isLengthChanged)
+                {
+                    // x là tỉ lệ của width so với height
+                    // Vd: vector2 1,1 có nghĩa thông số luôn bằng nhau
+                    Debug.Log("is Length Changed");
+                    width = length / resizeRatio.y;
+                }
+                if (isWidthChanged)
+                {
+                    Debug.Log("Is Height Changed");
+                    length = width / resizeRatio.x;
+                }
+
+                //Debug.Log("Is Alway make square");
+                //higherValue = Mathf.Max(width, length);
+                //width = length = higherValue;
             }
             Debug.Log($"Giá trị mới {width} {length}");
             currentFurniture.data.size.width = width;
             currentFurniture.data.size.length = length;
+            currentFurniture.data.size.height = height;
             currentFurniture.SyncWithBounds();
             currentFurniture.data.size.ClampSize();
 
@@ -201,6 +227,7 @@ public class FurnitureEditFunction : MonoBehaviour
         Debug.Log("On Refresh Value");
         widthInputField.SetValue(currentFurniture.width);
         lengthInputField.SetValue(currentFurniture.length);
+        heightInputField.SetValue(currentFurniture.height);
         distanceFromGroundInputField.SetValue(currentFurniture.data.size.distanceFromGround);
     }
 }
