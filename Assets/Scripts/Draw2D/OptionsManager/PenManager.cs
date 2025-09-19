@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 public class PenManager : MonoBehaviour
 {
+    public static float MAX_CAMERA_ZOOM = 70;
     public Button penButton; // Button để bật/tắt chức năng pen
     public static Camera mainCamera; // Camera chính để di chuyển và phóng to
     public float zoomSpeed = 2f; // Tốc độ zoom
@@ -293,7 +294,8 @@ public class PenManager : MonoBehaviour
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (scroll != 0f)
         {
-            mainCamera.orthographicSize = Mathf.Clamp(mainCamera.orthographicSize - scroll * zoomSpeed, 1f, 70f);
+            mainCamera.orthographicSize = Mathf.Clamp(mainCamera.orthographicSize - scroll * zoomSpeed, 1f, MAX_CAMERA_ZOOM);
+            CameraResizeByFloor.Instance.BreakZoom();
         }
 
         // Di chuyển camera bằng chuột hoặc bằng 1 ngón tay
@@ -316,7 +318,8 @@ public class PenManager : MonoBehaviour
                     mainCamera.ScreenToWorldPoint(new Vector3(touch.position.x - touchDelta.x,
                         touch.position.y - touchDelta.y, mainCamera.nearClipPlane));
                 mainCamera.transform.Translate(-move, Space.World);
-                
+
+                CameraResizeByFloor.Instance.BreakMove();
             }
         }
 
@@ -334,6 +337,8 @@ public class PenManager : MonoBehaviour
             float difference = currentMagnitude - prevMagnitude;
             mainCamera.orthographicSize =
                 Mathf.Clamp(mainCamera.orthographicSize - difference * zoomSpeed * 0.01f, 1f, 70f);
+
+            CameraResizeByFloor.Instance.BreakZoom();
         }
     }
 

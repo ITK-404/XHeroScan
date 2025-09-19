@@ -19,25 +19,38 @@ public class CameraResizeByFloor : MonoBehaviour
     }
 
 
-    public void Resize(Vector2 center, List<Vector2> checkPoints)
+    public void Resize(List<Vector2> checkPoints)
     {
         moveTween?.Kill();
         sizeTween?.Kill();
 
-        Vector3 newCenter = new Vector3(center.x, mainCamera.transform.position.y, center.y);
-        Bounds bounds = new Bounds();
+        Bounds bounds = new Bounds(checkPoints[0],Vector3.zero);
         foreach (var item in checkPoints)
         {
             bounds.Encapsulate(item);
         }
+        Vector3 boundCenter = bounds.center;
+        Vector3 correctCenter = new Vector3(boundCenter.x, mainCamera.transform.position.y, boundCenter.y);
         // tỉ lệ màn hình
+        Debug.Log("Target Size: " + bounds.ToString());
         float targetSize = GetTargetSize(bounds);
-
+        targetSize = Mathf.Clamp(targetSize, 3, PenManager.MAX_CAMERA_ZOOM);
+        
         moveTween = DOVirtual.Float(mainCamera.orthographicSize, targetSize, 0.4f, (x) =>
         {
             mainCamera.orthographicSize = x;
         });
-        sizeTween = mainCamera.transform.DOMove(newCenter, 0.4f);
+        
+        sizeTween = mainCamera.transform.DOMove(correctCenter, 0.4f);
+    }
+    public void BreakMove()
+    {
+        moveTween?.Kill();
+    }
+
+    public void BreakZoom()
+    {
+        sizeTween?.Kill();
     }
 
     private float GetTargetSize(Bounds bounds)

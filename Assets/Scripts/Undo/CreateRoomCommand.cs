@@ -99,6 +99,9 @@ public class EditRoomCommand : IUndoRedoCommand
 
         RestoreFurnitureInRoom();
         Debug.Log("After Total room count:  " + RoomStorage.rooms.Count);
+        var room = RoomStorage.GetRoomByID(oldRoomSnapShoot.ID);
+        CameraResizeByFloor.Instance.Resize(room.checkpoints);
+
     }
 
     private void RestoreFurnitureInRoom()

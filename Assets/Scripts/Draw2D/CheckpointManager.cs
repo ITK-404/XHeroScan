@@ -465,6 +465,11 @@ public class CheckpointManager : MonoBehaviour
             CreateRoomMeshCtrl(room);
             DrawWallLineByRoom(room); 
         }
+        if(RoomStorage.rooms.Count > 0)
+        {
+            var room = RoomStorage.rooms[0];
+            CameraResizeByFloor.Instance.Resize(room.checkpoints);
+        }
     }
 
     private const float EPS_LEN = 1e-3f;

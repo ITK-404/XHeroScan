@@ -544,6 +544,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1786281808129855105, guid: b89f9e764548d4641ab064c6b9e170e1,
+        type: 3}
+      propertyPath: m_RaycastPadding.w
+      value: -13.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 1786281808129855105, guid: b89f9e764548d4641ab064c6b9e170e1,
+        type: 3}
+      propertyPath: m_RaycastPadding.y
+      value: -4.67
+      objectReference: {fileID: 0}
     - target: {fileID: 3029100561729791912, guid: b89f9e764548d4641ab064c6b9e170e1,
         type: 3}
       propertyPath: m_Name
@@ -1205,7 +1215,7 @@ PrefabInstance:
     - target: {fileID: 8262827178141053050, guid: b89f9e764548d4641ab064c6b9e170e1,
         type: 3}
       propertyPath: m_Value
-      value: 1
+      value: 1.0000001
       objectReference: {fileID: 0}
     - target: {fileID: 8318633395566688054, guid: b89f9e764548d4641ab064c6b9e170e1,
         type: 3}

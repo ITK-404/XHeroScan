@@ -649,11 +649,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void CreareEditCommandBySnapShot()
     {
-        if (data.Equals(SnapShotTemp))
-        {
-            Debug.Log("This data is same, does not create commnad for that");
-            return;
-        }
+        
         UndoRedoController.Instance.AddToUndo(new EditItemCommand(SnapShotTemp));
     }
 }
