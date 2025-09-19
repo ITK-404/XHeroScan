@@ -27,6 +27,52 @@ public class CompassMenu : MonoBehaviour
         
     }
 
+    private void InitRotationCalculator()
+    {
+        var current = Camera.main ? Camera.main.transform.eulerAngles.y : 0f;
+        // góc mà UI nằm
+        DirectionRotationCalculator = new();
+        DirectionRotationCalculator.circleDirection = new()
+        {
+            // Direction.South, // 0
+            // Direction.East, // 90
+            // Direction.North, // 180
+            // Direction.West // 270
+            Direction.North, // 0
+            Direction.West, // 270
+            Direction.South, // 180
+            Direction.East // 90
+        };
+        DirectionRotationCalculator.Init();
+    }
+
+    private void InitIconDirections()
+    {
+        for (int i = 0; i < directions.Count; i++)
+        {
+
+            var item = Instantiate(directionalItemPrefab, directionalsObject.transform);
+            var direction = directions[i];
+            if (direction == Direction.East || directions[i] == Direction.West)
+            {
+                item.anchorIcon = AnchorPosition.MiddleBottom; // icon luôn nằm dưới text
+            }
+            else if (direction == Direction.North)
+            {
+                // item.anchorIcon = AnchorPosition.MiddleBottom;
+                item.anchorIcon = AnchorPosition.MiddleTop; // icon nằm trên text
+            }
+            else if (direction == Direction.South)
+            {
+                // item.anchorIcon = AnchorPosition.MiddleTop;
+                item.anchorIcon = AnchorPosition.MiddleBottom; // icon nằm dưới text
+            }
+
+            itemList.Add(item);
+        }
+
+    }
+
     private void SetupToggleButton()
     {
         turnOnBtn.onClick.AddListener(() => { Show(true); });
@@ -47,32 +93,7 @@ public class CompassMenu : MonoBehaviour
         Direction.South,
         Direction.West
     };
-    private void InitIconDirections()
-    {
-        for (int i = 0; i < directions.Count; i++)
-        {
-            
-            var item = Instantiate(directionalItemPrefab, directionalsObject.transform);
-            var direction = directions[i];
-            if(direction == Direction.East || directions[i] == Direction.West)
-            {
-                item.anchorIcon = AnchorPosition.MiddleBottom; // icon luôn nằm dưới text
-            }
-            else if(direction == Direction.North )
-            {
-                // item.anchorIcon = AnchorPosition.MiddleBottom;
-                item.anchorIcon = AnchorPosition.MiddleTop; // icon nằm trên text
-            }
-            else if(direction == Direction.South)
-            {
-                // item.anchorIcon = AnchorPosition.MiddleTop;
-                item.anchorIcon = AnchorPosition.MiddleBottom; // icon nằm dưới text
-            }
-            
-            itemList.Add(item);
-        }
-
-    }
+ 
 
     public void Refresh()
     {
@@ -86,7 +107,6 @@ public class CompassMenu : MonoBehaviour
             item.Set(directions[i]);
             item.SetAnchor(itemRect, anchor); // chỉnh anchor của item
             item.SetAnchor(item.Icon, item.anchorIcon); // chỉnh anchor của icon item
-
             DirectionRotationCalculator.SetZRotation(item.Icon, direction);
         }
     }
@@ -99,25 +119,7 @@ public class CompassMenu : MonoBehaviour
     }
     private List<DirectionalItem> itemList = new();
 
-    private void InitRotationCalculator()
-    {
-        var current = Camera.main ? Camera.main.transform.eulerAngles.y : 0f;
-        // góc mà UI nằm
-        DirectionRotationCalculator = new();
-        DirectionRotationCalculator.circleDirection = new()
-        {
-            // Direction.South, // 0
-            // Direction.East, // 90
-            // Direction.North, // 180
-            // Direction.West // 270
-            Direction.North, // 0
-            Direction.West, // 270
-            Direction.South, // 180
-            Direction.East // 90
-        };
-        DirectionRotationCalculator.Init();
-    }
-
+   
     private void Toggle()
     {
         isActive = !isActive;

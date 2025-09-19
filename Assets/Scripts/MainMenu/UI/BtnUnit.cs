@@ -49,7 +49,7 @@ public class BtnUnit : MonoBehaviour
     }
 
     // Ẩn panel lỗi nếu hợp lệ
-    ErrorPanel.SetActive(false);
+    //ErrorPanel.SetActive(false);
 
     // Lấy đơn vị từ Dropdown
     string selectedUnit = unitDropdown.options[unitDropdown.value].text;

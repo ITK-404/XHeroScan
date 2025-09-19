@@ -40,12 +40,12 @@ public class FurniturePoint : MonoBehaviour
         }
     }
 #endif
-    private float width, heigh;
+    private float width, length;
     private void OnMouseDown()
     {
         FurnitureItem.SnapShotTemp = furniture.data;
         width = furniture.width;
-        heigh = furniture.height;
+        length = furniture.length;
     }
     private void OnMouseDrag()
     {
@@ -63,7 +63,7 @@ public class FurniturePoint : MonoBehaviour
     {
         FurnitureItem.OnDragPoint = false;
 
-        if(width != furniture.width || heigh != furniture.height)
+        if(width != furniture.width || length != furniture.length)
         {
             furniture.CreareEditCommandBySnapShot();
         }
