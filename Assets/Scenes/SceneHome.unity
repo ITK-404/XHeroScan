@@ -1815,6 +1815,11 @@ PrefabInstance:
       propertyPath: unit
       value: 
       objectReference: {fileID: 2131890899}
+    - target: {fileID: 5244435599774293860, guid: be6800d4c9b54d64da6c1ca1effcc1ab,
+        type: 3}
+      propertyPath: popupErr
+      value: 
+      objectReference: {fileID: 811075109}
     - target: {fileID: 5259724658963950143, guid: be6800d4c9b54d64da6c1ca1effcc1ab,
         type: 3}
       propertyPath: m_Sprite
@@ -3136,7 +3141,7 @@ PrefabInstance:
     - target: {fileID: 3968083391658664775, guid: 02fe2f76154e7e641a80b0732c1173d9,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.000045776367
+      value: 0.000038146973
       objectReference: {fileID: 0}
     - target: {fileID: 5306324293149929753, guid: 02fe2f76154e7e641a80b0732c1173d9,
         type: 3}

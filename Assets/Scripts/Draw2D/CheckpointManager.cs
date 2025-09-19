@@ -511,7 +511,7 @@ public class CheckpointManager : MonoBehaviour
 
         // Trung bình tròn
         float phi = Mathf.Atan2((float)sx, (float)cx) * Mathf.Rad2Deg; // [-180..180]
-        return phi; // quay +phi (CCW) sẽ làm g ≈ s
+        return phi; // quay +phi (CCW) sẽ làm g ~ s
     }
 
     private void AlignRoomToSystemOrientation(Room room)
@@ -573,7 +573,6 @@ public class CheckpointManager : MonoBehaviour
             var wp = new Vector3(p.x, roomIndexY, p.y);
             loopGO.Add(Instantiate(checkpointPrefab, wp, Quaternion.identity));
         }
-       
         loopMappings.Add(new LoopMap(room.ID, loopGO));
         allCheckpoints.Add(loopGO);
     }
