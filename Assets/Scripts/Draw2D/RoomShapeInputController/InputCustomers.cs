@@ -15,6 +15,7 @@ public class InputCustomers : MonoBehaviour
     private CheckpointManager checkpointManager;
     private DragFromButtonSpawnFloor spawnFloor;
     TMP_InputField inputLength;
+    TMP_InputField inputHeight;
     TMP_InputField inputWidth;
     TMP_InputField thicknessInput;
     //[SerializeField] private Button buttonOk;
@@ -45,6 +46,7 @@ public class InputCustomers : MonoBehaviour
     private void Find()
     {
         inputLength = floorSettingPanel.GetParameterInputField(IntParameterType.Height).InputField;
+        inputHeight = floorSettingPanel.GetParameterInputField(IntParameterType.DistanceFromGround).InputField;
         inputWidth = floorSettingPanel.GetParameterInputField(IntParameterType.Width).InputField;
         thicknessInput = floorSettingPanel.GetParameterInputField(IntParameterType.Thickness).InputField;
     }
@@ -85,6 +87,7 @@ public class InputCustomers : MonoBehaviour
 
         inputWidth.text = bounds.size.x.ToString();
         inputLength.text = bounds.size.y.ToString();
+        inputHeight.text = "0.1";
     }
 
     // ROOM đang chọn
@@ -118,19 +121,19 @@ public class InputCustomers : MonoBehaviour
         Debug.Log($"[DimOK] Editing ROOM ID = {roomId}");
         RecreateRoomWithInputDims(roomId);
     }
-    private (float, float, bool) GetWidthLengthFromInput()
+    private (float, float, float, bool) GetWidthLengthFromInput()
     {
-        if (inputLength == null || inputWidth == null)
+        if (inputLength == null || inputWidth == null || inputHeight == null)
         {
             Debug.LogWarning("[DimOK] Không tìm thấy input Length/Width trong FloorSettingPanel.");
-            return (0, 0, false);
+            return (0, 0, 0, false);
         }
-        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
+        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W)|| !TryParse(inputHeight?.text, out float H))
         {
             Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng cho FLOOR.");
-            return (0, 0, false);
+            return (0, 0, 0, false);
         }
-        return (W, L, true);
+        return (W, L, H, true);
     }
     private Vector2 GetWidthAndHeight(Room room)
     {
@@ -146,14 +149,15 @@ public class InputCustomers : MonoBehaviour
     // Update dims cho ROOM
     private void RecreateRoomWithInputDims(string roomId)
     {
-        var (W, L, ok) = GetWidthLengthFromInput();
+        var (W, L, H, ok) = GetWidthLengthFromInput();
         if (!ok) return;
 
         // Lấy room
         Room room = RoomStorage.GetRoomByID(roomId);
         var size = GetWidthAndHeight(room);
         Debug.Log($"Size from input {W} {L} : Size from room{size}");
-        if(size.x == W && size.y == L)
+        bool heightUnchanged = room.heights != null && room.heights.Count > 0 && Mathf.Approximately(room.heights[0], H);
+        if (size.x == W && size.y == L && heightUnchanged)
         {
             Debug.Log("This is same, does not create it againt");
             return;
@@ -258,6 +262,14 @@ public class InputCustomers : MonoBehaviour
         Debug.Log($"[DimOK] UPDATED room {roomId}: points+lines+mesh (index=2) -> {L}x{W}, baseY={baseY}, lift={roomWallLift}");
         floorSettingPanel.ResetAllParameters();
 
+        // === HEIGHT update ===
+        room.heights.Clear(); // xóa cũ để tránh dư
+        for (int i = 0; i < room.wallLines.Count; i++)
+        {
+            // đồng bộ list heights
+            room.heights.Add(H);
+        }
+
     }
 
     private List<GameObject> TryGetCheckpointListForRoom(string id)
@@ -307,7 +319,7 @@ public class InputCustomers : MonoBehaviour
         // chú ý: length = chiều dọc (Z), width = chiều ngang (X)
         // Đọc L & W
 
-        var (W, L, ok) = GetWidthLengthFromInput();
+        var (W, L, H, ok) = GetWidthLengthFromInput();
 
         if (!ok) return;
 

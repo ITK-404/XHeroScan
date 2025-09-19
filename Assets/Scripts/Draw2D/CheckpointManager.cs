@@ -463,7 +463,7 @@ public class CheckpointManager : MonoBehaviour
 
             AddGameObjectCheckPointToGlobalVariable(room);
             CreateRoomMeshCtrl(room);
-            DrawWallLineByRoom(room);
+            DrawWallLineByRoom(room); 
         }
     }
 
