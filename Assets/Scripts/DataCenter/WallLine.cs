@@ -122,7 +122,7 @@ public class Room
         Compass = other.Compass;
         floorMaterial = other.floorMaterial;
         floorID = other.floorID;
-
+        center = other.center;
         checkpoints = new List<Vector2>(other.checkpoints);
         wallLines = new List<WallLine>(other.wallLines.Select(w => new WallLine(w)));
         extraCheckpoints = new List<Vector2>(other.extraCheckpoints);

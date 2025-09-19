@@ -502,7 +502,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             // Vẽ lại từ state (sẽ cập nhật mesh/line/label vị trí)
             RedrawRectangleFromState();
 
-            CameraResizeByFloor.Instance.Resize(floor.center, floor.checkpoints);
+            CameraResizeByFloor.Instance.Resize(floor.checkpoints);
 
         }
         isDragging = false;

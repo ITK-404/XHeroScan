@@ -124,7 +124,6 @@ public class CompassMenu : MonoBehaviour
             //DirectionRotationCalculator.SetZRotation(item.Icon, direction);
             float rotation = GetDirection(anchor);
             item.Icon.transform.rotation = Quaternion.Euler(0, 0, rotation);
-            Debug.Log($"{anchor.ToString()} {GetDirection(anchor).ToString()}");
         }
     }
     public static float GetDirection(AnchorPosition anchorPosition)

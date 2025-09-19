@@ -76,8 +76,17 @@ public class HeightInputController : MonoBehaviour
     }
     private void ChangeHeight(float value)
     {
-        currentHeight += value;
-        currentHeight = Mathf.Clamp(currentHeight, minHeight, maxHeight);
+        UpdateValue(currentHeight + value);
+    }
+
+    private void UpdateValue(float value)
+    {
+        currentHeight = Mathf.Clamp(value, minHeight, maxHeight);
         inputField.text = $"{currentHeight:F1}";
+    }
+
+    public void SetHeight(float thickness)
+    {
+        UpdateValue(thickness);
     }
 }

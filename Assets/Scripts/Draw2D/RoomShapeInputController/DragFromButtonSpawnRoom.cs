@@ -118,7 +118,7 @@ public void OnEndDrag(PointerEventData eventData)
         ClearEdgeLabels();
 
         if (_lastCreatedRoom != null)
-            CameraResizeByFloor.Instance.Resize(_lastCreatedRoom.center, _lastCreatedRoom.checkpoints);
+            CameraResizeByFloor.Instance.Resize(_lastCreatedRoom.checkpoints);
     }
 
     // ================= Preview =================

@@ -33,7 +33,7 @@ public class EditFloorCommand : IUndoRedoCommand
             //dragHandler.ResetSingleFloor();
             FloorStorage.UpdateOrAddFloor(floor);
             dragHandler.LoadStateFromFloorId(floor.ID);
-            CameraResizeByFloor.Instance.Resize(floor.center, floor.checkpoints);
+            CameraResizeByFloor.Instance.Resize(floor.checkpoints);
             //dragHandler.RedrawRectangleFromState();
         }
 
