@@ -52,7 +52,7 @@ public static class DirectionAnchorMapping
     public static AnchorPosition ToAnchor(this Direction dir)
     {
         var current = Camera.main ? Camera.main.transform.eulerAngles.y : 0f;
-        // Debug.Log($"Camera main: {current.transform.eulerAngles.y}",current.gameObject);
+        //Debug.Log($"Camera main: {current}");
         if (current == 0f)
             return dir switch
             {
@@ -71,7 +71,8 @@ public static class DirectionAnchorMapping
                 Direction.West => AnchorPosition.MiddleTop,
                 _ => AnchorPosition.Center
             };
-        else if (current == -90f)
+        else if (current == 270)
+        {
             return dir switch
             {
                 Direction.North => AnchorPosition.MiddleLeft,
@@ -80,6 +81,7 @@ public static class DirectionAnchorMapping
                 Direction.West => AnchorPosition.MiddleTop,
                 _ => AnchorPosition.Center
             };
+        }
         else
             return dir switch
             {

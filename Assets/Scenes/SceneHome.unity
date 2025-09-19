@@ -3136,7 +3136,12 @@ PrefabInstance:
     - target: {fileID: 3968083391658664775, guid: 02fe2f76154e7e641a80b0732c1173d9,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0.000022888184
+      value: -0.000045776367
+      objectReference: {fileID: 0}
+    - target: {fileID: 5306324293149929753, guid: 02fe2f76154e7e641a80b0732c1173d9,
+        type: 3}
+      propertyPath: m_HideMobileInput
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7125470151957294278, guid: 02fe2f76154e7e641a80b0732c1173d9,
         type: 3}
