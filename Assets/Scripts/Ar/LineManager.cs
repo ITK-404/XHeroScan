@@ -1,6 +1,7 @@
 using System.Collections.Generic;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
+using static Unity.Burst.Intrinsics.X86.Avx;
 
 public class LineManager : MonoBehaviour
 {
@@ -21,8 +22,7 @@ public class LineManager : MonoBehaviour
 
     // private List<(GameObject anchor, LineRenderer line)> anchoredLines = new List<(GameObject, LineRenderer)>();
     private List<(GameObject startAnchor, GameObject endAnchor, LineRenderer line)> anchoredLines = new List<(GameObject, GameObject, LineRenderer)>();
-
-
+    public Camera mainCam;
     void Start()
     {
         // Lấy đơn vị đã lưu từ MainMenu
@@ -86,10 +86,25 @@ public class LineManager : MonoBehaviour
                 if (index >= 0 && index < distanceTexts.Count)
                 {
                     float distance = ConvertDistance(Vector3.Distance(startAnchor.transform.position, endAnchor.transform.position));
-                    distanceTexts[index].text = $"{distance:F2} {measurementUnit}";
-                    distanceTexts[index].transform.position = (startAnchor.transform.position + endAnchor.transform.position) / 2;
+                    TextMeshPro tmp = distanceTexts[index];
+                    tmp.text = $"{distance:F2} {measurementUnit}";
+                    tmp.transform.position = (startAnchor.transform.position + endAnchor.transform.position) / 2;
+                    Debug.Log($"Vẽ text line distnace");
+
+                    var direction = mainCam.transform.position - previewText.transform.position;
+                    direction.y = 0;
+                    direction.Normalize();
+                    tmp.transform.forward = -direction;
                 }
             }
+        }
+
+        if (previewText != null)
+        {
+            var direction = mainCam.transform.position - previewText.transform.position;
+            direction.y = 0;
+            direction.Normalize();
+            previewText.transform.forward = -direction;
         }
     }
     
@@ -187,6 +202,8 @@ public class LineManager : MonoBehaviour
 
         // Đặt text lên trên điểm preview (end)
         previewText.transform.position = end + new Vector3(0, 0.1f, 0);
+
+       
     }
 
     public void ClearPreviewLine()

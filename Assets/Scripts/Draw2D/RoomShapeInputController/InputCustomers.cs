@@ -242,7 +242,7 @@ public class InputCustomers : MonoBehaviour
         Vector3 v1 = new Vector3(rect[1].x, baseY + roomWallLift, rect[1].y);
         Vector3 v2 = new Vector3(rect[2].x, baseY + roomWallLift, rect[2].y);
         Vector3 v3 = new Vector3(rect[3].x, baseY + roomWallLift, rect[3].y);
-
+        
         room.wallLines.Add(new WallLine(v0, v1, LineType.Wall));
         room.wallLines.Add(new WallLine(v1, v2, LineType.Wall));
         room.wallLines.Add(new WallLine(v2, v3, LineType.Wall));
