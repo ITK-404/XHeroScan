@@ -56,6 +56,7 @@ public class WallLine
         this.materialFront = other.materialFront;
         this.materialBack = other.materialBack;
         this.isManualConnection = other.isManualConnection;
+        this.headingCompass = other.headingCompass;
     }
 }
 

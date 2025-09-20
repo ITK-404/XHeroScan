@@ -93,15 +93,44 @@ public class InputCustomers : MonoBehaviour
 
     private void UpdateInputWhenShow(Vector3 center, List<Vector2> checkPoints)
     {
-        Bounds bounds = new(checkPoints[0],Vector3.zero);
-        bounds.center = center;
-        foreach (var item in checkPoints)
+        //Bounds bounds = new(checkPoints[0],Vector3.zero);
+        //bounds.center = center;
+        //foreach (var item in checkPoints)
+        //{
+        //    bounds.Encapsulate(item);
+        //}
+        GetWidthHeight(checkPoints, out var height, out var width);
+        inputWidth.text = width.ToString();
+        inputLength.text = height.ToString();
+    }
+
+    void GetWidthHeight(List<Vector2> points, out float width, out float height)
+    {
+        // Giả sử list có ít nhất 4 điểm, là hình chữ nhật
+        Vector2 p0 = points[0];
+        Vector2 p1 = points[1];
+
+        // Trục X local: cạnh đầu tiên
+        Vector2 axisX = (p1 - p0).normalized;
+        // Trục Y local: vuông góc
+        Vector2 axisY = new Vector2(-axisX.y, axisX.x);
+
+        float minX = float.MaxValue, maxX = float.MinValue;
+        float minY = float.MaxValue, maxY = float.MinValue;
+
+        foreach (var p in points)
         {
-            bounds.Encapsulate(item);
+            float projX = Vector2.Dot(p, axisX);
+            float projY = Vector2.Dot(p, axisY);
+
+            if (projX < minX) minX = projX;
+            if (projX > maxX) maxX = projX;
+            if (projY < minY) minY = projY;
+            if (projY > maxY) maxY = projY;
         }
 
-        inputWidth.text = bounds.size.x.ToString();
-        inputLength.text = bounds.size.y.ToString();
+        width = maxX - minX;
+        height = maxY - minY;
     }
 
     // ROOM đang chọn
@@ -213,7 +242,7 @@ public class InputCustomers : MonoBehaviour
         Vector3 v1 = new Vector3(rect[1].x, baseY + roomWallLift, rect[1].y);
         Vector3 v2 = new Vector3(rect[2].x, baseY + roomWallLift, rect[2].y);
         Vector3 v3 = new Vector3(rect[3].x, baseY + roomWallLift, rect[3].y);
-
+        
         room.wallLines.Add(new WallLine(v0, v1, LineType.Wall));
         room.wallLines.Add(new WallLine(v1, v2, LineType.Wall));
         room.wallLines.Add(new WallLine(v2, v3, LineType.Wall));

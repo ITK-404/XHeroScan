@@ -7,15 +7,15 @@ public class FaceCamera : MonoBehaviour
     void Start()
     {
         // mainCamera = Camera.main; // Lấy camera chính
-        mainCamera = FindObjectOfType<Camera>(); // Tìm bất kỳ camera nào trong Scene
+        mainCamera = Camera.main;
     }
 
-    void Update()
-    {
-        // if (mainCamera != null)
-        // {
-        //     transform.LookAt(mainCamera.transform); // Nhìn về phía camera
-        //     transform.Rotate(0, 180, 0); // Quay ngược lại để tránh bị ngược chữ
-        // }
-    }
+    //void Update()
+    //{
+    //    if (mainCamera != null)
+    //    {
+    //        transform.LookAt(mainCamera.transform); // Nhìn về phía camera
+    //        transform.Rotate(0, 180, 0); // Quay ngược lại để tránh bị ngược chữ
+    //    }
+    //}
 }
