@@ -1,8 +1,11 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 
 public class LoadRoomScan : MonoBehaviour
 {
@@ -10,10 +13,10 @@ public class LoadRoomScan : MonoBehaviour
     public Transform contentParent;
     public GameObject dataItemPrefab;
     public GameObject panelLoadRooom;
+    public GameObject popupErr;
 
     public void OnEnable()
     {
-
         if (panelLoadRooom != null)
         {
             panelLoadRooom.SetActive(true);
@@ -33,7 +36,6 @@ public class LoadRoomScan : MonoBehaviour
 
             GameObject item = Instantiate(dataItemPrefab, contentParent);
 
-            // string displayName = "Room " + index;
             string displayName = room.roomName;
             string areaText = "Diện tích: " + GetRoomAreaString(room);
 
@@ -52,12 +54,34 @@ public class LoadRoomScan : MonoBehaviour
                 string capturedID = room.ID; // tránh closure
                 btn.onClick.AddListener(() =>
                 {
-                    PlayerPrefs.SetString("SelectedRoomID", capturedID);
-                    SceneManager.LoadScene("AR");
-                    // btnByCam.Instance.OnMeasureClicked();
+                    StartCoroutine(HandleRoomSelection(capturedID));
                 });
             }
         }
+    }
+
+    private IEnumerator HandleRoomSelection(string capturedID)
+    {
+        // Kiểm tra AR khả dụng
+        yield return ARSession.CheckAvailability();
+
+        if (ARSession.state == ARSessionState.Unsupported ||
+            ARSession.state == ARSessionState.None ||
+            ARSession.state == ARSessionState.NeedsInstall)
+        {
+            Debug.LogWarning("Thiết bị không hỗ trợ AR hoặc cần cài đặt ARCore/ARKit.");
+            if (popupErr != null) popupErr.SetActive(true);
+            yield break;
+        }
+
+        // Nếu ok thì tiếp tục vào AR scene
+        FurnitureManager.Instance.SaveRuntimesToTemp();
+        UndoRedoController.EditRoomCommandCreator = new();
+        UndoRedoController.EditRoomCommandCreator.TryAddChangedRoomID(capturedID);
+        UndoRedoController.Instance.CreateTempUndoListToScanAR();
+        PlayerPrefs.SetString("SelectedRoomID", capturedID);
+
+        SceneManager.LoadScene("AR");
     }
 
     private string GetRoomAreaString(Room room)

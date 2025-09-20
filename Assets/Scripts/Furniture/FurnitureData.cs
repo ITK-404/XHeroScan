@@ -27,7 +27,7 @@ public struct DrawItemSize
     public Vector2 heightMinMax;
     public Vector2 lengthMinMax;
 
-    public float offsetY;
+    public float distanceFromGround;
 
     public Vector2 To2DSize()
     {
@@ -73,7 +73,8 @@ public struct DrawingInstanced
     public DrawItemSize size;
 
     // just use for door and window
-    public bool isFlip;
+    public bool isFlipVertical;
+    public bool isFlipHorizontal;
 
     public void InitNewInstanceID()
     {

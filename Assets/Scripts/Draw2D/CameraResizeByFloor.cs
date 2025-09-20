@@ -9,38 +9,8 @@ public class CameraResizeByFloor : MonoBehaviour
     private Camera mainCamera;
     private Tween moveTween;
     private Tween sizeTween;
-    public void Resize(Vector2 center, List<Vector2> checkPoints)
-    {
-        moveTween?.Kill();
-        sizeTween?.Kill();
 
-        Vector3 newCenter = new Vector3(center.x, mainCamera.transform.position.y, center.y);
-        Bounds bounds = new Bounds();
-        foreach (var item in checkPoints)
-        {
-            bounds.Encapsulate(item);
-        }
-
-        float aspect = (float)Screen.width / (float)Screen.height;
-
-        // cần cover theo chiều cao
-        float sizeByHeight = bounds.size.y * 0.5f;
-
-        // cần cover theo chiều ngang
-        float sizeByWidth = (bounds.size.x * 0.5f) / aspect;
-
-        // chọn size lớn hơn để đảm bảo cover đủ
-        float targetSize = Mathf.Max(sizeByHeight, sizeByWidth);
-
-        // thêm padding 15%
-        targetSize *= 1.15f;
-
-        moveTween = DOVirtual.Float(mainCamera.orthographicSize, targetSize, 0.4f, (x) =>
-        {
-            mainCamera.orthographicSize = x;
-        });
-        sizeTween = mainCamera.transform.DOMove(newCenter, 0.4f);
-    }
+    public bool isLandscape = false;
 
     private void Awake()
     {
@@ -48,4 +18,67 @@ public class CameraResizeByFloor : MonoBehaviour
         mainCamera = Camera.main;
     }
 
+
+    public void Resize(List<Vector2> checkPoints)
+    {
+        moveTween?.Kill();
+        sizeTween?.Kill();
+
+        Bounds bounds = new Bounds(checkPoints[0],Vector3.zero);
+        foreach (var item in checkPoints)
+        {
+            bounds.Encapsulate(item);
+        }
+        Vector3 boundCenter = bounds.center;
+        Vector3 correctCenter = new Vector3(boundCenter.x, mainCamera.transform.position.y, boundCenter.y);
+        // tỉ lệ màn hình
+        Debug.Log("Target Size: " + bounds.ToString());
+        float targetSize = GetTargetSize(bounds);
+        targetSize = Mathf.Clamp(targetSize, 3, PenManager.MAX_CAMERA_ZOOM);
+        
+        moveTween = DOVirtual.Float(mainCamera.orthographicSize, targetSize, 0.4f, (x) =>
+        {
+            mainCamera.orthographicSize = x;
+        });
+        
+        sizeTween = mainCamera.transform.DOMove(correctCenter, 0.4f);
+    }
+    public void BreakMove()
+    {
+        moveTween?.Kill();
+    }
+
+    public void BreakZoom()
+    {
+        sizeTween?.Kill();
+    }
+
+    private float GetTargetSize(Bounds bounds)
+    {
+        // Kiểm tra nên match width hay height theo độ lớn của size X và size Y
+        isLandscape = bounds.size.x > bounds.size.y;
+        // tỉ lệ màn hình
+        float screenAspect = (float)Screen.width / (float)Screen.height;
+
+        float width = bounds.size.x;
+        float height = bounds.size.y;
+        
+        width = width * 0.5f;
+        height = height * 0.5f;
+
+        float sizeByHeight = height, sizeByWidth;
+        
+        if (isLandscape)
+        {
+            sizeByWidth = width / screenAspect;
+        }
+        else
+        {
+            sizeByWidth = width * screenAspect;
+        }
+        float offsetRatio = isLandscape ? 1.15f : 1.40f;
+        float targetSize = Mathf.Max(sizeByHeight, sizeByWidth) * offsetRatio;
+
+        return targetSize;
+    }
 }

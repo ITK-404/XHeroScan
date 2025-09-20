@@ -262,7 +262,7 @@ public partial class FurnitureItem : MonoBehaviour
         if (IUpdateWhenMoves == null) return;
         foreach (var item in IUpdateWhenMoves)
         {
-            if(item == null) continue;
+            if (item == null) continue;
             item.Update();
         }
     }
@@ -281,7 +281,7 @@ public partial class FurnitureItem : MonoBehaviour
         if (IUpdateWhenMoves == null) return;
         foreach (var item in IUpdateWhenMoves)
         {
-            if(item == null) continue;
+            if (item == null) continue;
             item.UpdateWhenCameraZoom();
         }
 
@@ -289,6 +289,7 @@ public partial class FurnitureItem : MonoBehaviour
         {
             furnitureMergeToWall.Update();
         }
+        model2D.flipX = data.isFlipHorizontal;
     }
     /// <summary>
     /// Hàm này được gọi khi người dùng muốn điều chỉnh kích thước bằng tay
@@ -350,7 +351,7 @@ public partial class FurnitureItem : MonoBehaviour
 
         // Sau khi resize xong, cập nhật hiển thị / điểm:
         modelContainer.transform.localPosition = new Vector3(bounds.center.x, modelContainer.transform.localPosition.y, bounds.center.z);
-        SetRotation(currentRotation.y);
+        RefreshRotation();
     }
 
 
@@ -373,25 +374,29 @@ public partial class FurnitureItem : MonoBehaviour
         width = bounds.size.x;
         length = bounds.size.z;
     }
-
+    public Vector3 correctPosition;
     /// <summary>
     /// Kéo furniture theo delta của mouse, không dựa vào vị trí của mouse
     /// </summary>
     /// <param name="dragTransform"></param>
-    public void Dragging(Transform dragTransform)
+    public void Dragging(Vector3 correctPosition)
     {
         var currentPos = GetWorldMousePosition();
         var delta = currentPos - startPos;
-
-        dragTransform.localPosition += delta;
+        this.correctPosition = correctPosition;
+        //dragTransform.localPosition += delta;
+        SetWorldPosition(correctPosition);
 
         if (allowSnapToWall)
         {
             furnitureMergeToWall.StartSnap();
         }
+        else
+        {
+        }
 
         startPos = currentPos;
-        bounds.center = dragTransform.localPosition;
+        //bounds.center = dragTransform.localPosition;
 
         RefreshCheckPointsByBounds();
         UpdateWorldSizeFromLocal();
@@ -413,7 +418,7 @@ public partial class FurnitureItem : MonoBehaviour
     /// Lấy vị trí chuột ở world 
     /// </summary>
     /// <returns></returns>
-    private Vector3 GetWorldMousePosition()
+    public Vector3 GetWorldMousePosition()
     {
         float distance = Vector3.Distance(mainCam.transform.position, FurnitureManager.Instance.transform.position);
 
@@ -421,7 +426,7 @@ public partial class FurnitureItem : MonoBehaviour
         Vector3 worldMousePosition = mainCam.ScreenToWorldPoint(
             new Vector3(Input.mousePosition.x, Input.mousePosition.y, distance)
         );
-        return worldMousePosition;
+        return new Vector3(worldMousePosition.x, FurnitureManager.SpawnHeight, worldMousePosition.z);
     }
 
     /// <summary>
@@ -514,7 +519,7 @@ public partial class FurnitureItem : MonoBehaviour
         SetWorldPosition(data.worldPosition);
         modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
 
-        SetRotation(currentRotation.y);
+        RefreshRotation();
         // Cập nhật bounds
         bounds.center = modelContainer.transform.localPosition;
         bounds.size = new Vector3(width, 1, length);
@@ -541,9 +546,17 @@ public partial class FurnitureItem : MonoBehaviour
         return null;
     }
 
+    public void RefreshRotation()
+    {
+        SetRotation(currentRotation.y);
+    }
+
     public void SetRotation(float yRotation)
     {
-        modelContainer.transform.localRotation = Quaternion.Euler(90, yRotation, 0);
+        var flipOffset = 0;
+        //flipOffset = data.isFlipVertical ? 180 : 0;
+
+        modelContainer.transform.localRotation = Quaternion.Euler(90, yRotation + flipOffset, 0);
         data.size.rotation.y = yRotation;
     }
 
@@ -608,9 +621,18 @@ public partial class FurnitureItem : MonoBehaviour
     {
         //FurnitureManager.Instance.RemoveFromRuntime(this);
         FurnitureManager.Instance.SelectFurniture(null);
-        Vector3 position = transform.position + new Vector3(length, 0, width);
+
+        Vector3 worldPostion = GetWorldPosition();
+        Vector3 position = worldPostion + new Vector3(length, 0, width);
+
+        Debug.Log("World Position: " + worldPostion);
+        Debug.Log("Spawn Position: " + position);
+
         var furniture = FurnitureManager.Instance.SpawnFurniture(this.data.itemTemplateID, position);
-        furniture.FetchData(this.data);
+        var cloneData = data;
+        cloneData.worldPosition = position;
+
+        furniture.FetchData(cloneData);
         furniture.data.InitNewInstanceID();
         return furniture;
     }
@@ -627,6 +649,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void CreareEditCommandBySnapShot()
     {
+        
         UndoRedoController.Instance.AddToUndo(new EditItemCommand(SnapShotTemp));
     }
 }

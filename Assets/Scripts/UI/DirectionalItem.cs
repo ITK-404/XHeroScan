@@ -51,14 +51,46 @@ public static class DirectionAnchorMapping
 {
     public static AnchorPosition ToAnchor(this Direction dir)
     {
-        return dir switch
+        var current = Camera.main ? Camera.main.transform.eulerAngles.y : 0f;
+        //Debug.Log($"Camera main: {current}");
+        if (current == 0f)
+            return dir switch
+            {
+                Direction.North => AnchorPosition.MiddleBottom,
+                Direction.South => AnchorPosition.MiddleTop,
+                Direction.East => AnchorPosition.MiddleLeft,
+                Direction.West => AnchorPosition.MiddleRight,
+                _ => AnchorPosition.Center
+            };
+        else if (current == 90f)
+            return dir switch
+            {
+                Direction.North => AnchorPosition.MiddleRight,
+                Direction.South => AnchorPosition.MiddleLeft,
+                Direction.East => AnchorPosition.MiddleBottom,
+                Direction.West => AnchorPosition.MiddleTop,
+                _ => AnchorPosition.Center
+            };
+        else if (current == 270)
         {
-            Direction.North => AnchorPosition.MiddleTop,
-            Direction.South => AnchorPosition.MiddleBottom,
-            Direction.East  => AnchorPosition.MiddleRight,
-            Direction.West  => AnchorPosition.MiddleLeft,
-            _ => AnchorPosition.Center
-        };
+            return dir switch
+            {
+                Direction.North => AnchorPosition.MiddleLeft,
+                Direction.South => AnchorPosition.MiddleRight,
+                Direction.East => AnchorPosition.MiddleBottom,
+                Direction.West => AnchorPosition.MiddleTop,
+                _ => AnchorPosition.Center
+            };
+        }
+        else
+            return dir switch
+            {
+                Direction.North => AnchorPosition.MiddleTop,
+                Direction.South => AnchorPosition.MiddleBottom,
+                Direction.East => AnchorPosition.MiddleRight,
+                Direction.West => AnchorPosition.MiddleLeft,
+                _ => AnchorPosition.Center
+            };
     }
 }
 

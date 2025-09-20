@@ -9,11 +9,10 @@ public class ModularPopupEdit : MonoBehaviour
     public Button editBtn;
     public Button splitBtn;
     public Button doubleBtn;
-    public Button flipBtn;
     public Button deleteBtn;
 
     [Header("Contents (chỉ 1 hiển thị tại 1 thời điểm)")]
-    [SerializeField] private GameObject objectEdit;
+    [SerializeField] private BottomSheetUI objectEdit;
     [SerializeField] private GameObject objectSplit;
     [SerializeField] private GameObject objectDouble;
     // [SerializeField] private GameObject objectDelete;
@@ -25,7 +24,7 @@ public class ModularPopupEdit : MonoBehaviour
     void Awake()
     {
         gameObject.SetActive(false);
-        if (editBtn)   editBtn.onClick.AddListener(() => ShowOnly(objectEdit));
+        if (editBtn)   editBtn.onClick.AddListener(() => objectEdit.Open());
         if (splitBtn)  splitBtn.onClick.AddListener(() => ShowOnly(objectSplit));
         if (doubleBtn) doubleBtn.onClick.AddListener(() => ShowOnly(objectDouble));
         //if (deleteBtn) deleteBtn.onClick.AddListener(() => clearAllRoomsButton.OnClearAllClicked());
@@ -37,7 +36,6 @@ public class ModularPopupEdit : MonoBehaviour
             es.AddComponent<StandaloneInputModule>();
         }
         splitBtn.gameObject.SetActive(isShowSplit);
-        flipBtn.gameObject.SetActive(!isShowSplit);
     }
 
     private void ShowOnly(GameObject target)
@@ -45,13 +43,12 @@ public class ModularPopupEdit : MonoBehaviour
         if (!target) return;
 
         // Tắt tất cả
-        if (objectEdit) objectEdit.SetActive(false);
+        if (objectEdit) objectEdit.gameObject.SetActive(false);
         if (objectSplit) objectSplit.SetActive(false);
         if (objectDouble) objectDouble.SetActive(false);
         // if (objectDelete) objectDelete.SetActive(false);
 
         // Bật panel mục tiêu
-        target.SetActive(true);
 
         // Nếu là tab Edit thì mở ngay BottomSheetUI
         if (target == objectEdit)

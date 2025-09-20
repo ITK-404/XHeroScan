@@ -1,10 +1,12 @@
-using System.Globalization;
 using System.Collections;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Globalization;
 using System.Reflection;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using System.Collections.Generic;
 
 public class InputCustomers : MonoBehaviour
 {
@@ -13,8 +15,12 @@ public class InputCustomers : MonoBehaviour
     private CheckpointManager checkpointManager;
     private DragFromButtonSpawnFloor spawnFloor;
     TMP_InputField inputLength;
+    TMP_InputField inputHeight;
     TMP_InputField inputWidth;
     TMP_InputField thicknessInput;
+
+    private HeightInputController heightInputController;
+
     //[SerializeField] private Button buttonOk;
 
     [SerializeField] FloorSettingPanel floorSettingPanel;
@@ -34,24 +40,97 @@ public class InputCustomers : MonoBehaviour
         floorSettingPanel.OnApplyAction += ApplyDimensionsForSelectedRoom;
         floorSettingPanel.OnApplyAction += ApplyDimensionsForSelectedFloor;
 
+
     }
     private void Start()
     {
-        //Invoke(nameof(Find), 0.);
-        Find();
+        Invoke(nameof(Find), 0.5f);
     }
 
     private void Find()
     {
-        inputLength = floorSettingPanel.GetParameterInputField(IntParameterType.Height).InputField;
+        inputLength = floorSettingPanel.GetParameterInputField(IntParameterType.Length).InputField;
+        inputHeight = floorSettingPanel.GetParameterInputField(IntParameterType.Height).InputField;
         inputWidth = floorSettingPanel.GetParameterInputField(IntParameterType.Width).InputField;
         thicknessInput = floorSettingPanel.GetParameterInputField(IntParameterType.Thickness).InputField;
+    
+        heightInputController = floorSettingPanel.GetParameterInputField(IntParameterType.Thickness).GetComponent<HeightInputController>();
     }
 
     private void OnDestroy()
     {
         //if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedRoom);
         //if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedFloor);
+    }
+
+    public void LoadDataWhenShow()
+    {
+        if (!roomInfoDisplay.TryGetSelection(out RoomInfoDisplay.SelType kind, out string roomId))
+        {
+            Debug.LogWarning("[DimOK] Không có mục nào đang được chọn -> không áp dụng.");
+            return;
+        }
+
+        if (kind != RoomInfoDisplay.SelType.Room || string.IsNullOrEmpty(roomId))
+        {
+            Debug.LogWarning($"[DimOK] Đang chọn {kind}, không phải ROOM hoặc ID rỗng -> không áp dụng.");
+            return;
+        }
+        var room = RoomStorage.GetRoomByID(roomId);
+        heightInputController.SetHeight(room.thickness);
+        UpdateInputWhenShow(room.center,room.checkpoints);
+      
+        if(room.heights.Count > 0)
+        {
+            inputHeight.text = room.heights[0].ToString();
+        }
+        else
+        {
+            inputHeight.text = "0.0";
+        }
+
+    }
+
+    private void UpdateInputWhenShow(Vector3 center, List<Vector2> checkPoints)
+    {
+        //Bounds bounds = new(checkPoints[0],Vector3.zero);
+        //bounds.center = center;
+        //foreach (var item in checkPoints)
+        //{
+        //    bounds.Encapsulate(item);
+        //}
+        GetWidthHeight(checkPoints, out var height, out var width);
+        inputWidth.text = width.ToString();
+        inputLength.text = height.ToString();
+    }
+
+    void GetWidthHeight(List<Vector2> points, out float width, out float height)
+    {
+        // Giả sử list có ít nhất 4 điểm, là hình chữ nhật
+        Vector2 p0 = points[0];
+        Vector2 p1 = points[1];
+
+        // Trục X local: cạnh đầu tiên
+        Vector2 axisX = (p1 - p0).normalized;
+        // Trục Y local: vuông góc
+        Vector2 axisY = new Vector2(-axisX.y, axisX.x);
+
+        float minX = float.MaxValue, maxX = float.MinValue;
+        float minY = float.MaxValue, maxY = float.MinValue;
+
+        foreach (var p in points)
+        {
+            float projX = Vector2.Dot(p, axisX);
+            float projY = Vector2.Dot(p, axisY);
+
+            if (projX < minX) minX = projX;
+            if (projX > maxX) maxX = projX;
+            if (projY < minY) minY = projY;
+            if (projY > maxY) maxY = projY;
+        }
+
+        width = maxX - minX;
+        height = maxY - minY;
     }
 
     // ROOM đang chọn
@@ -85,30 +164,48 @@ public class InputCustomers : MonoBehaviour
         Debug.Log($"[DimOK] Editing ROOM ID = {roomId}");
         RecreateRoomWithInputDims(roomId);
     }
-    private (float, float, bool) GetWidthLengthFromInput()
+    private (float, float, float, bool) GetWidthLengthFromInput()
     {
-        if (inputLength == null || inputWidth == null)
+        if (inputLength == null || inputWidth == null || inputHeight == null)
         {
             Debug.LogWarning("[DimOK] Không tìm thấy input Length/Width trong FloorSettingPanel.");
-            return (0, 0, false);
+            return (0, 0, 0, false);
         }
-        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W))
+        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W)|| !TryParse(inputHeight?.text, out float H))
         {
             Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng cho FLOOR.");
-            return (0, 0, false);
+            return (0, 0, 0, false);
         }
-        return (W, L, true);
+        return (W, L, H, true);
     }
-
-
+    private Vector2 GetWidthAndHeight(Room room)
+    {
+        Bounds bounds = new();
+        bounds.center = room.center;
+        foreach (var item in room.checkpoints)
+        {
+            Debug.Log("Encapsulate");
+            bounds.Encapsulate(item);
+        }
+        return bounds.size;
+    }
     // Update dims cho ROOM
     private void RecreateRoomWithInputDims(string roomId)
     {
-        var (W, L, ok) = GetWidthLengthFromInput();
+        var (W, L, H, ok) = GetWidthLengthFromInput();
         if (!ok) return;
 
         // Lấy room
         Room room = RoomStorage.GetRoomByID(roomId);
+        var size = GetWidthAndHeight(room);
+        Debug.Log($"Size from input {W} {L} : Size from room{size}");
+        bool heightUnchanged = room.heights != null && room.heights.Count > 0 && Mathf.Approximately(room.heights[0], H);
+        if (size.x == W && size.y == L && heightUnchanged)
+        {
+            Debug.Log("This is same, does not create it againt");
+            return;
+        }
+
         UndoRedoController.Instance.AddToUndo(new EditRoomCommand(new Room(room)));
         if (room == null)
         {
@@ -119,7 +216,7 @@ public class InputCustomers : MonoBehaviour
         room.thickness = thickness;
         // Tính centroid hiện có
         Vector2 centroid = ComputeCentroid2D(room.checkpoints);
-
+        room.center = centroid;
         // Force index = 2
         var cr = FindFirstObjectByType<CreateRoomOnFloor>();
         float layerStep = (cr != null) ? cr.layerStepY : 0.002f; // fallback 2mm
@@ -127,7 +224,7 @@ public class InputCustomers : MonoBehaviour
         float roomWallLift = (cr != null) ? cr.roomWallLift : fallbackRoomWallLift;
 
         // Ghi lại polygon LxW quanh centroid (GIỮ THỨ TỰ NHƯ KHI TẠO)
-        float hx = L * 0.5f, hy = W * 0.5f;
+        float hx = W * 0.5f, hy = L * 0.5f;
         var rect = new List<Vector2>(4)
         {
             new Vector2(centroid.x - hx, centroid.y - hy), // v0 
@@ -145,7 +242,7 @@ public class InputCustomers : MonoBehaviour
         Vector3 v1 = new Vector3(rect[1].x, baseY + roomWallLift, rect[1].y);
         Vector3 v2 = new Vector3(rect[2].x, baseY + roomWallLift, rect[2].y);
         Vector3 v3 = new Vector3(rect[3].x, baseY + roomWallLift, rect[3].y);
-
+        
         room.wallLines.Add(new WallLine(v0, v1, LineType.Wall));
         room.wallLines.Add(new WallLine(v1, v2, LineType.Wall));
         room.wallLines.Add(new WallLine(v2, v3, LineType.Wall));
@@ -199,7 +296,7 @@ public class InputCustomers : MonoBehaviour
             }
         }
 
-        
+
 
         // Redraw để line được vẽ lại theo wallLines mới
         checkpointManager.RedrawAllRooms();
@@ -207,6 +304,14 @@ public class InputCustomers : MonoBehaviour
         FurnitureManager.Instance.TrySnapToNearestWall();
         Debug.Log($"[DimOK] UPDATED room {roomId}: points+lines+mesh (index=2) -> {L}x{W}, baseY={baseY}, lift={roomWallLift}");
         floorSettingPanel.ResetAllParameters();
+        //CameraResizeByFloor.Instance.Resize(room.checkpoints);
+        // === HEIGHT update ===
+        room.heights.Clear(); // xóa cũ để tránh dư
+        for (int i = 0; i < room.wallLines.Count; i++)
+        {
+            // đồng bộ list heights
+            room.heights.Add(H);
+        }
 
     }
 
@@ -257,7 +362,7 @@ public class InputCustomers : MonoBehaviour
         // chú ý: length = chiều dọc (Z), width = chiều ngang (X)
         // Đọc L & W
 
-        var (W, L, ok) = GetWidthLengthFromInput();
+        var (W, L, H, ok) = GetWidthLengthFromInput();
 
         if (!ok) return;
 
@@ -319,7 +424,7 @@ public class InputCustomers : MonoBehaviour
             Debug.LogWarning("[DimOK] spawnFloor NULL — không thể vẽ lại points/line. Hãy đảm bảo DragFromButtonSpawnFloor có trong scene.");
         }
         Debug.Log($"[DimOK] UPDATED FLOOR {floorId}: points + line + mesh -> {L}x{W}, area={L * W}");
-        CameraResizeByFloor.Instance.Resize(target.center, target.checkpoints);
+        CameraResizeByFloor.Instance.Resize(target.checkpoints);
 
         return true;
     }

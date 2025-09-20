@@ -831,7 +831,7 @@ public class BtnController : MonoBehaviour
                     Debug.Log("insertIndex 0 Door = " + insertIndex);
 
                     // Nếu không phải cạnh cuối, kiểm tra các cạnh còn lại
-                    if (insertIndex == -1)  
+                    if (insertIndex == -1)
                     {
                         for (int i = 0; i < pts.Count - 1; i++)
                         {
@@ -1036,20 +1036,20 @@ public class BtnController : MonoBehaviour
         }
 
         // Kiểm tra nếu Pn gần P1, tự động khép kín đường
-if (count > 2 && Vector3.Distance(newBasePoint.transform.position, currentBasePoints[0].transform.position) < closeThreshold)
-{
-    // >>> FIX CLOSE LOOP: reparent & hard-snap để loại drift theo anchor khác nhau
-    ReparentAndHardSnap(newBasePoint.transform, currentBasePoints[0].transform);
-    ReparentAndHardSnap(newHeightPoint.transform, currentHeightPoints[0].transform);
+        if (count > 2 && Vector3.Distance(newBasePoint.transform.position, currentBasePoints[0].transform.position) < closeThreshold)
+        {
+            // >>> FIX CLOSE LOOP: reparent & hard-snap để loại drift theo anchor khác nhau
+            ReparentAndHardSnap(newBasePoint.transform, currentBasePoints[0].transform);
+            ReparentAndHardSnap(newHeightPoint.transform, currentHeightPoints[0].transform);
 
-    // OPTIONAL: ép lại vị trí Pn nằm đúng trên segment P(n-1)->P1 theo XZ (đẹp hình học)
-    var prev = currentBasePoints[count - 2].transform.position;
-    var p1   = currentBasePoints[0].transform.position;
-    newBasePoint.transform.position = ProjectPointOnSegmentXZ(prev, p1, newBasePoint.transform.position);
-    // Đỉnh tương ứng theo Y của P1
-    newHeightPoint.transform.position = new Vector3(newBasePoint.transform.position.x,
-                                                    currentHeightPoints[0].transform.position.y,
-                                                    newBasePoint.transform.position.z);
+            // OPTIONAL: ép lại vị trí Pn nằm đúng trên segment P(n-1)->P1 theo XZ (đẹp hình học)
+            var prev = currentBasePoints[count - 2].transform.position;
+            var p1 = currentBasePoints[0].transform.position;
+            newBasePoint.transform.position = ProjectPointOnSegmentXZ(prev, p1, newBasePoint.transform.position);
+            // Đỉnh tương ứng theo Y của P1
+            newHeightPoint.transform.position = new Vector3(newBasePoint.transform.position.x,
+                                                            currentHeightPoints[0].transform.position.y,
+                                                            newBasePoint.transform.position.z);
 
 
             // Vẽ đoạn nối chốt vòng
@@ -1112,35 +1112,41 @@ if (count > 2 && Vector3.Distance(newBasePoint.transform.position, currentBasePo
                 // wallLines.Add(wl);             // Thêm vào tổng
                 segmentWallLines.Add(wl);
             }
-var canonicalBase   = CanonicalizeLoop(baseCopy);   // world positions, không lặp điểm cuối = đầu
-var canonicalHeight = CanonicalizeLoop(heightCopy); // tương ứng
+            var canonicalBase = CanonicalizeLoop(baseCopy);   // world positions, không lặp điểm cuối = đầu
+            var canonicalHeight = CanonicalizeLoop(heightCopy); // tương ứng
 
-int n = canonicalBase.Count;
-Debug.Log("Canonical vertex count = " + n);
+            int n = canonicalBase.Count;
+            Debug.Log("Canonical vertex count = " + n);
 
-// Build wallLines từ canonical để đảm bảo end(i) == start(i+1) theo cùng giá trị số
-segmentWallLines.Clear();
-for (int i = 0; i < n; i++) {
-    Vector3 start = canonicalBase[i];
-    Vector3 end   = canonicalBase[(i + 1) % n];
-    segmentWallLines.Add(new WallLine(start, end, currentLineType, 0f, heightValue));
-}
+            // Build wallLines từ canonical để đảm bảo end(i) == start(i+1) theo cùng giá trị số
+            segmentWallLines.Clear();
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 start = canonicalBase[i];
+                Vector3 end = canonicalBase[(i + 1) % n];
+                segmentWallLines.Add(new WallLine(start, end, currentLineType, 0f, heightValue));
+            }
 
-// Build checkpoints/heights tương ứng (KHÔNG chèn điểm trùng cuối)
-var path2D     = new List<Vector2>(n);
-var heightList = new List<float>(n);
-for (int j = 0; j < n; j++) {
-    var b = canonicalBase[j];
-    var h = canonicalHeight[j];
-    path2D.Add(new Vector2(b.x, b.z));
-    heightList.Add(Mathf.Max(0f, h.y - b.y));
-}
+            // Build checkpoints/heights tương ứng (KHÔNG chèn điểm trùng cuối)
+            var path2D = new List<Vector2>(n);
+            var heightList = new List<float>(n);
+            for (int j = 0; j < n; j++)
+            {
+                var b = canonicalBase[j];
+                var h = canonicalHeight[j];
+                path2D.Add(new Vector2(b.x, b.z));
+                heightList.Add(Mathf.Max(0f, h.y - b.y));
+            }
             // Lưu chính xác các WallLine này vào Room hiện tại
             string selectedID = PlayerPrefs.GetString("SelectedRoomID", "");
             Room room = new Room();
             if (!string.IsNullOrEmpty(selectedID))
             {
                 room.SetID(selectedID); // Gán lại ID để overwrite
+                if(UndoRedoController.loadFromScanAR)
+                {
+                    UndoRedoController.EditRoomCommandCreator.CreateAndAddScanARList();
+                }
             }
             room.wallLines.AddRange(segmentWallLines);
             Debug.Log("Done 1: " + segmentWallLines.Count);
@@ -1162,7 +1168,7 @@ for (int j = 0; j < n; j++) {
 
             // RoomStorage.rooms.Add(room); 
             RoomStorage.UpdateOrAddRoomForAR(room);
-    
+
             // Tính diện tích mặt đứng **phải làm ở đây**, trước khi clear
             for (int i = 0; i < count; i++)
             {
@@ -1305,8 +1311,9 @@ for (int j = 0; j < n; j++) {
     }
 
     // Ép về [0,1] đoạn a-b theo XZ
-    Vector3 ProjectPointOnSegmentXZ(Vector3 a, Vector3 b, Vector3 p) {
-        Vector2 A = new(a.x,a.z), B = new(b.x,b.z), P = new(p.x,p.z);
+    Vector3 ProjectPointOnSegmentXZ(Vector3 a, Vector3 b, Vector3 p)
+    {
+        Vector2 A = new(a.x, a.z), B = new(b.x, b.z), P = new(p.x, p.z);
         Vector2 AB = B - A;
         float ab2 = Vector2.Dot(AB, AB);
         float t = (ab2 < 1e-12f) ? 0f : Mathf.Clamp01(Vector2.Dot(P - A, AB) / ab2);
@@ -1315,7 +1322,8 @@ for (int j = 0; j < n; j++) {
     }
 
     // Đưa Pn về cùng cha với P1 và snap local cho thật khít
-    void ReparentAndHardSnap(Transform pn, Transform p1) {
+    void ReparentAndHardSnap(Transform pn, Transform p1)
+    {
         // đưa pn sang cùng parent với p1 để loại drift anchor
         pn.SetParent(p1.parent, worldPositionStays: true);
         // snap theo world rồi ép lại local để không drift
@@ -1324,13 +1332,15 @@ for (int j = 0; j < n; j++) {
     }
 
     // Chuẩn hoá danh sách world positions: bỏ duplicate cuối, đảm bảo khép kín qua modulo
-    List<Vector3> CanonicalizeLoop(IList<GameObject> basePts, float eps = 1e-4f) {
+    List<Vector3> CanonicalizeLoop(IList<GameObject> basePts, float eps = 1e-4f)
+    {
         var outList = new List<Vector3>(basePts.Count);
         for (int i = 0; i < basePts.Count; i++)
             outList.Add(basePts[i].transform.position);
 
         // nếu điểm cuối trùng đầu trong khoảng eps -> bỏ điểm cuối
-        if (outList.Count >= 2) {
+        if (outList.Count >= 2)
+        {
             if (Vector3.Distance(outList[outList.Count - 1], outList[0]) <= eps)
                 outList.RemoveAt(outList.Count - 1);
         }

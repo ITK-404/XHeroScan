@@ -17,7 +17,7 @@ public class WallLine
 
     public WallLine()
     {
-        Debug.Log("[WallLine] Init no parameter");
+        Debug.Log("[WallLine] Init no parameter");  
     }
     public bool isVisible = true;
 
@@ -56,6 +56,7 @@ public class WallLine
         this.materialFront = other.materialFront;
         this.materialBack = other.materialBack;
         this.isManualConnection = other.isManualConnection;
+        this.headingCompass = other.headingCompass;
     }
 }
 
@@ -122,7 +123,7 @@ public class Room
         Compass = other.Compass;
         floorMaterial = other.floorMaterial;
         floorID = other.floorID;
-
+        center = other.center;
         checkpoints = new List<Vector2>(other.checkpoints);
         wallLines = new List<WallLine>(other.wallLines.Select(w => new WallLine(w)));
         extraCheckpoints = new List<Vector2>(other.extraCheckpoints);

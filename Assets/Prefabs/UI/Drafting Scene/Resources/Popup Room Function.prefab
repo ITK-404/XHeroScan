@@ -1083,7 +1083,6 @@ MonoBehaviour:
     type: 3}
   objectSplit: {fileID: 0}
   objectDouble: {fileID: 0}
-  objectDelete: {fileID: 0}
   isShowSplit: 1
   deferOpenOneFrame: 1
 --- !u!1 &6653301013369645473
@@ -1770,7 +1769,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4971188435459648976
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1787,10 +1786,10 @@ RectTransform:
   - {fileID: 1247738228636389762}
   m_Father: {fileID: 951327318117445134}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 435.63416, y: -36.262497}
+  m_SizeDelta: {x: 124.466896, y: 72.524994}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2811150406699389356
 CanvasRenderer:

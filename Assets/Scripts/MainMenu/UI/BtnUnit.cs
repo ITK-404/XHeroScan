@@ -27,32 +27,32 @@ public class BtnUnit : MonoBehaviour
 
     public void OnBtnUnitClicked()
 {
-    string inputText = heightInput.text.Trim();
+        string inputText = heightInput.text.Trim();
 
-    // Nếu chứa dấu chấm (.), báo lỗi vì chỉ chấp nhận dấu phẩy (,)
-    if (inputText.Contains("."))
-    {
-        Debug.LogWarning("Chỉ chấp nhận định dạng với dấu phẩy (,) thay vì dấu chấm (.)");
-        ErrorPanel.SetActive(true);
-        return;
-    }
+        //// Nếu chứa dấu chấm (.), báo lỗi vì chỉ chấp nhận dấu phẩy (,)
+        //if (inputText.Contains("."))
+        //{
+        //    Debug.LogWarning("Chỉ chấp nhận định dạng với dấu phẩy (,) thay vì dấu chấm (.)");
+        //    ErrorPanel.SetActive(true);
+        //    return;
+        //}
 
-    // Thử chuyển dấu phẩy thành dấu chấm tạm thời để có thể parse
-    string normalizedInput = inputText.Replace(',', '.');
+        //// Thử chuyển dấu phẩy thành dấu chấm tạm thời để có thể parse
+        string normalizedInput = inputText.Replace(',', '.');
 
-    // Kiểm tra parse thành số và số đó phải dương
-    if (!float.TryParse(normalizedInput, out float heightValue) || heightValue <= 0)
-    {
-        Debug.LogWarning("Giá trị không hợp lệ: phải là số dương và không chứa chữ");
-        ErrorPanel.SetActive(true);
-        return;
-    }
+        //// Kiểm tra parse thành số và số đó phải dương
+        if (!float.TryParse(normalizedInput, out float heightValue) || heightValue <= 0)
+        {
+            Debug.LogWarning("Giá trị không hợp lệ: phải là số dương và không chứa chữ");
+            ErrorPanel.SetActive(true);
+            return;
+        }
 
-    // Ẩn panel lỗi nếu hợp lệ
-    ErrorPanel.SetActive(false);
+        // Ẩn panel lỗi nếu hợp lệ
+        //ErrorPanel.SetActive(false);
 
-    // Lấy đơn vị từ Dropdown
-    string selectedUnit = unitDropdown.options[unitDropdown.value].text;
+        // Lấy đơn vị từ Dropdown
+        string selectedUnit = unitDropdown.options[unitDropdown.value].text;
 
     // Chuyển đổi chiều cao theo đơn vị đo đã chọn
     float convertedHeight = ConvertHeightToUnit(heightValue, selectedUnit);

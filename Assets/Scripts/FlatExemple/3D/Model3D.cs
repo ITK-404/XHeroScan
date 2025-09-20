@@ -15,6 +15,9 @@ public class Model3D : MonoBehaviour
 
     public GameObject compassPrefab;       // Prefab la bàn 3D
 
+    // private static bool HasHeading(float h) => h >= 0f && h <= 360f;
+    private static bool HasHeading(float h) => h != 0f;
+
     void Start()
     {
         List<Room> rooms = RoomStorage.rooms;
@@ -36,7 +39,7 @@ public class Model3D : MonoBehaviour
                 Debug.Log($"[Room {rooms.IndexOf(room)}] Compass = {room.Compass}, Heading = {room.headingCompass}");
             }
 
-            // === XÓA các đoạn tường ảo (start ≈ end) ===
+            // === XÓA các đoạn tường ảo (start ~ end) ===
             room.wallLines.RemoveAll(w =>
             {
                 bool isZeroLength = Vector3.Distance(w.start, w.end) < 0.01f;
@@ -56,8 +59,6 @@ public class Model3D : MonoBehaviour
             CreateFloor(room);
             // Vẽ Tọa độ đã check
             CreateCompassObject(room);
-            // Tính toán các hướng dựa trên hướng chuẩn.
-            // UpdateWallDirections(room);
 
             // Kiểm tra dữ liệu đầu vào phòng
             if (room.wallLines == null || room.wallLines.Count == 0)
@@ -80,6 +81,8 @@ public class Model3D : MonoBehaviour
             // Lần đầu tiên, vẽ TẤT CẢ các đoạn ngoại trừ các đoạn cuối đặc biệt
             foreach (WallLine line in room.wallLines)
             {
+                // StampLineHeading(room, line);
+                EnsureLineHeading(room, line);
                 if (line.type == LineType.Wall)
                 {
                     // Nếu có một Door/Window nào có cùng start-end (hoặc đảo ngược), thì bỏ qua Wall này
@@ -146,7 +149,12 @@ public class Model3D : MonoBehaviour
         // Tính hướng tường
         Vector3 dir = (line.end - line.start).normalized;
         float angleLocal = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-        float realWorldAngle = (angleLocal + headingCompass + 360f) % 360f;
+        float realWorldAngle = HasHeading(line.headingCompass)
+                            ? line.headingCompass
+                            : RealWorldAngleForLine(line, headingCompass);
+        // nếu line chưa có heading thì ghi lại để lần sau khỏi tính
+        if (!HasHeading(line.headingCompass))
+            line.headingCompass = realWorldAngle;
         string directionLabel = AngleToDirectionLabel(realWorldAngle);
 
         // Chỉ hiển thị nhãn nếu tường dài hơn 20cm (0.2m)
@@ -254,7 +262,8 @@ public class Model3D : MonoBehaviour
         }
 
         // Giá trị mặc định nếu không có thông tin chiều cao
-        return 3.0f; // Giả định chiều cao tường mặc định là 3 mét
+        // return 3.0f; // Giả định chiều cao tường mặc định là 3 mét
+        return 0.1f;
     }
 
     // Hàm tạo sàn từ các điểm checkpoint
@@ -524,28 +533,6 @@ public class Model3D : MonoBehaviour
         Debug.Log($"[Compass] Room {RoomStorage.rooms.IndexOf(room)} -> Position: {compassPosition}, Parent: {(compassObject.transform.parent != null ? compassObject.transform.parent.name : "null")}");
     }
 
-    private void UpdateWallDirections(Room room)
-    {
-        foreach (WallLine line in room.wallLines)
-        {
-            Vector3 dir = (line.end - line.start).normalized;
-
-            // Góc so với trục Z (Bắc)
-            float angleToNorth = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-
-            // Cộng với góc chuẩn la bàn
-            float realWorldAngle = (angleToNorth + room.headingCompass + 360f) % 360f;
-
-            // (tuỳ chọn) gán vào line nếu bạn muốn lưu
-            // line.directionAngle = realWorldAngle;
-
-            // Gợi ý hướng chữ
-            string directionLabel = AngleToDirectionLabel(realWorldAngle);
-
-            Debug.Log($"[Heading][WallDir] {line.start} -> {line.end} = {realWorldAngle:0.0}° ({directionLabel})");
-        }
-    }
-
     private string AngleToDirectionLabel(float degree)
     {
         if (degree < 0) degree += 360;
@@ -664,7 +651,7 @@ public class Model3D : MonoBehaviour
     {
         WallLine refWall = FindNearestWall(referencePoint, room.wallLines);
 
-        if (refWall == null) 
+        if (refWall == null)
         {
             Debug.LogWarning("[Heading] Khong tim thay tuong chuan!");
             return;
@@ -689,5 +676,31 @@ public class Model3D : MonoBehaviour
 
         Debug.Log($"[Heading] Tuong chuan: {refWall.start} to {refWall.end}");
         Debug.Log($"[Heading] Huong mong muon: {desiredDirection}, final headingCompass = {finalHeading:0.0}");
+    }
+
+    // Trả về heading thực địa cho 1 line (tính từ heading của phòng)
+    private static float RealWorldAngleForLine(WallLine line, float roomHeadingCompass)
+    {
+        Vector3 d = (line.end - line.start);
+        d.y = 0f;
+        if (d.sqrMagnitude < 1e-6f) return 0f;
+
+        float angleLocal = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;    // so với Z+
+        float realWorldAngle = (angleLocal + roomHeadingCompass + 360f) % 360f;
+        return realWorldAngle;
+    }
+
+    // Chỉ ghi heading vào line nếu line chưa có heading
+    private static void EnsureLineHeading(Room room, WallLine line)
+    {
+        if (!HasHeading(line.headingCompass))            // tức là == 0
+        {
+            float angle = RealWorldAngleForLine(line, room.headingCompass);
+
+            if (Mathf.Approximately(angle, 0f))
+                angle = 360f; // hoặc: angle = 0.0001f;
+
+            line.headingCompass = angle;
+        }
     }
 }

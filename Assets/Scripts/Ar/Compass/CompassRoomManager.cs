@@ -9,137 +9,133 @@ public class CompassRoomManager : MonoBehaviour
 
     public void OnSetCompassDirectionForCurrentRoom()
     {
-        Debug.Log(">>> Button clicked: gan huong phong");
+        if (RoomStorage.rooms == null || RoomStorage.rooms.Count == 0) return;
 
+        int idx = RoomStorage.rooms.Count - 1;
+        var room = RoomStorage.rooms[idx];          // <- copy
+        float heading = CompassManager.Instance.GetCurrentHeading();
+
+        room.headingCompass = heading;              // sửa trên copy
+        RoomStorage.rooms[idx] = room;              // commit ngược vào list
+
+        Debug.Log($"[Set Heading] idx={idx} heading={heading:0.0}°");
+        Debug.Log($"[Verify] list value now = {RoomStorage.rooms[idx].headingCompass:0.0}°");
+        CreateCompassLabel(heading);
+    }
+
+
+    private void CreateCompassLabel(float heading)
+    {
+        if (compassLabelPrefab == null)
+        {
+            Debug.LogWarning("Chưa gán compassLabelPrefab!");
+            return;
+        }
+        Camera cam = Camera.main != null ? Camera.main : (Camera.allCameras.Length > 0 ? Camera.allCameras[0] : null);
+        if (cam == null)
+        {
+            Debug.LogError("Không tìm thấy Camera.main");
+            return;
+        }
         if (RoomStorage.rooms == null || RoomStorage.rooms.Count == 0)
         {
-            Debug.LogWarning("Button clicked: no room in RoomStorage.");
+            Debug.LogWarning("RoomStorage trống.");
             return;
         }
 
         Room currentRoom = RoomStorage.rooms[RoomStorage.rooms.Count - 1];
-        float heading = CompassManager.Instance.GetCurrentHeading(); // lấy từ compass mượt
 
-        currentRoom.headingCompass = heading;
-        Debug.Log($"[Set Heading] {heading:0.0}° for room");
-        // In ra hướng và vị trí hiện tại đã lưu
-        Debug.Log($"[Room Info] Compass Heading: {currentRoom.headingCompass:0.0}, Position: {currentRoom.Compass}");
+        // === Tính yaw của camera theo world và offset quy đổi world→true ===
+        float camYaw = Mathf.Atan2(cam.transform.forward.x, cam.transform.forward.z) * Mathf.Rad2Deg;
+        camYaw = (camYaw + 360f) % 360f;
 
-        // Tạo nhãn hoặc mũi tên hướng
-        CreateCompassLabel(heading);
-    }
-    
-private void CreateCompassLabel(float heading)
-{
-    if (compassLabelPrefab == null)
-    {
-        Debug.LogWarning("Chưa gán compassLabelPrefab!");
-        return;
-    }
+        // Mọi góc đo theo world muốn quy về Bắc thật thì + northOffset
+        // float northOffset = (heading - camYaw + 360f) % 360f;
 
-    Camera cam = Camera.main != null ? Camera.main : (Camera.allCameras.Length > 0 ? Camera.allCameras[0] : null);
-    if (cam == null)
-    {
-        Debug.LogError("Không tìm thấy Camera.main");
-        return;
-    }
-
-    if (RoomStorage.rooms == null || RoomStorage.rooms.Count == 0)
-    {
-        Debug.LogWarning("RoomStorage trống.");
-        return;
-    }
-    Room currentRoom = RoomStorage.rooms[RoomStorage.rooms.Count - 1];
-
-    // --- Xác định vị trí spawn ---
-    Vector3 camPos = cam.transform.position;
-    Ray ray = new Ray(camPos, Vector3.down);
-    Vector3 spawnPosition;
-
-    if (Physics.Raycast(ray, out RaycastHit hit, 10f))
-    {
-        spawnPosition = hit.point + Vector3.up * 0.1f;
-        currentRoom.Compass = new Vector2(spawnPosition.x, spawnPosition.z);
-        Debug.Log($"Raycast hit ARPlane: {hit.point}");
-    }
-    else
-    {
-        spawnPosition = camPos + cam.transform.forward * 0.5f - Vector3.up * 0.3f;
-        currentRoom.Compass = new Vector2(spawnPosition.x, spawnPosition.z);
-        Debug.LogWarning("Không raycast được mặt sàn AR, fallback tại vị trí camera.");
-    }
-
-    // --- Tìm tường gần nhất ---
-    WallLine nearestWall = null;
-    Vector3 nearestPointOnWall = Vector3.zero;
-    float minDistance = float.MaxValue;
-
-    foreach (var wall in currentRoom.wallLines)
-    {
-        Vector3 closest = ClosestPointOnLine(wall.start, wall.end, spawnPosition);
-        float dist = Vector3.Distance(spawnPosition, closest);
-
-        if (dist < minDistance)
+        // --- Xác định vị trí spawn ---
+        Vector3 camPos = cam.transform.position;
+        Ray ray = new Ray(camPos, Vector3.down);
+        Vector3 spawnPosition;
+        if (Physics.Raycast(ray, out RaycastHit hit, 10f))
         {
-            minDistance = dist;
-            nearestWall = wall;
-            nearestPointOnWall = closest;
+            spawnPosition = hit.point + Vector3.up * 0.1f;
+            currentRoom.Compass = new Vector2(spawnPosition.x, spawnPosition.z);
+            Debug.Log($"Raycast hit ARPlane: {hit.point}");
         }
-    }
-
-    if (nearestWall != null)
-    {
-        // --- TÍNH & GÁN HƯỚNG THỰC ĐỊA CHO TƯỜNG GẦN NHẤT ---
-        Vector3 dir = nearestWall.end - nearestWall.start;
-        dir.y = 0f;
-        float angleToNorth = 0f;
-        if (dir.sqrMagnitude > 1e-9f)
+        else
         {
-            angleToNorth = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-            angleToNorth = (angleToNorth + 360f) % 360f;
+            spawnPosition = camPos + cam.transform.forward * 0.5f - Vector3.up * 0.3f;
+            currentRoom.Compass = new Vector2(spawnPosition.x, spawnPosition.z);
+            Debug.LogWarning("Không raycast được mặt sàn AR, fallback tại vị trí camera.");
         }
 
-        // Quy chiếu sang Bắc thật bằng heading của phòng
-        float wallTrueHeading = (angleToNorth + currentRoom.headingCompass) % 360f;
-        nearestWall.headingCompass = wallTrueHeading;
+        // --- Tìm tường gần nhất ---
+        WallLine nearestWall = null;
+        Vector3 nearestPointOnWall = Vector3.zero;
+        float minDistance = float.MaxValue;
 
-        Debug.Log($"[WallDir] Nearest wall {nearestWall.start} -> {nearestWall.end} " +
-                  $"local={angleToNorth:0.0}°, true={wallTrueHeading:0.0}° (roomHeading={currentRoom.headingCompass:0.0}°)");
+        foreach (var wall in currentRoom.wallLines)
+        {
+            Vector3 closest = ClosestPointOnLine(wall.start, wall.end, spawnPosition);
+            float dist = Vector3.Distance(spawnPosition, closest);
+            if (dist < minDistance)
+            {
+                minDistance = dist;
+                nearestWall = wall;
+                nearestPointOnWall = closest;
+            }
+        }
 
-        // --- Xoá các nhãn cũ ---
-        foreach (Transform child in transform)
-            if (child.name.Contains("CompassLabel")) Destroy(child.gameObject);
-        foreach (Transform child in transform)
-            if (child.name.Contains("CompassLabel2")) Destroy(child.gameObject);
+        if (nearestWall != null)
+        {
+            // Góc tường theo WORLD
+            Vector3 dir = nearestWall.end - nearestWall.start; dir.y = 0f;
+            float angleWorld = 0f;
+            if (dir.sqrMagnitude > 1e-9f)
+            {
+                angleWorld = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+                angleWorld = (angleWorld + 360f) % 360f;
+            }
 
-        // --- Tạo nhãn/mũi tên theo hướng la bàn hiện tại ---
-        Quaternion lookRotation = Quaternion.Euler(90f, heading, 135f); // quay theo Bắc thật
-        Debug.Log("[CompassArrow] rotation euler = " + lookRotation.eulerAngles);
+            // Quy về BẮC THẬT bằng offset world→true
+            // float wallTrueHeading = (angleWorld + northOffset) % 360f;
+            // nearestWall.headingCompass = heading;
 
-        GameObject label = Instantiate(
-            compassLabelPrefab,
-            spawnPosition,
-            lookRotation,
-            transform
-        );
-        label.name = "CompassLabel";
+            // --- Xoá các nhãn cũ ---
+            foreach (Transform child in transform)
+                if (child.name.Contains("CompassLabel")) Destroy(child.gameObject);
+            foreach (Transform child in transform)
+                if (child.name.Contains("CompassLabel2")) Destroy(child.gameObject);
 
-        GameObject label2 = Instantiate(
-            compassLabelPrefab2,
-            spawnPosition,
-            lookRotation,
-            transform
-        );
-        label2.name = "CompassLabel2";
+            float yawForNorthWorld = (camYaw - heading + 360f) % 360f;
 
-        SetLayerRecursively(label2, LayerMask.NameToLayer("PreviewModel"));
+            Quaternion lookRotation = Quaternion.Euler(90f, yawForNorthWorld, 135f);
+
+            GameObject label = Instantiate(
+                compassLabelPrefab,
+                spawnPosition,
+                lookRotation,
+                transform
+            );
+            label.name = "CompassLabel";
+
+            if (compassLabelPrefab2 != null)
+            {
+                GameObject label2 = Instantiate(
+                    compassLabelPrefab2,
+                    spawnPosition,
+                    lookRotation,
+                    transform
+                );
+                label2.name = "CompassLabel2";
+                SetLayerRecursively(label2, LayerMask.NameToLayer("PreviewModel"));
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Không tìm thấy tường gần nhất để hướng mũi tên.");
+        }
     }
-    else
-    {
-        Debug.LogWarning("Không tìm thấy tường gần nhất để hướng mũi tên.");
-    }
-}
-
 
     // Hàm bổ trợ tìm điểm gần nhất trên đoạn thẳng
     private Vector3 ClosestPointOnLine(Vector3 a, Vector3 b, Vector3 p)

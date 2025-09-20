@@ -429,7 +429,8 @@ public class MovePointManager : MonoBehaviour
                 line.start = selected.transform.position - dir * 0.001f;
                 line.end = selected.transform.position + dir * 0.001f;
             }
-            line.headingCompass= HeadingManager.HeadingDeg(line.start, line.end);
+            // line.headingCompass= HeadingManager.HeadingDeg(line.start, line.end);
+            HeadingManager.UpdateAllWallHeadings(room, room.headingCompass);
         }
 
         foreach (var door in room.wallLines.Where(w => w.type != LineType.Wall))

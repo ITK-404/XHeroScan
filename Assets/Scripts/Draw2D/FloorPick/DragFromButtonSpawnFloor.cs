@@ -264,10 +264,12 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         if (aspect >= 1.8f || sw <= 1280)
         {
             width = 5f; depth = 20f;
+            CameraResizeByFloor.Instance.isLandscape = false;
         }
         else
         {
             width = 20f; depth = 5f;
+            CameraResizeByFloor.Instance.isLandscape = true;
         }
     }
 
@@ -500,7 +502,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
             // Vẽ lại từ state (sẽ cập nhật mesh/line/label vị trí)
             RedrawRectangleFromState();
 
-            CameraResizeByFloor.Instance.Resize(floor.center, floor.checkpoints);
+            CameraResizeByFloor.Instance.Resize(floor.checkpoints);
 
         }
         isDragging = false;

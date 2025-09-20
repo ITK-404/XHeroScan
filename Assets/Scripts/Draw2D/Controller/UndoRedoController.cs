@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-
 public class UndoRedoController : MonoBehaviour
 {
+    public static bool loadFromScanAR = false;
     public static UndoRedoController Instance;
+    public static List<IUndoRedoCommand> scanARTempList = new();
 
     [SerializeField] private int maxStackCount = 20;
     
     private List<IUndoRedoCommand> undoList;
     private List<IUndoRedoCommand> redoList;
+
+    public static EditRoomCommandCreator EditRoomCommandCreator;
     
     private void Awake()
     {
@@ -17,6 +20,20 @@ public class UndoRedoController : MonoBehaviour
 
         undoList = new List<IUndoRedoCommand>();
         redoList = new List<IUndoRedoCommand>();
+        // dùng biến static để lưu object data khi load sang scene khác
+        if(scanARTempList.Count > 0)
+        {
+            undoList = new List<IUndoRedoCommand>(scanARTempList);
+        }
+        // sau khi load xong thì clear đi
+        scanARTempList.Clear();
+        loadFromScanAR = false;
+    }
+
+    public void CreateTempUndoListToScanAR()
+    {
+        scanARTempList = new List<IUndoRedoCommand>(undoList);
+        loadFromScanAR = true;
     }
 #if UNITY_EDITOR
     private void Update()
@@ -80,4 +97,5 @@ public class UndoRedoController : MonoBehaviour
         undoList.Clear();
         redoList.Clear();
     }
+
 }

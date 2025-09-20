@@ -12,9 +12,10 @@ public class BottomSheetUI : BaseAnimUI
     protected Vector2 keyboardOpenPos;
 
     private bool isTweenDone = true;
-
+    private BlockPopupBackground blockPopupBackground;
     private void Start()
     {
+        blockPopupBackground = GetComponentInChildren<BlockPopupBackground>();
         float height = rectContainer.rect.height;
 
         // Vị trí mở (ngay vị trí hiện tại)
@@ -27,8 +28,15 @@ public class BottomSheetUI : BaseAnimUI
         rectContainer.anchoredPosition = closedPos;
 
         rectContainer.gameObject.SetActive(false);
+        if(blockPopupBackground)
+            blockPopupBackground.OnClickBackgroundEvent += Close;
     }
 
+    private void OnDestroy()
+    {
+        if(blockPopupBackground)
+            blockPopupBackground.OnClickBackgroundEvent -= Close;
+    }
     public override void Open()
     {
         if (container.gameObject.activeSelf) return;
@@ -70,5 +78,10 @@ public class BottomSheetUI : BaseAnimUI
 
     protected virtual void Update()
     {
+    }
+
+    public bool IsOpen()
+    {
+        return container.gameObject.activeSelf;
     }
 }

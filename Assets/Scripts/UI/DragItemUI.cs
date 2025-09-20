@@ -3,10 +3,10 @@ using UnityEngine.EventSystems;
 
 public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
 {
-    [SerializeField] private string ItemID;
+    [SerializeField, Dropdown(typeof(FurnitureName))] private string ItemID;
     public void OnDrag(PointerEventData eventData)
     {
-        Debug.Log("On Drag UI: over gameobject: " + IsOverUI());
+
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -14,24 +14,15 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
         // start drag
         FurnitureItem.OnDragFurniture = true;
         FurnitureManager.Instance.StartDragItem(ItemID);
+
+        // UI này nằm trong BottomSheetPageManager
+        BottomSheetPageManager.Instance.blockTouchImage.raycastTarget = false;
+        BottomSheetPageManager.Instance.CloseAll();
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-
-        if (IsOverUI())
-        {
-            FurnitureManager.Instance.ClearDragItem();
-        }
-        else
-        {
-            FurnitureManager.Instance.DropDragItem();
-        }
-        FurnitureItem.OnDragFurniture = false;
+        
     }
 
-    private bool IsOverUI()
-    {
-        return EventSystem.current.IsPointerOverGameObject();
-    }
 }

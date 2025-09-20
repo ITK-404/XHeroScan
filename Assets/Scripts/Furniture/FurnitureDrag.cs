@@ -5,11 +5,19 @@ public class FurnitureDrag : MonoBehaviour
 {
     [SerializeField] private FurnitureItem furnitureItem;
     private Vector3 startPosition;
+    private Vector3 touchPosition;
+    private Vector3 offsetPosition;
     private void OnMouseDown()
     {
         furnitureItem.StartDrag();
         FurnitureItem.SnapShotTemp = furnitureItem.data;
         startPosition = furnitureItem.GetWorldPosition();
+        touchPosition = furnitureItem.GetWorldMousePosition();
+        offsetPosition = touchPosition - startPosition;
+
+        //Debug.Log("Start position: " + startPosition);
+        //Debug.Log("Touch position: " + touchPosition);
+        //Debug.Log("Offset position: " + offsetPosition);
     }
 
     private void OnMouseDrag()
@@ -21,7 +29,9 @@ public class FurnitureDrag : MonoBehaviour
 
         if (FurnitureManager.Instance.IsSelectFurniture(furnitureItem))
         {
-            furnitureItem.Dragging(transform);
+            var correctPosition = furnitureItem.GetWorldMousePosition() - offsetPosition;
+            //Debug.Log($"Correct position {correctPosition} {furnitureItem.GetWorldPosition()}");
+            furnitureItem.Dragging(correctPosition);
         }
         
     }

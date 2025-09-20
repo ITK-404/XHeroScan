@@ -35,8 +35,9 @@ public class RoomInfoDisplay : MonoBehaviour
     [SerializeField] private float popupX = 0.2f;
     [SerializeField] private float popupZ = 0.2f;
 
-    private enum SelectionKind { None, Room, Floor, Furniture }
+    public enum SelectionKind { None, Room, Floor, Furniture }
     private SelectionKind selectionKind = SelectionKind.None;
+    public SelectionKind SelectionItem => selectionKind;
     private string selectedRoomID = "";
     private string selectedFloorID = "";
     private string highlightedID = "";
@@ -291,8 +292,10 @@ public class RoomInfoDisplay : MonoBehaviour
 
         if (popupWS && popupWS.activeSelf)
         {
+            float camYaw = Camera.main ? Camera.main.transform.eulerAngles.y : 0f;
+            // popupWS.transform.localRotation = Quaternion.Euler(0f, camYaw, 0f);
             popupWS.transform.position = worldPos;
-            popupWS.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            popupWS.transform.rotation = Quaternion.Euler(90f, camYaw, 0f);
         }
     }
 
@@ -823,6 +826,7 @@ public class RoomInfoDisplay : MonoBehaviour
 
             var cv = popupWS.GetComponentInChildren<Canvas>(true) ?? popupWS.AddComponent<Canvas>();
             cv.renderMode = RenderMode.WorldSpace;
+            cv.sortingOrder = 100;
             if (!cv.worldCamera) cv.worldCamera = Camera.main;
             if (!popupWS.GetComponentInChildren<UnityEngine.UI.GraphicRaycaster>())
                 popupWS.AddComponent<UnityEngine.UI.GraphicRaycaster>();

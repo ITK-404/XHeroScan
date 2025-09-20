@@ -3,34 +3,30 @@ using UnityEngine;
 
 public class BottomSheetInputUI : BottomSheetUI
 {
-    private float delayTime = 1;
-    private bool previousState;
-
-
+    private float prevousHeight;
+    private float timer;
+    
     protected override void Update()
     {
         base.Update();
         if (container.gameObject.activeSelf == false) return;
 
-        //bool isVisible = TouchScreenKeyboard.visible;
-
-        //if (isVisible != previousState && container.gameObject.activeSelf)
-        //{
-        //    if (delayTime > 0)
-        //    {
-        //        delayTime -= Time.deltaTime;
-        //        return;
-        //    }
-
-        //    previousState = TouchScreenKeyboard.visible;
-        //    delayTime = 0.5f;
-        //    OnInputFocus();
-        //}
         float height = KeyboardHeight.GetHeight();
+        if (prevousHeight != height)
+        {
+            timer = 0.2f; // Reset timer khi chiều cao thay đổi
+            prevousHeight = height;
+        }
+        else
+        {
+            timer -= Time.deltaTime;
+            if (timer > 0)
+                return; // Chưa đủ thời gian ổn định, không cập nhật UI
+        }
         float scaleHeight = height * ((RectTransform)rectContainer.parent).rect.height / Screen.height;
         Vector3 lerpPosition = Vector3.Lerp(rectContainer.anchoredPosition, openPos + new Vector2(0, scaleHeight), Time.deltaTime * 10);
         rectContainer.anchoredPosition = lerpPosition;
-        Debug.Log($"On Show Keyboard: {TouchScreenKeyboard.visible} {TouchScreenKeyboard.area}");
+        //Debug.Log($"On Show Keyboard: {TouchScreenKeyboard.visible} {TouchScreenKeyboard.area}");
     }
 
     public void OnInputFocus()

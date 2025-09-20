@@ -6,7 +6,6 @@ using UnityEngine;
 [Serializable]
 public class FurnitureMergeToWall
 {
-    private float flipOffset;
     public float ratio;
     private FurnitureItem furnitureItem;
 
@@ -24,6 +23,7 @@ public class FurnitureMergeToWall
         this.furnitureItem = furnitureItem;
 
         typedWallLine = new WallLine();
+        typedWallLine.type = furnitureItem.lineType;
     }
 
     public void SetupAnchor(CheckpointType leftPoint, CheckpointType rightPoint)
@@ -43,7 +43,35 @@ public class FurnitureMergeToWall
     public void StartSnap() => allowSnap = true;
     public void EndSnap() => allowSnap = false;
 
-    private Vector3 GetCenterPosition()
+    public void Update()
+    {
+        if (allowSnap)
+        {
+            TryToMergeAndSnapInAllWall();
+        }
+        else
+        {
+            if (attachedWallLine != null)
+            {
+                // moving but using center of wall line
+                // Debug.Log("Wall line is not null, try to align with them");
+                Vector3 centerPosition = Vector3.Lerp(attachedWallLine.start, attachedWallLine.end, ratio);
+                // sync y position from model 2D
+                centerPosition.y = furnitureItem.GetWorldPosition().y;
+
+                furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, centerPosition);
+                furnitureItem.RefreshCheckPointsByBounds();
+
+                RotationToWallLine();
+            }
+        }
+
+        UpdateOwnWallLine();
+        UpdateRoomAttaced();
+        ProcessWidthForWindow();
+    }
+
+    public Vector3 GetCenterPosition()
     {
         return furnitureItem.isUsingCenterPosToSnap ? furnitureItem.GetWorldPosition() : bottomPoint.transform.position;
     }
@@ -116,7 +144,7 @@ public class FurnitureMergeToWall
         foundPoint = firstDoorPoint;
     }
 
-    private void FindNearestWallLine(Room room, Vector3 centerPosition, float minDistance, ref float minDist, ref WallLine wallLine, ref Vector3 firstDoorPoint)
+    public void FindNearestWallLine(Room room, Vector3 centerPosition, float minDistanceValid, ref float minDist, ref WallLine wallLine, ref Vector3 firstDoorPoint)
     {
         foreach (var wl in room.wallLines)
         {
@@ -126,11 +154,12 @@ public class FurnitureMergeToWall
                 CheckpointManager.Instance.ProjectPointOnLineSegment(wl.start, wl.end, centerPosition);
             centerPosition.y = projected.y;
             float dist = Vector3.Distance(centerPosition, projected);
-
-            bool isObjectNearLine = IsWithinDistance(centerPosition, projected, minDistance);
+            //Debug.Log($"Distance from center to line: " + dist);
+            bool isObjectNearLine = IsWithinDistance(centerPosition, projected, minDistanceValid);
 
             if (dist < minDist && isObjectNearLine)
             {
+                //Debug.Log("Đã tìm thấy wall line ngắn");
                 minDist = dist;
                 wallLine = wl;
                 firstDoorPoint = projected;
@@ -138,6 +167,8 @@ public class FurnitureMergeToWall
             //Debug.Log("Distance: " + dist);
         }
     }
+
+
 
     private void SetAttachedWallLine(WallLine wallLine)
     {
@@ -158,8 +189,7 @@ public class FurnitureMergeToWall
             }
         }
     }
-
-
+  
     float GetPointRatio(Vector3 start, Vector3 end, Vector3 point)
     {
         Vector3 ab = end - start;
@@ -168,34 +198,7 @@ public class FurnitureMergeToWall
         return Mathf.Clamp01(t);
     }
 
-    public void Update()
-    {
-        if (allowSnap)
-        {
-            TryToMergeAndSnapInAllWall();
-        }
-
-        else
-        {
-            if (attachedWallLine != null)
-            {
-                // moving but using center of wall line
-                // Debug.Log("Wall line is not null, try to align with them");
-                Vector3 centerPosition = Vector3.Lerp(attachedWallLine.start, attachedWallLine.end, ratio);
-                // sync y position from model 2D
-                centerPosition.y = furnitureItem.GetWorldPosition().y;
-
-                furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, centerPosition);
-                furnitureItem.RefreshCheckPointsByBounds();
-
-                RotationToWallLine();
-            }
-        }
-
-        UpdateOwnWallLine();
-        UpdateRoomAttaced();
-        ProcessWidthForWindow();
-    }
+   
     private void ProcessWidthForWindow()
     {
         // xử lý độ dày cho cửa sổ
@@ -220,8 +223,8 @@ public class FurnitureMergeToWall
 
     private void RotationToWallLine()
     {
-        
-        flipOffset = furnitureItem.data.isFlip ? 180 : 0;
+        //var flipOffset = 0;
+        var flipOffset = furnitureItem.data.isFlipVertical ? 180 : 0;
         Vector3 dir = attachedWallLine.end - attachedWallLine.start;
         dir.y = 0;
         float angle = Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
@@ -244,6 +247,18 @@ public class FurnitureMergeToWall
     {
         attachedRoom = null;
         attachedWallLine = null;
+    }
+
+    public bool IsDragPosCanMerge(Vector3 dragPosition, ref Vector3 firstDoorPoint)
+    {
+        float minDis = float.MaxValue;
+        WallLine wallLine = null;
+        foreach (var room in RoomStorage.rooms)
+        {
+            FindNearestWallLine(room, dragPosition, 1, ref minDis, ref wallLine, ref firstDoorPoint);
+        }
+
+        return wallLine != null;
     }
 }
 

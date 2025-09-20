@@ -4,8 +4,10 @@ using UnityEngine.UI;
 
 public partial class BottomSheetPageManager : MonoBehaviour
 {
+    public static BottomSheetPageManager Instance;
     private BottomSheetPage[] bottomSheetPages;
-    [SerializeField] private Button closeAllBtn;
+    public BlockPopupBackground blockpopup;
+    public Image blockTouchImage;
     public enum PageType
     {
         None,
@@ -17,23 +19,28 @@ public partial class BottomSheetPageManager : MonoBehaviour
     }
     private void Awake()
     {
+        Instance = this;
         bottomSheetPages = GetComponentsInChildren<BottomSheetPage>();
         foreach (var closePageBtn in bottomSheetPages)
         {
             closePageBtn.hideButton.onClick.AddListener(OpenMenu);
             closePageBtn.closeAllBtn.onClick.AddListener(CloseAll);
         }
-        closeAllBtn.onClick.AddListener(CloseAll);
+        blockpopup.OnClickBackgroundEvent += CloseAll;
     }
 
-    private void CloseAll()
+    private void OnDestroy()
+    {
+        blockpopup.OnClickBackgroundEvent -= CloseAll;
+    }
+
+    public void CloseAll()
     {
         Debug.Log("Close All");
         foreach (var page in GetComponentsInChildren<BaseAnimUI>())
         {
             page.Close();
         }
-        closeAllBtn.gameObject.SetActive(false);
     }
 
     public void Open(PageType pageType)

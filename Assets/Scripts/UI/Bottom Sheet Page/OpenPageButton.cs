@@ -8,14 +8,19 @@ public class OpenPageButton : MonoBehaviour
     private Button btn;
     private void Awake()
     {
-        manager = GetComponentInParent<BottomSheetPageManager>();
         btn = GetComponent<Button>();
         if (btn == null) return;
         btn.onClick.AddListener(OnOpenPage);
     }
 
+    private void Start()
+    {
+        manager = Instance;
+    }
+
     private void OnOpenPage()
     {
+        if (pageType == PageType.None) return;
         manager.Open(pageType);
     }
 }

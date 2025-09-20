@@ -14,9 +14,8 @@ public class SettingPanel : MonoBehaviour
 {
     [SerializeField] protected ParameterInputField parameterInputFieldPrefab;
     [SerializeField] protected Transform contentParent;
-    [SerializeField] protected IntParameterType[] parameterTypes;
     [SerializeField] protected Button applyButton;
-    protected List<ParameterInputField> parameterInputFields = new List<ParameterInputField>();
+    [SerializeField] protected List<ParameterInputField> parameterInputFields = new List<ParameterInputField>();
 
     public Action OnApplyAction;
 

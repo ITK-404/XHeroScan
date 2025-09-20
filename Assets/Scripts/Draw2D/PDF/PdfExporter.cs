@@ -1,11 +1,12 @@
 using iTextSharp.text;
 using iTextSharp.text.pdf;
-using UnityEngine;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections;
-using System;
+using Unity.VisualScripting;
+using UnityEngine;
 
 
 public class PdfExporter
@@ -43,9 +44,9 @@ public class PdfExporter
             float pageCenterX = PageSize.A4.Width / 2f;
             float pageCenterY = PageSize.A4.Height / 2f;
 
-            // --- N (trên)
+            // --- S: Nam (trên)
             cb.BeginText();
-            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "N", pageCenterX, PageSize.A4.Height - 40, 0);
+            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "S", pageCenterX, PageSize.A4.Height - 40, 0);
             cb.EndText();
 
             float radiusN = 40f;
@@ -55,9 +56,9 @@ public class PdfExporter
             cb.Arc(arcXN, arcYN, arcXN + radiusN * 2, arcYN + radiusN * 2, 180, 180);
             cb.Stroke();
 
-            // --- S (dưới)
+            // --- N: Bắc (dưới)
             cb.BeginText();
-            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "S", pageCenterX, 20, 0);
+            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "N", pageCenterX, 20, 0);
             cb.EndText();
 
             float radiusS = 40f;
@@ -66,17 +67,17 @@ public class PdfExporter
             cb.Arc(arcXS, arcYS, arcXS + radiusS * 2, arcYS + radiusS * 2, 0, 180);
             cb.Stroke();
 
-            // --- E (trái) 
+            // --- E: Đông (trái) 
             cb.BeginText();
-            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "W", 40, pageCenterY, 90); // trái
+            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "E", 40, pageCenterY, 90); // trái
             cb.EndText();
             float rL = 40f, xL = 20 - rL, yL = pageCenterY - rL;
             cb.Arc(xL, yL, xL + rL * 2, yL + rL * 2, 270, 180);
             cb.Stroke();
 
-            // --- W (phải)
+            // --- W: Tây (phải)
             cb.BeginText();
-            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "E", PageSize.A4.Width - 40, pageCenterY, 270); // phải
+            cb.ShowTextAligned(PdfContentByte.ALIGN_CENTER, "W", PageSize.A4.Width - 40, pageCenterY, 270); // phải
             cb.EndText();
             float rR = 40f, xR = PageSize.A4.Width - 20 - rR, yR = pageCenterY - rR;
             cb.Arc(xR, yR, xR + rR * 2, yR + rR * 2, 90, 180);
@@ -262,6 +263,7 @@ public class PdfExporter
                         // Truyền tọa độ gốc, convert nội bộ sau
                         DrawSymbol(cb, Convert, start2D, end2D, wall.type.ToString().ToLower());
                     }
+          
                 }
 
                 // Sau khi tính xong shift, scale, offsetX/Y:
