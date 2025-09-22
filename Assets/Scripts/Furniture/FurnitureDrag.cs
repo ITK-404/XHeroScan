@@ -7,6 +7,9 @@ public class FurnitureDrag : MonoBehaviour
     private Vector3 startPosition;
     private Vector3 touchPosition;
     private Vector3 offsetPosition;
+
+    private bool canMove = false;
+
     private void OnMouseDown()
     {
         furnitureItem.StartDrag();
@@ -18,10 +21,12 @@ public class FurnitureDrag : MonoBehaviour
         //Debug.Log("Start position: " + startPosition);
         //Debug.Log("Touch position: " + touchPosition);
         //Debug.Log("Offset position: " + offsetPosition);
+        canMove = true;
     }
 
-    private void OnMouseDrag()
+    private void Update()
     {
+        if (canMove == false) return;
         if (Input.touchCount > 1)
         {
             return;
@@ -33,16 +38,21 @@ public class FurnitureDrag : MonoBehaviour
             //Debug.Log($"Correct position {correctPosition} {furnitureItem.GetWorldPosition()}");
             furnitureItem.Dragging(correctPosition);
         }
-        
     }
 
     private void OnMouseUp()
     {
+        canMove = false;
         furnitureItem.DeActiveDrag();
 
         if(startPosition != furnitureItem.GetWorldPosition())
         {
             furnitureItem.CreareEditCommandBySnapShot();
         }
+    }
+
+    public void SetCanMove(bool canMove)
+    {
+        this.canMove = canMove;
     }
 }

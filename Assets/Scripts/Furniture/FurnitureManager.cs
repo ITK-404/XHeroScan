@@ -176,10 +176,10 @@ public partial class FurnitureManager : MonoBehaviour
 
     public void SelectFurniture(FurnitureItem furniture)
     {
-        if (placementController.IsDragTempFurniture())
-        {
-            return;
-        }
+        //if (placementController.IsDragTempFurniture())
+        //{
+        //    return;
+        //}
         if (currentFurniture == null)
         {
             currentFurniture = furniture;

@@ -385,7 +385,6 @@ public partial class FurnitureItem : MonoBehaviour
         var delta = currentPos - startPos;
         this.correctPosition = correctPosition;
         //dragTransform.localPosition += delta;
-        SetWorldPosition(correctPosition);
 
         if (allowSnapToWall)
         {
@@ -393,6 +392,7 @@ public partial class FurnitureItem : MonoBehaviour
         }
         else
         {
+            SetWorldPosition(correctPosition);
         }
 
         startPos = currentPos;
