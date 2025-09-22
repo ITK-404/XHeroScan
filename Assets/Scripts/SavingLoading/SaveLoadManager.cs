@@ -203,6 +203,13 @@ public static class SaveLoadManager
 
         return false;
     }
+    
+    public static bool IsContainSaveFileLocal()
+    {
+        List<JsonFileInfo> infos = new List<JsonFileInfo>();
+        string[] files = Directory.GetFiles(Application.persistentDataPath, "*.json");
+        return files.Length > 0;
+    }
 
     public static List<JsonFileInfo> GetAllSavedFileInfos()
     {
