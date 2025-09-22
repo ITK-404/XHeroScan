@@ -15,7 +15,13 @@ public class BottomSheetUI : BaseAnimUI
     private BlockPopupBackground blockPopupBackground;
     private void Start()
     {
-        blockPopupBackground = GetComponentInChildren<BlockPopupBackground>();
+        
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
+
         float height = rectContainer.rect.height;
 
         // Vị trí mở (ngay vị trí hiện tại)
@@ -28,7 +34,7 @@ public class BottomSheetUI : BaseAnimUI
         rectContainer.anchoredPosition = closedPos;
 
         rectContainer.gameObject.SetActive(false);
-        if(blockPopupBackground)
+        if (blockPopupBackground)
             blockPopupBackground.OnClickBackgroundEvent += Close;
     }
 
