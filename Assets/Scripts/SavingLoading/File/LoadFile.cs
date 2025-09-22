@@ -14,6 +14,7 @@ public class LoadFile : MonoBehaviour
 
     [Header("Warning UI")]
     [SerializeField] private GameObject warningPopup;
+
     void OnEnable()
     {
         LoadAllSavedFiles();

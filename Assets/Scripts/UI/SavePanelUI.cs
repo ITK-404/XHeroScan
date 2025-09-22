@@ -102,6 +102,8 @@ public class MessageLog
     public const string ErrorMessage_FileNameEmpty = "Tên tệp đang bị để trống";
     public const string ErrorMessage_FileNameExit = "Tên tệp này đã tồn tại. Vui lòng chọn một tên khác";
     public const string ErrorMessage_UnknowError = "Có lỗi không xác định xảy ra, vui lòng thử lại";
+
     public const string SuccessMessage_ExportFileComplete = "Bạn đã lưu bản vẽ thành công";
     public const string SuccessMessage_ChangeFileNameComplete = "Bạn thay đổi tên bản vẽ thành công";
+    public const string SuccessMessage_DeleteFileComplete = "Bạn đã xóa file thành công";
 }

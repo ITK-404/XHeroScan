@@ -10,6 +10,11 @@ public class StoredDrawEmptyPanel : MonoBehaviour
     }
     private void OnEnable()
     {
+        Refresh();
+    }
+
+    public void Refresh()
+    {
         if (SaveLoadManager.IsContainSaveFileLocal())
         {
             emptyPanel.gameObject.SetActive(false);

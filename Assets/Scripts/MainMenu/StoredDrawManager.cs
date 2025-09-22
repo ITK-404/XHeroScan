@@ -16,6 +16,8 @@ public class StoredDrawManager : MonoBehaviour
     [Header("Test delete file ")]
     [SerializeField] private LoadFile loadFile;
 
+    [SerializeField] private StoredDrawEmptyPanel emptyPanel;
+
     private string currentFileName;
 
     private void Awake()
@@ -91,6 +93,9 @@ public class StoredDrawManager : MonoBehaviour
         {
             loadFile.LoadAllSavedFiles();
             deletePanel.gameObject.SetActive(false);
+            emptyPanel.Refresh();
+            ShowPopup(MessageLog.SuccessMessage_DeleteFileComplete, ModularPopup.PopupAsset.toastPopupComplete);
+
         }
     }
 

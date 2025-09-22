@@ -16240,6 +16240,12 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!224 &1978113827 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 5903793532362399477, guid: fbba4f0e5d996d34e911e0d373c8d376,
+    type: 3}
+  m_PrefabInstance: {fileID: 1666341212}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1999261427
 GameObject:
   m_ObjectHideFlags: 0
@@ -18643,7 +18649,7 @@ PrefabInstance:
     - target: {fileID: 2682049878017311227, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 510.80667
+      value: 1168.5
       objectReference: {fileID: 0}
     - target: {fileID: 2839958350783021052, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
@@ -19739,7 +19745,7 @@ PrefabInstance:
         type: 3}
       propertyPath: popupErr
       value: 
-      objectReference: {fileID: 500542163}
+      objectReference: {fileID: 0}
     - target: {fileID: 7595238954075170666, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: drawingTool
@@ -19923,7 +19929,7 @@ PrefabInstance:
     - target: {fileID: 8556240370596885310, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 770.72406
+      value: 920.3
       objectReference: {fileID: 0}
     - target: {fileID: 8640374401235794372, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
@@ -20077,7 +20083,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4562216335577397071, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1978113827}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3714c6f9abf74fc469066e9fe76ecfbf, type: 3}
 --- !u!114 &4492018900371189174 stripped
