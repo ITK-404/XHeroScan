@@ -77,6 +77,7 @@ public class MovePointRoomCommand : IUndoRedoCommand
     private void DeleteAndCreateNewRoom(List<Room> rooms,List<DrawingInstanced> drawingInstanceds)
     {
         Debug.Log("Before Total room count:  " + RoomStorage.rooms.Count);
+        // xóa những phòng chịu ảnh hưởng
         foreach (var room in rooms)
         {
             CheckpointManager.Instance.ClearRoomById(room.ID);
@@ -125,10 +126,12 @@ public class EditRoomCommand : IUndoRedoCommand
 
     private void Restore(Room room, List<DrawingInstanced> list)
     {
+        // xóa phòng hiện tại và spawn phòng mới dựa trên ID
+        
         Debug.Log("Before Total room count:  " + RoomStorage.rooms.Count);
         CheckpointManager.Instance.ClearRoomById(room.ID);
         CheckpointManager.Instance.RestoreRoom(room);
-
+        
         RestoreFurnitureInRoom(oldFurnitureData);
         Debug.Log("After Total room count:  " + RoomStorage.rooms.Count);
 
