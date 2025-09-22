@@ -22,6 +22,11 @@ public class SettingPanel : MonoBehaviour
     protected virtual void Awake()
     {
         applyButton.onClick.AddListener(() => OnApplyAction?.Invoke());
+
+        foreach(var item in GetComponentsInChildren<ParameterInputField>(includeInactive:true))
+        {
+            Add(item);
+        }
     }
 
     public void ResetAllParameters()
@@ -45,6 +50,7 @@ public class SettingPanel : MonoBehaviour
 
     public void Add(ParameterInputField parameter)
     {
+        Debug.Log($"ParameterInputField Register: " + parameter.ToString());
         parameterInputFields.Add(parameter);
     }
 }

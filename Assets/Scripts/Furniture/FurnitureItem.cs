@@ -649,7 +649,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void CreareEditCommandBySnapShot()
     {
-        
-        UndoRedoController.Instance.AddToUndo(new EditItemCommand(SnapShotTemp));
+
+        UndoRedoController.Instance.AddToUndo(new EditItemCommand(SnapShotTemp, this.data));
     }
 }

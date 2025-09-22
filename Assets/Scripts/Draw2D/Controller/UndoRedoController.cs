@@ -56,6 +56,7 @@ public class UndoRedoController : MonoBehaviour
 #endif
 
     public bool CanUndo() => undoList.Count > 0;
+    public bool CanRedo() => redoList.Count > 0;
 
     public void AddToUndo(IUndoRedoCommand command)
     {
@@ -79,7 +80,7 @@ public class UndoRedoController : MonoBehaviour
         IUndoRedoCommand command = undoList[^1];
         undoList.Remove(command);
         command.Undo();
-        //redoList.Add(command);
+        redoList.Add(command);
     }
 
     public void Redo()

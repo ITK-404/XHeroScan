@@ -491,7 +491,7 @@ public class CreateRoomOnFloor : MonoBehaviour
             CreateRoomButton.colors = colors;
         }
 
-        UndoRedoController.Instance.AddToUndo(new CreateRoomCommand(room.ID));
+        UndoRedoController.Instance.AddToUndo(new CreateRoomCommand(room));
     }
 
     public void CreateRoomByRoomData(Room room)

@@ -16,45 +16,77 @@ public class EditRoomCommandCreator
             snapShotRoomData.Add(new Room(room));
         }
 
-        if(FurnitureManager.Instance == null) return;
+        if (FurnitureManager.Instance == null) return;
 
-        var runtimeFurnitures = FurnitureManager.Instance.GetAllFurniture();
+        furnitureInsideRoom = GetFurnitureData();
+    }
+
+    private List<DrawingInstanced> GetFurnitureData()
+    {
+        var runtimeFurnitures = new List<FurnitureItem>();
+        var furnitureInsideRoom = new List<DrawingInstanced>();
+        runtimeFurnitures = FurnitureManager.Instance.GetAllFurniture();
         foreach (var furniture in runtimeFurnitures)
         {
             if (furniture == null || string.IsNullOrEmpty(furniture.data.roomID)) continue;
             furnitureInsideRoom.Add(furniture.data);
         }
+
+        return furnitureInsideRoom;
     }
 
     public MovePointRoomCommand CreateUndoCommand()
     {
-        if(roomIDChanged == null) return null;
+        if (roomIDChanged == null) return null;
         if (roomIDChanged.Count == 0) return null;
 
         foreach (var item in roomIDChanged)
         {
             Debug.Log("Room ID changed: " + item);
         }
-        List<Room> currentRoomData = new();
-        List<DrawingInstanced> currentChangedList = new();
+        List<Room> oldRoomData = new();
+        List<Room> newRoomData = new();
+        List<DrawingInstanced> oldFurnitureData = new();
+        List<DrawingInstanced> newFurnitureData = new();
         // just save room that changed
+
         foreach (var item in snapShotRoomData)
         {
             if (roomIDChanged.Contains(item.ID))
             {
-                currentRoomData.Add(item);
+                oldRoomData.Add(item);
             }
         }
+
+        foreach (var item in RoomStorage.rooms)
+        {
+            if (roomIDChanged.Contains(item.ID))
+            {
+                newRoomData.Add(new(item));
+            }
+        }
+
         // just save furniture inside room changed
-        if(furnitureInsideRoom == null) return null;
+        if (furnitureInsideRoom == null) return null;
         foreach (var item in furnitureInsideRoom)
         {
             if (roomIDChanged.Contains(item.roomID))
             {
-                currentChangedList.Add(item);
+                Debug.Log($"Old {item.instanceID} {item.worldPosition}");
+                oldFurnitureData.Add(item);
             }
         }
-        return new MovePointRoomCommand(currentRoomData, currentChangedList);
+
+
+        foreach (var item in GetFurnitureData())
+        {
+            if (roomIDChanged.Contains(item.roomID))
+            {
+                Debug.Log($"New {item.instanceID} {item.worldPosition}");
+                newFurnitureData.Add(item);
+            }
+        }
+        return new MovePointRoomCommand(oldRoomData, oldFurnitureData, newRoomData, newFurnitureData);
     }
 
     public void CreateAndAddUndoList()

@@ -1,18 +1,24 @@
 ﻿
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class CreateRoomCommand : IUndoRedoCommand
 {
     private string roomID;
-    public CreateRoomCommand(string id)
+    private Room room;
+    public CreateRoomCommand(Room room)
     {
-        roomID = id;
+        roomID = room.ID;
+        this.room = new Room(room);
     }
+
     public void Redo()
     {
+        CheckpointManager.Instance.RestoreRoom(room);
     }
+
     public void Undo()
     {
         CheckpointManager.Instance.ClearRoomById(roomID);
@@ -29,7 +35,9 @@ public class DeleteRoomCommand : IUndoRedoCommand
 
     public void Redo()
     {
+        CheckpointManager.Instance.ClearRoomById(room.ID);
     }
+
     public void Undo()
     {
         CheckpointManager.Instance.RestoreRoom(room);
@@ -37,84 +45,108 @@ public class DeleteRoomCommand : IUndoRedoCommand
 }
 public class MovePointRoomCommand : IUndoRedoCommand
 {
-    private List<Room> oldRoomSnapShoot = new();
-    private List<DrawingInstanced> furnitureInsideRooms = new();
+    private List<Room> undoRooms = new();
+    private List<Room> redoRooms = new();
+    private List<DrawingInstanced> undoFurnitures = new();
+    private List<DrawingInstanced> redoFurnitures = new();
+
     public MovePointRoomCommand(Room oldRoom)
     {
-        oldRoomSnapShoot.Add(oldRoom);
+        undoRooms.Add(oldRoom);
     }
-    public MovePointRoomCommand(List<Room> rooms, List<DrawingInstanced> furnitureInsideRooms)
-    {
-        foreach (var room in rooms)
-        {
-            oldRoomSnapShoot.Add(room);
-        }
 
-        this.furnitureInsideRooms = furnitureInsideRooms;
+    public MovePointRoomCommand(List<Room> undoRooms, List<DrawingInstanced> undoFurnitures, List<Room> redoRooms, List<DrawingInstanced> redoFurnitures)
+    {
+        this.undoRooms.AddRange(undoRooms);
+        this.undoFurnitures = undoFurnitures;
+
+        this.redoRooms.AddRange(redoRooms);
+        this.redoFurnitures = redoFurnitures;
     }
+
     public void Redo()
     {
+        DeleteAndCreateNewRoom(redoRooms, redoFurnitures);
     }
+
     public void Undo()
     {
+        DeleteAndCreateNewRoom(undoRooms, undoFurnitures);
+    }
+
+    private void DeleteAndCreateNewRoom(List<Room> rooms,List<DrawingInstanced> drawingInstanceds)
+    {
         Debug.Log("Before Total room count:  " + RoomStorage.rooms.Count);
-        foreach (var room in oldRoomSnapShoot)
+        foreach (var room in rooms)
         {
             CheckpointManager.Instance.ClearRoomById(room.ID);
             CheckpointManager.Instance.RestoreRoom(room);
         }
 
         // restore lại vị trí các furniture bên trong phòng
-        foreach (var instacedData in furnitureInsideRooms)
+        foreach (var instacedData in drawingInstanceds)
         {
             var furniture = FurnitureManager.Instance.GetFurnitureByInstanceID(instacedData.instanceID);
             if (furniture == null) continue;
-            Debug.Log(furniture.name + " Restore furniture in room ");
             furniture.FetchData(instacedData);
+            Debug.Log($"World Position: {furniture.data.worldPosition}");
         }
         FurnitureManager.Instance.ForceSnapAllToNearestRoom();
         Debug.Log("After Total room count:  " + RoomStorage.rooms.Count);
     }
 }
+
 public class EditRoomCommand : IUndoRedoCommand
 {
-    private Room oldRoomSnapShoot = new();
-    private List<DrawingInstanced> furnitureInsideRooms = new();
-    public EditRoomCommand(Room oldRoom)
+    private Room newRoom = new();
+    private Room oldRoom = new();
+    private List<DrawingInstanced> oldFurnitureData = new();
+    private List<DrawingInstanced> newFurnitureData = new();
+    public EditRoomCommand(Room oldRoom, List<DrawingInstanced> oldList, Room newRoom)
     {
-        this.oldRoomSnapShoot = oldRoom;
         // lấy danh sách furniture bên trong phòng cũ, để khi undo có thể restore lại đúng vị trí
-        furnitureInsideRooms = FurnitureManager.Instance.GetFurnitureInsideRoom(oldRoom.ID);
+        this.oldRoom = oldRoom;
+        oldFurnitureData = oldList;
+       
+        this.newRoom = newRoom;
+        newFurnitureData = FurnitureManager.Instance.GetFurnitureInsideRoom(newRoom.ID);
     }
+
 
     public void Redo()
     {
+        Restore(newRoom, newFurnitureData);
     }
 
     public void Undo()
     {
-        Debug.Log("Before Total room count:  " + RoomStorage.rooms.Count);
-        CheckpointManager.Instance.ClearRoomById(oldRoomSnapShoot.ID);
-        CheckpointManager.Instance.RestoreRoom(oldRoomSnapShoot);
-
-        RestoreFurnitureInRoom();
-        Debug.Log("After Total room count:  " + RoomStorage.rooms.Count);
-        var room = RoomStorage.GetRoomByID(oldRoomSnapShoot.ID);
-        CameraResizeByFloor.Instance.Resize(room.checkpoints);
-
+        Restore(oldRoom, oldFurnitureData);
     }
 
-    private void RestoreFurnitureInRoom()
+    private void Restore(Room room, List<DrawingInstanced> list)
+    {
+        Debug.Log("Before Total room count:  " + RoomStorage.rooms.Count);
+        CheckpointManager.Instance.ClearRoomById(room.ID);
+        CheckpointManager.Instance.RestoreRoom(room);
+
+        RestoreFurnitureInRoom(oldFurnitureData);
+        Debug.Log("After Total room count:  " + RoomStorage.rooms.Count);
+
+        var _room = RoomStorage.GetRoomByID(oldRoom.ID);
+        CameraResizeByFloor.Instance.Resize(room.checkpoints);
+    }
+
+    private void RestoreFurnitureInRoom(List<DrawingInstanced> drawList)
     {
 
         // restore lại vị trí các furniture bên trong phòng
-        foreach (var instacedData in furnitureInsideRooms)
+        foreach (var instacedData in drawList)
         {
             var furniture = FurnitureManager.Instance.GetFurnitureByInstanceID(instacedData.instanceID);
             if (furniture == null) continue;
             Debug.Log(furniture.name + " Restore furniture in room ");
             furniture.FetchData(instacedData);
         }
-        FurnitureManager.Instance.ForceSnapAllToNearestRoom();
+        //FurnitureManager.Instance.ForceSnapAllToNearestRoom();
     }
 }

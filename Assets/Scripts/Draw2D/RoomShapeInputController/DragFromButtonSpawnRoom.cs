@@ -249,7 +249,7 @@ public void OnEndDrag(PointerEventData eventData)
             checkPointManager.RedrawAllRooms();
         }
 
-        UndoRedoController.Instance.AddToUndo(new CreateRoomCommand(room.ID));
+        UndoRedoController.Instance.AddToUndo(new CreateRoomCommand(room));
         return room;
     }
 
