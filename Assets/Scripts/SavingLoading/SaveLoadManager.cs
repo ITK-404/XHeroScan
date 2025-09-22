@@ -184,10 +184,16 @@ public static class SaveLoadManager
             try
             {
                 string json = File.ReadAllText(path);
-                SaveData data = JsonUtility.FromJson<SaveData>(json);
-
-                if (data.paths.Count > 0 && data.paths[0].roomID == baseName)
+                var fileName = Path.GetFileNameWithoutExtension(path);
+                if (fileName.Equals(baseName))
+                {
                     return true;
+                }
+
+                //SaveData data = JsonUtility.FromJson<SaveData>(json);
+                //Debug.Log($"File Path {path}");
+                //if (data.paths.Count > 0 && data.paths[0].roomID == baseName)
+                //    return true;
             }
             catch
             {
