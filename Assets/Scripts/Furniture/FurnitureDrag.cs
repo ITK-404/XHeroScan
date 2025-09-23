@@ -9,8 +9,15 @@ public class FurnitureDrag : MonoBehaviour
     private Vector3 offsetPosition;
 
     private bool canMove = false;
-
+    private bool canCreateCommand = false;
     private void OnMouseDown()
+    {
+        canCreateCommand = true;
+
+        StartMoveSetup();
+    }
+
+    public void StartMoveSetup()
     {
         furnitureItem.StartDrag();
         FurnitureItem.SnapShotTemp = furnitureItem.data;
@@ -42,13 +49,15 @@ public class FurnitureDrag : MonoBehaviour
 
     private void OnMouseUp()
     {
-        canMove = false;
         furnitureItem.DeActiveDrag();
 
-        if(startPosition != furnitureItem.GetWorldPosition())
+        if(startPosition != furnitureItem.GetWorldPosition() && canCreateCommand)
         {
             furnitureItem.CreareEditCommandBySnapShot();
         }
+
+        canMove = false;
+        canCreateCommand = false;
     }
 
     public void SetCanMove(bool canMove)

@@ -36,6 +36,8 @@ public partial class FurnitureItem : MonoBehaviour
     {
         get => data.size.lengthMinMax.x / 2;
     }
+
+
     [SerializeField] private Vector2 hitBoxSizeBuffer = Vector2.one;
     [Header("Cấu hình để phân biệt cửa/cửa sổ và đồ nội thất")]
     [SerializeField] private bool allowSnapToWall = false; // có thể gắn vào tường
