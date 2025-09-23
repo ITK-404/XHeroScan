@@ -121,8 +121,8 @@ public class CheckpointManager : MonoBehaviour
                 handleCheckpointManger.HandleSingleWallPlacement(previewPosition);
                 // handleCheckpointManger.HandleWallLoopPlacement(previewPosition);
             }
-            else
-                handleCheckpointManger.HandleCheckpointPlacement(previewPosition);
+            // else
+            //     handleCheckpointManger.HandleCheckpointPlacement(previewPosition);
 
             DeselectCheckpoint();
             isDragging = false;
