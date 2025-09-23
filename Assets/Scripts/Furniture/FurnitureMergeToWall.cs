@@ -221,7 +221,7 @@ public class FurnitureMergeToWall
     }
 
 
-    private void RotationToWallLine()
+    public void RotationToWallLine()
     {
         //var flipOffset = 0;
         var flipOffset = furnitureItem.data.isFlipVertical ? 180 : 0;

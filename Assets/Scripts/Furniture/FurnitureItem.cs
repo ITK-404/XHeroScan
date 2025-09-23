@@ -409,6 +409,8 @@ public partial class FurnitureItem : MonoBehaviour
         MakeDirty();
 
         OnDragPoint = true;
+
+        furnitureMergeToWall.RotationToWallLine();
     }
 
     /// <summary>
