@@ -11,5 +11,4 @@ public class StoredDrawUI : MonoBehaviour
 
 
     public string fileName;
-
 }

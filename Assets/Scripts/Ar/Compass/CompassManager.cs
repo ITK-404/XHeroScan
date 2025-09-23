@@ -18,6 +18,24 @@ public class CompassManager : MonoBehaviour
     public float maxJumpPerFrame = 45f;  // ngưỡng loại outlier
     public float gravityAlpha = 0.1f;    // low-pass cho gravity fallback (0.05–0.2)
     public bool debugLogs = false;       // bật log chẩn đoán
+    [Header("Stability")]
+    public bool freezeWhenStill = true;     // đóng băng khi đứng yên
+    public float gyroStillThreshold = 1.5f; // deg/s: < ngưỡng coi như không xoay
+    public float accelStillThreshold = 0.02f; // g delta: < ngưỡng coi như không rung
+    public float stillHoldSeconds = 0.35f;  // phải yên bao lâu mới đóng băng
+    public float holdBreakoutDeg = 3.0f;    // đổi vượt ngưỡng này mới phá băng
+    public float headingDeadband = 0.6f;    // thay đổi < ngưỡng này -> bỏ qua
+    public float uiUpdateHz = 10f;          // tần số update UI (giảm nhấp nháy)
+
+    // stillness detection
+    private Vector3 accelLP2 = Vector3.zero;
+    private float stillTimer = 0f;
+    private bool isStill = false;
+
+    // UI throttle
+    private float nextUiUpdateTime = 0f;
+    private float lastUiShownDeg = float.NaN;
+
 
     public static CompassManager Instance;
 
@@ -74,33 +92,71 @@ public class CompassManager : MonoBehaviour
 
     // void Awake() => Instance = this;
     void Awake()
-{
-    if (Instance != null && Instance != this)
     {
-        Debug.LogWarning($"[Compass] Duplicate manager detected. Destroy {gameObject.name} (id={GetInstanceID()}).");
-        Destroy(gameObject);
-        return;
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning($"[Compass] Duplicate manager detected. Destroy {gameObject.name} (id={GetInstanceID()}).");
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        // Nếu cần dùng qua nhiều scene:
+        // DontDestroyOnLoad(gameObject);
     }
-    Instance = this;
-    // Nếu cần dùng qua nhiều scene:
-    // DontDestroyOnLoad(gameObject);
-}
 
 
     void Start()
     {
+        ResetState();
+        Input.gyro.enabled = true;
+
 #if UNITY_ANDROID
-        // Cần quyền Location nếu muốn bù declination chuẩn (GeomagneticField)
         if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
-        {
-            Permission.RequestUserPermission(Permission.FineLocation);
-            StartCoroutine(WaitForPermissionThenReload());
-            return;
-        }
+            Permission.RequestUserPermission(Permission.FineLocation); // yêu cầu quyền, nhưng KHÔNG return
 #endif
-        StartCoroutine(InitializeAll());
+
+        StartCoroutine(InitializeAll());               // luôn bật sensor/fallback
+        StartCoroutine(PollLocationAndUpdateDecl());   // cập nhật declination khi quyền/Location sẵn sàng
+    }
+    private IEnumerator PollLocationAndUpdateDecl()
+    {
+        while (true)
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // auto start location nếu đã có quyền mà Location chưa chạy
+        if (Permission.HasUserAuthorizedPermission(Permission.FineLocation) &&
+            Input.location.status != LocationServiceStatus.Running &&
+            Input.location.isEnabledByUser)
+        {
+            Input.location.Start(1f, 0.1f);
+        }
+
+        if (Input.location.status == LocationServiceStatus.Running)
+            UpdateDeclination();
+#endif
+            yield return new WaitForSeconds(5f);
+        }
     }
 
+
+    void OnEnable()
+    {
+        ResetState();
+    }
+
+    private void ResetState()
+    {
+        Heading = 0f;
+        headingHistory.Clear();
+        gravityLP = Vector3.zero;
+#if UNITY_ANDROID && !UNITY_EDITOR
+        rvAzimuthPending = float.NaN;
+        lastRvCallbackTime = -1f;
+        isUpsideDown = false;
+        androidRotationVectorOk = false;
+#endif
+        if (debugLogs) Debug.Log("[Compass] State reset.");
+    }
 #if UNITY_ANDROID
     private IEnumerator WaitForPermissionThenReload()
     {
@@ -222,7 +278,18 @@ public class CompassManager : MonoBehaviour
         const int AXIS_MINUS_Y = 130; // SensorManager.AXIS_MINUS_Y (0x82)
 
         // 2) Remap theo xoay màn hình (giống app hệ thống)
-        int rotation = windowManager.Call<AndroidJavaObject>("getDefaultDisplay").Call<int>("getRotation");
+        // int rotation = windowManager.Call<AndroidJavaObject>("getDefaultDisplay").Call<int>("getRotation");
+        int rotation = 0;
+try
+{
+    var display = context.Call<AndroidJavaObject>("getWindowManager")
+                         ?.Call<AndroidJavaObject>("getDefaultDisplay");
+    rotation = display?.Call<int>("getRotation") ?? 0;
+}
+catch
+{
+    rotation = 0; // dùng portrait mặc định
+}
         int outX = AXIS_X;
         int outY = AXIS_Y;
         switch (rotation)
@@ -234,7 +301,16 @@ public class CompassManager : MonoBehaviour
         }
 
         float[] Rremap = new float[9];
-        bool remapped = sensorManagerClass.CallStatic<bool>("remapCoordinateSystem", R, outX, outY, Rremap);
+        // bool remapped = sensorManagerClass.CallStatic<bool>("remapCoordinateSystem", R, outX, outY, Rremap);
+bool remapped = false;
+try
+{
+    remapped = sensorManagerClass.CallStatic<bool>("remapCoordinateSystem", R, outX, outY, Rremap);
+}
+catch { remapped = false; }
+
+// float[] Ruse = remapped ? Rremap : R;
+
         if (!remapped && debugLogs) Debug.LogWarning("[Compass/Android] remapCoordinateSystem failed, using raw R");
         float[] Ruse = remapped ? Rremap : R;
 
@@ -270,6 +346,7 @@ public class CompassManager : MonoBehaviour
 
     void Update()
     {
+        UpdateStillness();
 #if UNITY_ANDROID && !UNITY_EDITOR
         // Watchdog: nếu listener không callback >1s -> bật fallback
         if (androidRotationVectorOk && (Time.realtimeSinceStartup - lastRvCallbackTime) > 1.0f)
@@ -301,14 +378,14 @@ public class CompassManager : MonoBehaviour
         FallbackUpdateFromRaw();
 #endif
 
-if (compassObject != null)
-{
-    #if UNITY_EDITOR
-    compassObject.text = $"{DirVN(Heading)}:{Heading:F1}° (id:{GetInstanceID()})";
-    #else
+        if (compassObject != null)
+        {
+#if UNITY_EDITOR
+            compassObject.text = $"{DirVN(Heading)}:{Heading:F1}° (id:{GetInstanceID()})";
+#else
     compassObject.text = $"{DirVN(Heading)}:{Heading:F1}°";
-    #endif
-}
+#endif
+        }
 
     }
 
@@ -369,10 +446,10 @@ if (compassObject != null)
     {
         switch (Screen.orientation)
         {
-            case ScreenOrientation.Portrait:             return (deg + 360f) % 360f;
-            case ScreenOrientation.PortraitUpsideDown:   return (deg + 180f) % 360f;
-            case ScreenOrientation.LandscapeLeft:        return (deg + 90f) % 360f;
-            case ScreenOrientation.LandscapeRight:       return (deg + 270f) % 360f;
+            case ScreenOrientation.Portrait: return (deg + 360f) % 360f;
+            case ScreenOrientation.PortraitUpsideDown: return (deg + 180f) % 360f;
+            case ScreenOrientation.LandscapeLeft: return (deg + 90f) % 360f;
+            case ScreenOrientation.LandscapeRight: return (deg + 270f) % 360f;
             case ScreenOrientation.AutoRotation:
             default:
                 return (deg + 360f) % 360f;
@@ -408,4 +485,24 @@ if (compassObject != null)
         if (degree < 337.5f) return "Tây Bắc";
         return "Bắc";
     }
+    private void UpdateStillness()
+{
+    // Gyro tốc độ quay (rad/s -> deg/s)
+    float gyroDegPerSec = 0f;
+    try
+    {
+        var w = Input.gyro.rotationRateUnbiased; // rad/s
+        gyroDegPerSec = w.magnitude * Mathf.Rad2Deg;
+    }
+    catch { gyroDegPerSec = 0f; }
+
+    // Đo dao động gia tốc (jerk)
+    accelLP2 = Vector3.Lerp(accelLP2, Input.acceleration, 0.2f);
+    float accelJerk = (Input.acceleration - accelLP2).magnitude; // ~g
+
+    bool stillNow = (gyroDegPerSec < gyroStillThreshold) && (accelJerk < accelStillThreshold);
+    stillTimer = stillNow ? stillTimer + Time.deltaTime : 0f;
+    isStill = stillTimer >= stillHoldSeconds;
+}
+
 }

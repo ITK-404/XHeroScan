@@ -13,6 +13,8 @@ public class PopupToggleHandle : MonoBehaviour
         toggleBtn.onClick.AddListener(Toggle);
         if(popupHideButtons)
             popupHideButtons.OnClickBtnHide = () => { ToggleByState(false); };
+
+        ToggleByState(isToggle);  
     }
 
     private void OnValidate()

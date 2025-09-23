@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,6 +15,8 @@ public class StoredDrawManager : MonoBehaviour
 
     [Header("Test delete file ")]
     [SerializeField] private LoadFile loadFile;
+
+    [SerializeField] private StoredDrawEmptyPanel emptyPanel;
 
     private string currentFileName;
 
@@ -42,12 +45,46 @@ public class StoredDrawManager : MonoBehaviour
     private void OnConfirmChangeFileName()
     {
         string newFileName = fileNameInputField.text;
-        
-        if (string.IsNullOrWhiteSpace(newFileName)) return;
-        if (!SaveLoadManager.ChangeFileName(currentFileName, newFileName)) return;
-        
+        bool isFileNameEmpty = string.IsNullOrEmpty(newFileName);
+        bool isFileExist = SaveLoadManager.DoesNameExist(newFileName);
+        if (isFileNameEmpty)
+        {
+            ShowPopup(MessageLog.ErrorMessage_FileNameEmpty, ModularPopup.PopupAsset.toastPopupError);
+            return;
+        }
+
+        if (isFileExist)
+        {
+            ShowPopup(MessageLog.ErrorMessage_FileNameExit, ModularPopup.PopupAsset.toastPopupError);
+            return;
+        }
+
+        if (!SaveLoadManager.ChangeFileName(currentFileName, newFileName))
+        {
+            ShowPopup(MessageLog.ErrorMessage_UnknowError, ModularPopup.PopupAsset.toastPopupError);
+        }
+
         loadFile.LoadAllSavedFiles();
         changeNamePanel.gameObject.SetActive(false);
+        fileNameInputField.text = "";
+        ShowPopup(MessageLog.SuccessMessage_ChangeFileNameComplete, ModularPopup.PopupAsset.toastPopupComplete);
+    }
+
+    private void ShowPopup(string description, GameObject popupPrefab)
+    {
+        StartCoroutine(Delay(description, popupPrefab));
+        // successPopup.GetComponent<ToastUI>().DescriptionText = description;
+        // successPopup.gameObject.SetActive(true);
+    }
+
+    private IEnumerator Delay(string description, GameObject popupPrefab)
+    {
+        yield return new WaitForSeconds(0.1f);
+
+        var popup = ToastManager.Spawn(description, popupPrefab);
+        popup.SetParent(transform, transform.GetSiblingIndex() + 1);
+
+
     }
 
     private void OnConfirmDeleteFile()
@@ -56,6 +93,9 @@ public class StoredDrawManager : MonoBehaviour
         {
             loadFile.LoadAllSavedFiles();
             deletePanel.gameObject.SetActive(false);
+            emptyPanel.Refresh();
+            ShowPopup(MessageLog.SuccessMessage_DeleteFileComplete, ModularPopup.PopupAsset.toastPopupComplete);
+
         }
     }
 

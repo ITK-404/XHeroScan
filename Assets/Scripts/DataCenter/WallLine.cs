@@ -142,6 +142,9 @@ public enum LineType
     None
 }
 #endregion
+#region Data Room 2 (Copy from Data Room 1)
+
+#endregion
 
 #region Floor
 [System.Serializable]

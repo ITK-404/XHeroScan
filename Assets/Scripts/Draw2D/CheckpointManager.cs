@@ -677,7 +677,7 @@ public class CheckpointManager : MonoBehaviour
 
         tempDoorWindowPoints.Clear();
 
-        Debug.Log("Đã xóa toàn bộ dữ liệu vẽ chưa khép kín.");
+        Debug.Log("Đã xóa toàn bộ dữ liệu vẽ chưa khép kín. ");
     }
 
     public string GetSelectedRoomID()
