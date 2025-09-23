@@ -10,11 +10,7 @@ public class ParameterInputField : MonoBehaviour
 
  
     public TMP_InputField InputField => inputField;
-    private void Awake()
-    {
-        GetComponentInParent<SettingPanel>().Add(this);
-    }
-
+  
     public void Initialize(string labelText, string placeholderText, TMP_InputField.ContentType contentType = TMP_InputField.ContentType.Standard)
     {
         label.text = labelText;

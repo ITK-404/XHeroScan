@@ -112,7 +112,7 @@ public partial class FurnitureManager : MonoBehaviour
         var worldPointFromViewPort = mainCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f));
         var centerPosition = new Vector3(worldPointFromViewPort.x, SpawnHeight, worldPointFromViewPort.z);
         var item = SpawnFurniture(itemID, centerPosition);
-        UndoRedoController.Instance.AddToUndo(new CreateItemCommand(item.data.instanceID));
+        UndoRedoController.Instance.AddToUndo(new CreateItemCommand(item.data));
 
     }
 
@@ -176,10 +176,10 @@ public partial class FurnitureManager : MonoBehaviour
 
     public void SelectFurniture(FurnitureItem furniture)
     {
-        if (placementController.IsDragTempFurniture())
-        {
-            return;
-        }
+        //if (placementController.IsDragTempFurniture())
+        //{
+        //    return;
+        //}
         if (currentFurniture == null)
         {
             currentFurniture = furniture;

@@ -53,7 +53,7 @@ public class InputCustomers : MonoBehaviour
         inputHeight = floorSettingPanel.GetParameterInputField(IntParameterType.Height).InputField;
         inputWidth = floorSettingPanel.GetParameterInputField(IntParameterType.Width).InputField;
         thicknessInput = floorSettingPanel.GetParameterInputField(IntParameterType.Thickness).InputField;
-    
+
         heightInputController = floorSettingPanel.GetParameterInputField(IntParameterType.Thickness).GetComponent<HeightInputController>();
     }
 
@@ -78,9 +78,9 @@ public class InputCustomers : MonoBehaviour
         }
         var room = RoomStorage.GetRoomByID(roomId);
         heightInputController.SetHeight(room.thickness);
-        UpdateInputWhenShow(room.center,room.checkpoints);
-      
-        if(room.heights.Count > 0)
+        UpdateInputWhenShow(room.center, room.checkpoints);
+
+        if (room.heights.Count > 0)
         {
             inputHeight.text = room.heights[0].ToString();
         }
@@ -171,7 +171,7 @@ public class InputCustomers : MonoBehaviour
             Debug.LogWarning("[DimOK] Không tìm thấy input Length/Width trong FloorSettingPanel.");
             return (0, 0, 0, false);
         }
-        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W)|| !TryParse(inputHeight?.text, out float H))
+        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W) || !TryParse(inputHeight?.text, out float H))
         {
             Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng cho FLOOR.");
             return (0, 0, 0, false);
@@ -205,8 +205,10 @@ public class InputCustomers : MonoBehaviour
             Debug.Log("This is same, does not create it againt");
             return;
         }
+        var oldRoom = new Room(room);
+        var oldList = FurnitureManager.Instance.GetFurnitureInsideRoom(room.ID);
 
-        UndoRedoController.Instance.AddToUndo(new EditRoomCommand(new Room(room)));
+
         if (room == null)
         {
             Debug.LogWarning($"[DimOK] Không tìm thấy ROOM với ID={roomId}");
@@ -242,7 +244,7 @@ public class InputCustomers : MonoBehaviour
         Vector3 v1 = new Vector3(rect[1].x, baseY + roomWallLift, rect[1].y);
         Vector3 v2 = new Vector3(rect[2].x, baseY + roomWallLift, rect[2].y);
         Vector3 v3 = new Vector3(rect[3].x, baseY + roomWallLift, rect[3].y);
-        
+
         room.wallLines.Add(new WallLine(v0, v1, LineType.Wall));
         room.wallLines.Add(new WallLine(v1, v2, LineType.Wall));
         room.wallLines.Add(new WallLine(v2, v3, LineType.Wall));
@@ -307,6 +309,9 @@ public class InputCustomers : MonoBehaviour
         //CameraResizeByFloor.Instance.Resize(room.checkpoints);
         // === HEIGHT update ===
         room.heights.Clear(); // xóa cũ để tránh dư
+
+        UndoRedoController.Instance.AddToUndo(new EditRoomCommand(oldRoom, oldList, new Room(room)));
+
         for (int i = 0; i < room.wallLines.Count; i++)
         {
             // đồng bộ list heights

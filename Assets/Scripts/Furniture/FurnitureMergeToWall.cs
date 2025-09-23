@@ -73,7 +73,8 @@ public class FurnitureMergeToWall
 
     public Vector3 GetCenterPosition()
     {
-        return furnitureItem.isUsingCenterPosToSnap ? furnitureItem.GetWorldPosition() : bottomPoint.transform.position;
+        return furnitureItem.correctPosition;
+        //return furnitureItem.isUsingCenterPosToSnap ? furnitureItem.correctPosition : bottomPoint.transform.position;
     }
 
     public void TryToMergeAndSnapInAllWall()
@@ -92,15 +93,14 @@ public class FurnitureMergeToWall
 
         //Debug.Log("bắt đầu check để snap wall line");
 
-        SnapToNearestWallLine(RoomStorage.rooms, 0.2f, out var wallLine, out var firstDoorPoint);
-        SetAttachedWallLine(wallLine);
+        SnapToNearestWallLine(RoomStorage.rooms, 10, out var wallLine, out var firstDoorPoint);
 
         if (wallLine == null)
         {
             //Debug.Log("không kiếm được wallline để snap vào");
-            ratio = 0;
             return;
         }
+        SetAttachedWallLine(wallLine);
 
         //Debug.Log("Kiếm được wall line để snap vào");
         //Debug.Log($"Thông số {wallLine.start} {wallLine.end}");

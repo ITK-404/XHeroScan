@@ -1,18 +1,30 @@
-﻿using System.Linq;
+﻿using NUnit.Framework.Interfaces;
+using System.Linq;
 using UnityEngine;
 
 public class CreateItemCommand : IUndoRedoCommand
 {
     public string InstanceID;
-
-    public CreateItemCommand(string instanceID)
+    public DrawingInstanced itemData;
+    public CreateItemCommand(DrawingInstanced itemData)
     {
-        Debug.Log("Tạo lệnh undo furniture: " + instanceID);
-        InstanceID = instanceID;
+        this.itemData = itemData;
+        this.InstanceID = itemData.instanceID;
+        Debug.Log("Tạo lệnh undo furniture: " + InstanceID);
     }
 
     public void Redo()
     {
+        var item = FurnitureManager.Instance.SpawnFurniture(itemData.itemTemplateID, itemData.worldPosition);
+
+        if (item == null)
+        {
+            Debug.Log("Item id null");
+            return;
+        }
+
+        item.FetchData(itemData);
+        item.furnitureMergeToWall.ForceSnapToWall();
 
     }
 
@@ -35,7 +47,10 @@ public class DeleteItemCommand : IUndoRedoCommand
 
     public void Redo()
     {
-
+        var InstanceID = itemData.instanceID;
+        Debug.Log($"Find {InstanceID} to delete");
+        var furniture = FurnitureManager.Instance.GetFurnitureByInstanceID(InstanceID);
+        furniture.Destroy();
     }
 
     public void Undo()
@@ -49,28 +64,36 @@ public class DeleteItemCommand : IUndoRedoCommand
         }
 
         item.FetchData(itemData);
+        item.furnitureMergeToWall.ForceSnapToWall();
     }
 }
 
 public class EditItemCommand : IUndoRedoCommand
 {
-    public DrawingInstanced itemData;
-
-    public EditItemCommand(DrawingInstanced itemData)
+    public DrawingInstanced oldData;
+    public DrawingInstanced newData;
+    public EditItemCommand(DrawingInstanced oldData, DrawingInstanced newData)
     {
-        Debug.Log("Tạo lệnh edit cho item " + itemData.instanceID);
-        this.itemData = itemData;
+        Debug.Log("Tạo lệnh edit cho item " + oldData.instanceID);
+        this.oldData = oldData;
+        this.newData = newData;
     }
 
     public void Redo()
     {
+        FetchData(newData);
     }
 
     public void Undo()
     {
-        var item = FurnitureManager.Instance.GetFurnitureByInstanceID(itemData.instanceID);
+        FetchData(oldData);
+    }
+
+    private void FetchData(DrawingInstanced data)
+    {
+        var item = FurnitureManager.Instance.GetFurnitureByInstanceID(data.instanceID);
         item.furnitureMergeToWall.ResetAttached();
-        item.FetchData(itemData);
+        item.FetchData(data);
         item.furnitureMergeToWall.TryToMergeAndSnapInAllWall();
     }
 }

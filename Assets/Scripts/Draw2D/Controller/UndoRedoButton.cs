@@ -28,7 +28,7 @@ public class UndoRedoButton : MonoBehaviour
     {
         if (controller == null) return;
 
-        btn.interactable = controller.CanUndo();
+        btn.interactable =  isUndo ? controller.CanUndo() : controller.CanRedo();
     }
     
     private void OnClicked()
