@@ -345,6 +345,10 @@ public partial class FurnitureItem : MonoBehaviour
         sizeLocal = furnitureVisuals.ClampSizeToBounds(
             sizeLocal, resizeAxis, dragLocalUnrot, anchorLocalUnrot, alwayMakeSquare);
 
+        // Giả sử bạn có maxSizeX, maxSizeZ trong furnitureItem
+        sizeLocal.x = Mathf.Clamp(sizeLocal.x, minSizeX, data.size.widthMinMax.y);
+        sizeLocal.z = Mathf.Clamp(sizeLocal.z, minSizeZ, data.size.lengthMinMax.y);
+
         // --- Chuyển center trở về không gian local (có xoay) và cập nhật bounds ---
         bounds.center = originalCenter + rotation * centerLocalUnrot;
         bounds.size = sizeLocal;
