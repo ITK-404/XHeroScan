@@ -15,7 +15,7 @@ public class BottomSheetUI : BaseAnimUI
     private BlockPopupBackground blockPopupBackground;
     private void Start()
     {
-        
+
     }
 
     protected override void Awake()
@@ -34,15 +34,17 @@ public class BottomSheetUI : BaseAnimUI
         rectContainer.anchoredPosition = closedPos;
 
         rectContainer.gameObject.SetActive(false);
+        blockPopupBackground = GetComponentInChildren<BlockPopupBackground>();
         if (blockPopupBackground)
             blockPopupBackground.OnClickBackgroundEvent += Close;
     }
 
     private void OnDestroy()
     {
-        if(blockPopupBackground)
+        if (blockPopupBackground)
             blockPopupBackground.OnClickBackgroundEvent -= Close;
     }
+
     public override void Open()
     {
         if (container.gameObject.activeSelf) return;
@@ -54,7 +56,7 @@ public class BottomSheetUI : BaseAnimUI
         });
         OnStartShowAnim?.Invoke();
 
-        Debug.Log("Bottom Sheet Open "+gameObject.name);
+        Debug.Log("Bottom Sheet Open " + gameObject.name);
     }
 
     public override void Close()

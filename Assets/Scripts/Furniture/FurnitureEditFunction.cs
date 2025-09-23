@@ -183,6 +183,8 @@ public class FurnitureEditFunction : MonoBehaviour
 
             // maybe create world space canvas
         }
+        if (furnitureManager.placementController.tempDragItem != null) return;
+
         currentPopup.gameObject.SetActive(currentFurniture);
 
         //if (currentFurniture != null)

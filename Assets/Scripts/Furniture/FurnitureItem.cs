@@ -36,6 +36,8 @@ public partial class FurnitureItem : MonoBehaviour
     {
         get => data.size.lengthMinMax.x / 2;
     }
+
+
     [SerializeField] private Vector2 hitBoxSizeBuffer = Vector2.one;
     [Header("Cấu hình để phân biệt cửa/cửa sổ và đồ nội thất")]
     [SerializeField] private bool allowSnapToWall = false; // có thể gắn vào tường
@@ -343,6 +345,10 @@ public partial class FurnitureItem : MonoBehaviour
         sizeLocal = furnitureVisuals.ClampSizeToBounds(
             sizeLocal, resizeAxis, dragLocalUnrot, anchorLocalUnrot, alwayMakeSquare);
 
+        // Giả sử bạn có maxSizeX, maxSizeZ trong furnitureItem
+        sizeLocal.x = Mathf.Clamp(sizeLocal.x, minSizeX, data.size.widthMinMax.y);
+        sizeLocal.z = Mathf.Clamp(sizeLocal.z, minSizeZ, data.size.lengthMinMax.y);
+
         // --- Chuyển center trở về không gian local (có xoay) và cập nhật bounds ---
         bounds.center = originalCenter + rotation * centerLocalUnrot;
         bounds.size = sizeLocal;
@@ -403,6 +409,8 @@ public partial class FurnitureItem : MonoBehaviour
         MakeDirty();
 
         OnDragPoint = true;
+
+        furnitureMergeToWall.RotationToWallLine();
     }
 
     /// <summary>

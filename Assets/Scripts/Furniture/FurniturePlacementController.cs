@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 public partial class FurnitureManager : MonoBehaviour
@@ -6,6 +7,7 @@ public partial class FurnitureManager : MonoBehaviour
     public class FurniturePlacementController
     {
         public FurnitureItem tempDragItem;
+        private FurnitureDrag furnitureDrag;
         private FurnitureManager furnitureManager;
 
         public FurniturePlacementController(FurnitureManager furnitureManager)
@@ -15,9 +17,18 @@ public partial class FurnitureManager : MonoBehaviour
 
         public void StartDrag(string ItemID)
         {
+            // Bởi vì người dùng đã chạm và giữ tay để kéo vật thể trước đó nên các logic này cần được kích hoạt thủ công
+            var worldMousePosition = furnitureManager.GetWorldMousePosition();
+            worldMousePosition.y = SpawnHeight;
+            // setup manual 
             tempDragItem = furnitureManager.InitItemByID(ItemID);
-            tempDragItem.GetComponentInChildren<FurnitureDrag>().SetCanMove(canMove: true);
+            tempDragItem.transform.position = worldMousePosition;
             tempDragItem?.InitLineAndText();
+            // setup logic drag
+            furnitureDrag = tempDragItem.GetComponentInChildren<FurnitureDrag>();
+            furnitureDrag.SetCanMove(canMove: true);
+            furnitureDrag.StartMoveSetup();
+
             furnitureManager.SelectFurniture(tempDragItem);
             if (tempDragItem == null)
             {
@@ -25,23 +36,20 @@ public partial class FurnitureManager : MonoBehaviour
                 return;
             }
 
-            //furnitureManager.SelectFurniture(tempDragItem);
         }
-
-        //    public void ClearDragItem()
-        //    {
-        //        Destroy(tempDragItem.gameObject);
-        //        tempDragItem = null;
-        //    }
 
         public void DropDragItem()
         {
+            // setup manuall cho creation command
             UndoRedoController.Instance.AddToUndo(new CreateItemCommand(tempDragItem.data));
+            // add vào runtime list
             runtimeFurnitures.Add(tempDragItem);
-
-            tempDragItem.GetComponentInChildren<FurnitureDrag>().SetCanMove(canMove: false);
-            tempDragItem = null;
+            // tắt logic di chuyển, ghép vật thể vào tường gần nhất
+            furnitureDrag.SetCanMove(canMove: false);
+            tempDragItem.DeActiveDrag();
+            tempDragItem.furnitureMergeToWall.ForceSnapToWall();
             furnitureManager.SelectFurniture(null);
+            tempDragItem = null;
 
             SaveLoadManager.MakeDirty();
         }
@@ -57,50 +65,7 @@ public partial class FurnitureManager : MonoBehaviour
             }
         }
 
-        //    private void TryDropFurniture()
-        //    {
-        //        Debug.Log($"BottomSheetPageManager.Instance.blockTouchImage.raycastTarget: {BottomSheetPageManager.Instance.blockTouchImage != null}");
-        //        BottomSheetPageManager.Instance.blockTouchImage.raycastTarget = true;
-        //        // Khởi tạo các biến cần thiết
-        //        var worldPosition = tempDragItem.furnitureMergeToWall.GetCenterPosition();
-        //        var tempFurniture = tempDragItem;
-        //        var firstDoorPoint = Vector3.zero;
-
-        //        bool isOverUI = IsOverUI();
-        //        bool isNormalFurniture = tempFurniture.lineType == LineType.None;
-        //        bool canMergeToWall = tempFurniture.furnitureMergeToWall.IsDragPosCanMerge(worldPosition, ref firstDoorPoint);
-
-        //        Debug.Log($"Is Over UI {isOverUI} WL not null {canMergeToWall} normal {isNormalFurniture}");
-        //        if (isNormalFurniture)
-        //        {
-        //            DropDragItem();
-        //        }
-        //        else if (!isOverUI && !isNormalFurniture && canMergeToWall)
-        //        {
-        //            DropDragItem();
-        //            tempFurniture.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, firstDoorPoint);
-        //            tempFurniture.furnitureMergeToWall.ForceSnapToWall();
-        //        }
-        //        else
-        //        {
-        //            ClearDragItem();
-        //        }
-        //        FurnitureItem.OnDragFurniture = false;
-        //    }
-
-        //    public bool IsDragTempFurniture()
-        //    {
-        //        return tempDragItem != null;
-        //    }
-        //}
-
-
-        //private static bool IsOverUI()
-        //{
-        //    bool isOverUI = EventSystem.current.IsPointerOverGameObject();
-        //    Debug.Log("is Over UI: " + isOverUI);
-        //    return isOverUI;
-        //}
+      
     }
 }
 
