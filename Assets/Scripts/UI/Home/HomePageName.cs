@@ -5,4 +5,7 @@ public static class HomePageName
     public const string SelectNewOrTemplate = "SelectNewOrTemplate";
     public const string SelectDrawCreatedOrShared = "SelectDrawCreatedOrShared";
     public const string SelectRoomHeighInputOrScan = "SelectRoomHeighInputOrScan";
+
+    public const string SelectSavedRoom = "SelectSavedRoom";
+    public const string SelectSharedRoom = "SelectSharedRoom";
 }

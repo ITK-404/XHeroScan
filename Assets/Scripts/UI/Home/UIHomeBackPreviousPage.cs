@@ -2,9 +2,8 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-public class UIHomePageButton : MonoBehaviour
+public class UIHomeBackPreviousPage : MonoBehaviour
 {
-    [Dropdown(typeof(HomePageName))] public string NextPageName;
     public UnityAction OnClickBtnEvent;
     private Button btn;
     private void Awake()
@@ -19,7 +18,7 @@ public class UIHomePageButton : MonoBehaviour
 
     private void OnClickButton()
     {
-        UIHomeNavigation.Instance.ChangePage(NextPageName, isStackUI: true);
+        UIHomeNavigation.Instance.BackPreviousPage();
         OnClickBtnEvent?.Invoke();
     }
 }

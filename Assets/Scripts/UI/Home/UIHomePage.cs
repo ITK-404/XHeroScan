@@ -5,6 +5,7 @@ public class UIHomePage : MonoBehaviour
 {
     [Dropdown(typeof(HomePageName))]public string PageName;
     [SerializeField] private GameObject container;
+    public bool isShowTopDecor = true;
     private CanvasGroup canvasGroup;
 
     private void OnValidate()
