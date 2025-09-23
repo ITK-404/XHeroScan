@@ -45,7 +45,7 @@ public class CheckpointManager : MonoBehaviour
     private float closeThreshold = 0.2f; // Khoảng cách tối đa để chọn điểm
     private Vector3 previewPosition; // Vị trí preview
     public GameObject firstPoint = null;
-    
+
     private SplitRoomManager splitRoomManager;
     private HandleCheckpointManger handleCheckpointManger;
     private MovePointManager movePointManager;
@@ -66,7 +66,7 @@ public class CheckpointManager : MonoBehaviour
     }
 
     void Start()
-    {        
+    {
         // splitRoomManager = FindFirstObjectByType<SplitRoomManager>();
         handleCheckpointManger = FindFirstObjectByType<HandleCheckpointManger>();
         movePointManager = FindFirstObjectByType<MovePointManager>();
@@ -74,7 +74,7 @@ public class CheckpointManager : MonoBehaviour
     }
 
     void Update()
-    {        
+    {
         if (EventSystem.current.IsPointerOverGameObject())
         {
             isPreviewing = false;
@@ -225,7 +225,7 @@ public class CheckpointManager : MonoBehaviour
                 Vector3 e = wl.end; e.y = yLine;
 
                 DrawingTool.currentLineType = wl.type;
-                DrawingTool.DrawLineAndDistance(s, e,room.thickness);
+                DrawingTool.DrawLineAndDistance(s, e, room.thickness);
 
                 // chỉ sync handle cho cửa/cửa sổ
                 if (wl.type != LineType.Door && wl.type != LineType.Window) continue;
@@ -416,7 +416,7 @@ public class CheckpointManager : MonoBehaviour
         selectedCheckpoint = null;
         isMovingCheckpoint = false;
     }
-    
+
     private EditRoomCommandCreator editRoomCommand;
     public void InitAndClearData()
     {
@@ -451,10 +451,113 @@ public class CheckpointManager : MonoBehaviour
     const float roomIndexY = 2 * layerStepY;
     const float lineLift = 0.0005f;
     const float lineWidth = 0.03f;
-    
+
     private HashSet<string> _alignedRooms = new HashSet<string>();
     void LoadPointsFromStorage()
     {
+        var floors = FloorStorage.floors;
+        // ====== FLOOR ======
+        foreach (var floor in floors)
+        {
+            if (floor == null || floor.checkpoints == null || floor.checkpoints.Count < 3) continue;
+
+            var cps = floor.checkpoints;
+
+            // Parent visual
+            var floorVis = new GameObject($"FloorVis_{floor.ID}");
+            floorVis.tag = "RoomFloor";
+            floorVis.transform.position = new Vector3(0f, floorIndexY, 0f);
+
+            // ----- LineRenderer (viền) -----
+            var lr = floorVis.AddComponent<LineRenderer>();
+            lr.positionCount = cps.Count + 1;
+            lr.loop = false;
+            lr.widthMultiplier = lineWidth;
+            lr.useWorldSpace = true;
+            lr.numCornerVertices = 4;
+            lr.sortingOrder = floorIndex;
+
+            var unlit = Shader.Find("Unlit/Color");
+            if (unlit == null) unlit = Shader.Find("Sprites/Default");
+            lr.material = new Material(unlit);
+            if (unlit != null && unlit.name == "Unlit/Color")
+                lr.material.SetColor("_Color", new Color(0.1f, 0.1f, 0.1f, 1f));
+
+            for (int i = 0; i < cps.Count; i++)
+                lr.SetPosition(i, new Vector3(cps[i].x, floorIndexY + lineLift, cps[i].y));
+            lr.SetPosition(cps.Count, new Vector3(cps[0].x, floorIndexY + lineLift, cps[0].y));
+
+            // ----- Mesh (mặt sàn) -----
+            var mf = floorVis.AddComponent<MeshFilter>();
+            var mr = floorVis.AddComponent<MeshRenderer>();
+            var mesh = new Mesh { name = $"FloorMesh_{floor.ID}" };
+
+            var verts = new List<Vector3>(cps.Count);
+            for (int i = 0; i < cps.Count; i++)
+                verts.Add(new Vector3(cps[i].x, floorIndexY, cps[i].y));
+
+            var tris = new List<int>();
+            for (int i = 1; i < cps.Count - 1; i++)
+            {
+                tris.Add(0);
+                tris.Add(i);
+                tris.Add(i + 1);
+            }
+
+            mesh.SetVertices(verts);
+            mesh.SetTriangles(tris, 0);
+
+            Vector2 min = cps[0], max = cps[0];
+            for (int i = 1; i < cps.Count; i++) { min = Vector2.Min(min, cps[i]); max = Vector2.Max(max, cps[i]); }
+            var size = max - min; if (size.x == 0) size.x = 1; if (size.y == 0) size.y = 1;
+            var uvs = new Vector2[cps.Count];
+            for (int i = 0; i < cps.Count; i++)
+                uvs[i] = new Vector2((cps[i].x - min.x) / size.x, (cps[i].y - min.y) / size.y);
+
+            mesh.SetUVs(0, new List<Vector2>(uvs));
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            mf.sharedMesh = mesh;
+
+            var fill = new Material(Shader.Find("Standard"));
+            fill.SetFloat("_Mode", 3);
+            fill.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            fill.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            fill.SetInt("_ZWrite", 0);
+            fill.DisableKeyword("_ALPHATEST_ON");
+            fill.EnableKeyword("_ALPHABLEND_ON");
+            fill.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            fill.renderQueue = 3000;
+            fill.color = new Color(0.2f, 0.6f, 1f, 0.15f);
+            mr.sharedMaterial = fill;
+            mr.sortingOrder = floorIndex;
+
+            // ====== TẠO POINT MARKERS TỪ CHECKPOINTS ======
+            foreach (var room in RoomStorage.rooms)
+            {
+                if (room == null || room.checkpoints == null || room.checkpoints.Count < 3) continue;
+
+                // 1) Lấy heading mong muốn từ dữ liệu tường đã lưu (nếu room.headingCompass chưa có)
+                ComputeRoomHeadingFromSavedLines(room);
+
+                // 2) Xoay DỮ LIỆU ROOM quanh tâm để đồng bộ hình học với heading
+                AlignRoomToHeading(room);
+
+                // 3) Bây giờ mới sinh GameObjects dựa trên dữ liệu đã xoay
+                AddGameObjectCheckPointToGlobalVariable(room);
+                CreateRoomMeshCtrl(room);
+
+                // 4) Vẽ line theo dữ liệu (EnsureLineHeadingFromRoom chỉ fill khi 0)
+                DrawWallLineByRoom(room);
+            }
+            // Room
+        }
+        if (FloorStorage.floors.Count > 0)
+        {
+            // Resize lại camera khi load
+            var floor = floors[0];
+            CameraResizeByFloor.Instance.Resize(floor.checkpoints);
+        }
         foreach (var room in RoomStorage.rooms)
         {
             if (room == null || room.checkpoints == null || room.checkpoints.Count < 3) continue;
@@ -463,9 +566,9 @@ public class CheckpointManager : MonoBehaviour
 
             AddGameObjectCheckPointToGlobalVariable(room);
             CreateRoomMeshCtrl(room);
-            DrawWallLineByRoom(room); 
+            DrawWallLineByRoom(room);
         }
-        if(RoomStorage.rooms.Count > 0)
+        if (RoomStorage.rooms.Count > 0)
         {
             var room = RoomStorage.rooms[0];
             CameraResizeByFloor.Instance.Resize(room.checkpoints);
@@ -590,7 +693,7 @@ public class CheckpointManager : MonoBehaviour
 
         meshCtrl.Initialize(room.ID);
         meshCtrl.GenerateMesh(room.checkpoints);
-        floorGO.transform.position = new Vector3(centerPostion.x,roomIndexY,centerPostion.y);
+        floorGO.transform.position = new Vector3(centerPostion.x, roomIndexY, centerPostion.y);
         //floorGO.transform.position = new Vector3(centerPostion.x, roomIndexY, centerPostion.z);
 
         Debug.Log("Center position: " + centerPostion);
@@ -616,8 +719,8 @@ public class CheckpointManager : MonoBehaviour
     }
 
     public void ClearAllLines() => DrawingTool.ClearAllLines();
-    public void DrawAllLinesFromRoomStorage()=> DrawingTool.DrawAllLinesFromRoomStorage();
-    public void DrawLineAndDistance(Vector3 start, Vector3 end, float width) => DrawingTool.DrawLineAndDistance(start, end,width);
+    public void DrawAllLinesFromRoomStorage() => DrawingTool.DrawAllLinesFromRoomStorage();
+    public void DrawLineAndDistance(Vector3 start, Vector3 end, float width) => DrawingTool.DrawLineAndDistance(start, end, width);
 
     void ShowIncompleteLoopPopup()
     {
@@ -738,7 +841,7 @@ public class CheckpointManager : MonoBehaviour
                 ? currentCheckpoints[0].transform.position
                 : currentCheckpoints[i + 1].transform.position;
 
-            DrawingTool.DrawLineAndDistance(start, end,Room.Thickness);
+            DrawingTool.DrawLineAndDistance(start, end, Room.Thickness);
             wallLines.Add(new WallLine(start, end, LineType.Wall));
         }
 
@@ -878,4 +981,160 @@ public class CheckpointManager : MonoBehaviour
         AddGameObjectCheckPointToGlobalVariable(room);
         RedrawAllRooms();
     }
+void ComputeRoomHeadingFromSavedLines(Room room)
+{
+    // Nếu room.headingCompass đã có (!=0) thì giữ; nếu chưa, lấy trung bình từ wl.headingCompass
+    if (room == null) return;
+
+    if (room.headingCompass != 0f) return;
+
+    float sum = 0f; int cnt = 0;
+    foreach (var wl in room.wallLines)
+    {
+        // Ưu tiên những wall có headingCompass đã lưu
+        if (wl.headingCompass != 0f)
+        {
+            sum += wl.headingCompass;
+            cnt++;
+        }
+    }
+    if (cnt > 0)
+    {
+        room.headingCompass = NormalizeAngleDeg(sum / cnt);
+    }
+    else
+    {
+        // fallback: dùng hình học hiện tại
+        room.headingCompass = GetDominantGeometryHeading(room);
+    }
+}
+
+void AlignRoomToHeading(Room room, float epsDeg = 0.1f)
+{
+    if (room == null || room.checkpoints == null || room.checkpoints.Count < 3) return;
+
+    // Tâm phòng (Vector2) – bạn đã có GeoUtil.Centroid
+    Vector2 center = GeoUtil.Centroid(room.checkpoints);
+
+    // Hướng hình học hiện tại (từ đoạn dài nhất)
+    float currentGeomHeading = GetDominantGeometryHeading(room);
+
+    // Hướng mong muốn (đã được ComputeRoomHeadingFromSavedLines suy ra)
+    float targetHeading = NormalizeAngleDeg(room.headingCompass);
+
+    // Góc cần quay
+    float delta = NormalizeAngleDeg(targetHeading - currentGeomHeading);
+    if (Mathf.Abs(delta) < epsDeg) return; // không cần xoay
+
+// 1) Xoay checkpoints (polygon chính)
+for (int i = 0; i < room.checkpoints.Count; i++)
+    room.checkpoints[i] = RotateAround((Vector2)room.checkpoints[i], center, delta);
+
+// 2) Xoay extra checkpoints
+if (room.extraCheckpoints != null)
+{
+    for (int i = 0; i < room.extraCheckpoints.Count; i++)
+        room.extraCheckpoints[i] = RotateAround((Vector2)room.extraCheckpoints[i], center, delta);
+}
+
+// 3) Xoay wallLines start/end
+foreach (var wl in room.wallLines)
+{
+    wl.start = RotateAround((Vector3)wl.start, new Vector3(center.x, wl.start.y, center.y), delta);
+    wl.end   = RotateAround((Vector3)wl.end,   new Vector3(center.x, wl.end.y, center.y), delta);
+    wl.headingCompass = SegmentHeadingDeg(wl.start, wl.end);
+}
+
+
+    // 4) Cập nhật room.headingCompass (giữ nguyên target)
+    room.headingCompass = targetHeading;
+}
+static float GetDominantGeometryHeading(Room room)
+{
+    // Lấy tường dài nhất (type=Wall hoặc bất kỳ nếu thiếu) để làm hướng hình học hiện tại
+    WallLine best = null;
+    float bestLen = -1f;
+    foreach (var wl in room.wallLines)
+    {
+        float len = Vector3.Distance(wl.start, wl.end);
+        if (len > bestLen)
+        {
+            bestLen = len;
+            best = wl;
+        }
+    }
+    if (best != null) return SegmentHeadingDeg(best.start, best.end);
+
+    // Nếu chưa có wallLines (trường hợp tối giản), suy ra từ cạnh polygon dài nhất
+    if (room.checkpoints != null && room.checkpoints.Count >= 2)
+    {
+        int n = room.checkpoints.Count;
+        float bestLenCp = -1f;
+        Vector2 a, b;
+        a = room.checkpoints[0];
+        for (int i = 0; i < n; i++)
+        {
+            a = room.checkpoints[i];
+            b = room.checkpoints[(i + 1) % n];
+            float len = Vector2.Distance(a, b);
+            if (len > bestLenCp)
+            {
+                bestLenCp = len;
+                // convert to Vector3 for heading calc
+                Vector3 s = new Vector3(a.x, 0f, a.y);
+                Vector3 e = new Vector3(b.x, 0f, b.y);
+                // return ở cuối vòng để chắc chắn chọn cạnh dài nhất
+                // nhưng ở đây ta lưu heading tạm thời:
+            }
+        }
+        // Tính lại heading của cạnh dài nhất
+        bestLenCp = -1f;
+        float heading = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            var p0 = room.checkpoints[i];
+            var p1 = room.checkpoints[(i + 1) % n];
+            float len = Vector2.Distance(p0, p1);
+            if (len > bestLenCp)
+            {
+                bestLenCp = len;
+                heading = SegmentHeadingDeg(new Vector3(p0.x,0f,p0.y), new Vector3(p1.x,0f,p1.y));
+            }
+        }
+        return heading;
+    }
+    return 0f;
+}
+    static float NormalizeAngleDeg(float deg)
+    {
+        deg %= 360f;
+        if (deg < 0f) deg += 360f;
+        return deg;
+    }
+    static float SegmentHeadingDeg(Vector3 s, Vector3 e)
+    {
+        // 0° = +Z (Bắc), 90° = +X (Đông). Dùng atan2(x, z)
+        Vector3 d = e - s; d.y = 0f;
+        if (d.sqrMagnitude < 1e-8f) return 0f;
+        float rad = Mathf.Atan2(d.x, d.z);
+        return NormalizeAngleDeg(rad * Mathf.Rad2Deg);
+    }
+static Vector2 RotateAround(Vector2 p, Vector2 pivot, float angleDeg)
+{
+    float rad = angleDeg * Mathf.Deg2Rad;
+    float cs = Mathf.Cos(rad), sn = Mathf.Sin(rad);
+    Vector2 t = p - pivot;
+    return new Vector2(t.x * cs - t.y * sn, t.x * sn + t.y * cs) + pivot;
+}
+
+static Vector3 RotateAround(Vector3 p, Vector3 pivot, float angleDeg)
+{
+    float rad = angleDeg * Mathf.Deg2Rad;
+    float cs = Mathf.Cos(rad), sn = Mathf.Sin(rad);
+    Vector3 t = p - new Vector3(pivot.x, p.y, pivot.y);
+    // Quay trên trục Y, dùng (x,z)
+    float rx =  t.x * cs + t.z * sn;
+    float rz = -t.x * sn + t.z * cs;
+    return new Vector3(rx + pivot.x, p.y, rz + pivot.y);
+}
 }
