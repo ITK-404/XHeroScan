@@ -410,7 +410,8 @@ public partial class FurnitureItem : MonoBehaviour
 
         OnDragPoint = true;
 
-        furnitureMergeToWall.RotationToWallLine();
+        if(furnitureMergeToWall.IsInWall())
+            furnitureMergeToWall.RotationToWallLine();
     }
 
     /// <summary>

@@ -306,6 +306,7 @@ public class PenManager : MonoBehaviour
 
             if (FurnitureItem.OnDragPoint || FurnitureItem.OnDragFurniture)
             {
+                Debug.Log($"Dang drag vat the, khong the di chuyen camera {FurnitureItem.OnDragPoint} {FurnitureItem.OnDragFurniture}");
                 return;
             }
             Touch touch = Input.GetTouch(0);
