@@ -183,8 +183,6 @@ public class Floor
     // Liên kết nhiều phòng với sàn này
     public List<string> roomIDs = new();
 
-    public float width, length;
-
     public Floor()
     {
         ID = GenerateID(); // Tự tạo ID khi khởi tạo
@@ -233,8 +231,6 @@ public class Floor
         floor.floorLine = new List<FloorLine>(other.floorLine.Select(w => new FloorLine(w)));
         floor.heights = new List<float>(other.heights);
         floor.roomIDs = new List<string>(other.roomIDs);
-        floor.width = other.width;
-        floor.length = other.length;
         return floor;
     }
 }

@@ -30,7 +30,7 @@ public partial class FurnitureManager : MonoBehaviour
     public FurniturePlacementController placementController;
 
     [SerializeField] private bool onDragPoint;
-    [SerializeField] private bool onDragItem;    
+    [SerializeField] private bool onDragItem;
 
     private void Awake()
     {
@@ -88,7 +88,22 @@ public partial class FurnitureManager : MonoBehaviour
 
     public void StartDragItem(string ItemID)
     {
+
         placementController.StartDrag(ItemID);
+
+    }
+
+    public LineType IsItemCanDragToWall(string itemID)
+    {
+        foreach (var item in furnitureItems)
+        {
+            if (item.data.itemTemplateID == itemID )
+            {
+                return item.lineType;
+            }
+        }
+
+        return LineType.None;
     }
 
     private FurnitureItem InitItemByID(string ItemID)

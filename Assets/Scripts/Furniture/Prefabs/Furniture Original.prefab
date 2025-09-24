@@ -300,8 +300,9 @@ MonoBehaviour:
       widthMinMax: {x: 0.5, y: 5000}
       heightMinMax: {x: 1, y: 5000}
       lengthMinMax: {x: 0.5, y: 5000}
-      offsetY: 0
-    isFlip: 0
+      distanceFromGround: 0
+    isFlipVertical: 0
+    isFlipHorizontal: 0
   modelContainer: {fileID: 5386840937885300725}
   model2D: {fileID: 3354348105385316814}
   resizeRatio: {x: 1, y: 1}
@@ -325,6 +326,10 @@ MonoBehaviour:
   furnitureMergeToWall:
     ratio: 0
   textContainer: {fileID: 6759521723316974626}
+  lineRenderer: {fileID: 0}
+  doorLinePrefab: {fileID: 2537071323837183285, guid: be16d088024828c48957fa1b76b275d2,
+    type: 3}
+  correctPosition: {x: 0, y: 0, z: 0}
 --- !u!114 &5451159717796942090
 MonoBehaviour:
   m_ObjectHideFlags: 0

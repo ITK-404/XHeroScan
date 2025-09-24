@@ -18,6 +18,8 @@ public class FurnitureMergeToWall
 
     private WallLine typedWallLine;
     public WallLine PDFWallLine => typedWallLine;
+
+
     public FurnitureMergeToWall(FurnitureItem furnitureItem)
     {
         this.furnitureItem = furnitureItem;
@@ -69,8 +71,26 @@ public class FurnitureMergeToWall
         UpdateOwnWallLine();
         UpdateRoomAttaced();
         ProcessWidthForWindow();
-    }
 
+        bool isInWall = IsInWall();
+        lineRenderer.gameObject.SetActive(IsInWall());
+
+        if (isInWall && attachedRoom != null)
+        {
+            Vector3 startPosition = leftPoint.transform.position;
+            Vector3 endPosition = rightPoint.transform.position;
+
+            startPosition.y = 5;
+            endPosition.y = 5;
+
+            lineRenderer.SetPosition(0, startPosition);
+            lineRenderer.SetPosition(1, endPosition);
+            lineRenderer.widthMultiplier = attachedRoom.thickness;
+            lineRenderer.startColor = Color.white;
+            lineRenderer.endColor = Color.white;
+        }
+    }
+    private LineRenderer lineRenderer => furnitureItem.lineRenderer;
     public Vector3 GetCenterPosition()
     {
         return furnitureItem.correctPosition;
