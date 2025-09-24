@@ -53,7 +53,7 @@ public class RoomMeshController : MonoBehaviour
 
                 case TouchPhase.Moved:
                     if (!isDragging) return;
-                    // DragRoom(touch.position); // nếu muốn bật drag trên mobile, bỏ comment
+                    DragRoom(touch.position); // nếu muốn bật drag trên mobile, bỏ comment
                     break;
 
                 case TouchPhase.Ended:
@@ -337,7 +337,7 @@ public class RoomMeshController : MonoBehaviour
             return;
         if (!PenManager.isPenActive) return;
         if (!isDragging) return;
-        // DragRoom(Input.mousePosition);
+        DragRoom(Input.mousePosition);
     }
 #endif
 

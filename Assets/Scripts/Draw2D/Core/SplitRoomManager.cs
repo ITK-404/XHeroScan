@@ -20,7 +20,7 @@ public class SplitRoomManager: MonoBehaviour
 
         const float AREA_MIN = 0.001f;
         var validLoops = allLoops.Where(lp => GeometryUtils.AbsArea(lp) > AREA_MIN).ToList();
-        if (validLoops.Count <= 1) return;
+        if (validLoops.Count <= 1) return;  
 
         var largestLoop = validLoops.OrderByDescending(lp => GeometryUtils.AbsArea(lp)).First();
         var uniqueLoops = validLoops.Where(lp => !GeometryUtils.IsSamePolygonFlexible(lp, largestLoop))
@@ -185,7 +185,7 @@ public class SplitRoomManager: MonoBehaviour
         var roomsInGroup = RoomStorage.GetRoomsByGroupID(groupID);
         var roomIDs = roomsInGroup.Select(r => r.ID).ToHashSet();
 
-        // 1. Xóa line trong DrawingTool.wallLines của các room này
+        // Xóa line trong DrawingTool.wallLines của các room này
         checkPointManager.DrawingTool.wallLines.RemoveAll(wl =>
             roomsInGroup.Any(r =>
                 r.wallLines.Any(gwl =>
@@ -197,7 +197,7 @@ public class SplitRoomManager: MonoBehaviour
             )
         );
 
-        // 2. Xóa checkpoint + loopMap
+        // Xóa checkpoint + loopMap
         foreach (var room in roomsInGroup)
         {
             var loopMap = checkPointManager.loopMappings.FirstOrDefault(lm => lm.RoomID == room.ID);
@@ -210,13 +210,13 @@ public class SplitRoomManager: MonoBehaviour
                 checkPointManager.AllCheckpoints.Remove(loopMap.CheckpointsGO);
             }
 
-            // 3. Xóa mesh floor
+            // Xóa mesh floor 
             if (checkPointManager.RoomFloorMap.TryGetValue(room.ID, out var oldGO))
             {
                 Destroy(oldGO);
                 checkPointManager.RoomFloorMap.Remove(room.ID);
             }
-            // 4. Xóa cửa / cửa sổ
+            // Xóa cửa / cửa sổ
             if (checkPointManager.tempDoorWindowPoints.ContainsKey(room.ID))
             {
                 foreach (var (_, p1, p2) in checkPointManager.tempDoorWindowPoints[room.ID])

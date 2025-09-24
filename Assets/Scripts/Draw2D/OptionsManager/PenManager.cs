@@ -79,28 +79,28 @@ public class PenManager : MonoBehaviour
                 checkpointManager.SelectCheckpoint();
                 checkpointManager.InitAndClearData();
 
-                //if (checkpointManager.selectedCheckpoint != null)
-                //{
-                //    _dragRoom = false;
-                //    _dragRoomID = null;
+                if (checkpointManager.selectedCheckpoint != null)
+                {
+                   _dragRoom = false;
+                   _dragRoomID = null;
 
-                //    // đang kéo checkpoint -> gán cờ handle dragging (nếu checkpoint là handle floor)
-                //    InteractionFlags.IsFloorHandleDragging = true;
+                   // đang kéo checkpoint -> gán cờ handle dragging (nếu checkpoint là handle floor)
+                   InteractionFlags.IsFloorHandleDragging = true;
 
-                //    _lastWorld = GetWorldOnXZ(Input.mousePosition);
-                //}
-                //else if (TryHitRoomFloor(out _dragRoomID))
-                //{
-                //    _dragRoom = true;
-                //    isRoomFloorBeingDragged = true;
-                //    InteractionFlags.IsRoomFloorDragging = true;
+                   _lastWorld = GetWorldOnXZ(Input.mousePosition);
+                }
+                else if (TryHitRoomFloor(out _dragRoomID))
+                {
+                   _dragRoom = true;
+                   isRoomFloorBeingDragged = true;
+                   InteractionFlags.IsRoomFloorDragging = true;
 
-                //    checkpointManager.DeselectCheckpoint();
-                //    checkpointManager.selectedCheckpoint = null;
-                //    checkpointManager.isMovingCheckpoint = false;
+                   checkpointManager.DeselectCheckpoint();
+                   checkpointManager.selectedCheckpoint = null;
+                   checkpointManager.isMovingCheckpoint = false;
 
-                //    _lastWorld = GetWorldOnXZ(Input.mousePosition);
-                //}
+                   _lastWorld = GetWorldOnXZ(Input.mousePosition);
+                }
             }
             else if (Input.GetMouseButton(0))
             {
