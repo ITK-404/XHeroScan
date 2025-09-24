@@ -162,14 +162,11 @@ public partial class FurnitureItem : MonoBehaviour
 
         rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
     }
-
+    [SerializeField] private LineRenderer lrPrefab;
 
     public void InitLineAndText()
     {
-        lineRenderer = CreateLineRenderer();
-        lineRenderer.material = new Material(lineRenderer.material);
-        lineRenderer.material.color = Color.white;
-        lineRenderer.sortingOrder = 20;
+        lineRenderer = Instantiate(lrPrefab);
         lineRenderer.transform.parent = checkPointParent.transform.parent;
 
         var topLine = new Outline(CreateLineRenderer(),
