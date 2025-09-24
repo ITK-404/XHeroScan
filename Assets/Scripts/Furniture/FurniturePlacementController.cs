@@ -35,6 +35,7 @@ public partial class FurnitureManager : MonoBehaviour
                 Debug.LogWarning("Furniture item with ID " + ItemID + " not found.");
                 return;
             }
+            FurnitureItem.OnDragFurniture = true;
 
         }
 
@@ -47,11 +48,16 @@ public partial class FurnitureManager : MonoBehaviour
             // tắt logic di chuyển, ghép vật thể vào tường gần nhất
             furnitureDrag.SetCanMove(canMove: false);
             tempDragItem.DeActiveDrag();
-            tempDragItem.furnitureMergeToWall.ForceSnapToWall();
+           
+            if(tempDragItem.lineType != LineType.None)
+                tempDragItem.furnitureMergeToWall.ForceSnapToWall();
+            
             furnitureManager.SelectFurniture(null);
             tempDragItem = null;
 
             SaveLoadManager.MakeDirty();
+            FurnitureItem.OnDragFurniture = false;
+
         }
 
         public void Update()

@@ -12,7 +12,6 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
     public void OnBeginDrag(PointerEventData eventData)
     {
         // start drag
-        FurnitureItem.OnDragFurniture = true;
         FurnitureManager.Instance.StartDragItem(ItemID);
 
         // UI này nằm trong BottomSheetPageManager
@@ -22,7 +21,6 @@ public class DragItemUI : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDr
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        
     }
 
 }

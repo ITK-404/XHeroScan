@@ -28,6 +28,10 @@ public partial class FurnitureManager : MonoBehaviour
 
     public FurnitureItem TempDragItem => placementController.tempDragItem;
     public FurniturePlacementController placementController;
+
+    [SerializeField] private bool onDragPoint;
+    [SerializeField] private bool onDragItem;    
+
     private void Awake()
     {
         Instance = this;
@@ -160,6 +164,9 @@ public partial class FurnitureManager : MonoBehaviour
         {
             SpawnFurnitureCenterScreen("bed_1");
         }
+
+        onDragItem = FurnitureItem.OnDragFurniture;
+        onDragPoint = FurnitureItem.OnDragPoint;
     }
 
     public void ClearAllFurnitures()
