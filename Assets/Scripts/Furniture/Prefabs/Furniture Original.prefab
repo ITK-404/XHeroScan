@@ -136,6 +136,7 @@ GameObject:
   - component: {fileID: 5824219951104008082}
   - component: {fileID: 3354348105385316814}
   - component: {fileID: 4057246774921060612}
+  - component: {fileID: 5283715099059976555}
   m_Layer: 9
   m_Name: Square
   m_TagString: Untagged
@@ -152,7 +153,7 @@ Transform:
   m_GameObject: {fileID: 4349819414962350944}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.0118, y: 0.02, z: -0.166}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -223,6 +224,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6099fc3074a347e68918d91c42cbe2a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &5283715099059976555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4349819414962350944}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3f80d6f211315548a96ece40cf16ce9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &4657399046887679853
@@ -300,8 +313,9 @@ MonoBehaviour:
       widthMinMax: {x: 0.5, y: 5000}
       heightMinMax: {x: 1, y: 5000}
       lengthMinMax: {x: 0.5, y: 5000}
-      offsetY: 0
-    isFlip: 0
+      distanceFromGround: 0
+    isFlipVertical: 0
+    isFlipHorizontal: 0
   modelContainer: {fileID: 5386840937885300725}
   model2D: {fileID: 3354348105385316814}
   resizeRatio: {x: 1, y: 1}
@@ -325,6 +339,10 @@ MonoBehaviour:
   furnitureMergeToWall:
     ratio: 0
   textContainer: {fileID: 6759521723316974626}
+  lineRenderer: {fileID: 0}
+  lrPrefab: {fileID: 7041135704643988281, guid: 212273ed750bd0d4f879e63ccc806270,
+    type: 3}
+  correctPosition: {x: 0, y: 0, z: 0}
 --- !u!114 &5451159717796942090
 MonoBehaviour:
   m_ObjectHideFlags: 0

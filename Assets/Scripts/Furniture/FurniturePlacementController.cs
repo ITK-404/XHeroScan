@@ -58,6 +58,7 @@ public partial class FurnitureManager : MonoBehaviour
             SaveLoadManager.MakeDirty();
             FurnitureItem.OnDragFurniture = false;
 
+            BottomSheetPageManager.Instance.blockTouchImage.raycastTarget = true;
         }
 
         public void Update()

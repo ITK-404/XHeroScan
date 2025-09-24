@@ -87,7 +87,7 @@ public class PrintingManager : MonoBehaviour
                 if (uri == null)
                 {
                     Debug.LogError("MediaStore insert returned null.");
-                    CreatePopup("Xuất PDF thất bại", ModularPopup.PopupAsset.toastPopupError);
+                    ModularPopup.CreatePopup("Xuất PDF thất bại", ModularPopup.PopupAsset.toastPopupError);
 
                     return;
                 }
@@ -118,14 +118,14 @@ public class PrintingManager : MonoBehaviour
                 activity.Call("startActivity", chooser);
 
                 Debug.Log("PDF saved to Downloads using MediaStore.");
-                CreatePopup("Xuất PDF thành công", ModularPopup.PopupAsset.toastPopupComplete);
+                ModularPopup.CreatePopup("Xuất PDF thành công", ModularPopup.PopupAsset.toastPopupComplete);
 
             }
         }
         catch (System.Exception ex)
         {
             Debug.LogError("Failed to save PDF using MediaStore: " + ex.Message);
-            CreatePopup("Xuất PDF thất bại", ModularPopup.PopupAsset.toastPopupError);
+            ModularPopup.CreatePopup("Xuất PDF thất bại", ModularPopup.PopupAsset.toastPopupError);
 
         }
     }
@@ -168,25 +168,17 @@ public class PrintingManager : MonoBehaviour
         {
             File.WriteAllBytes(fallbackPath, pdfData);
             Debug.Log("PDF saved to: " + fallbackPath);
-            CreatePopup("Xuất PDF thành công", ModularPopup.PopupAsset.toastPopupComplete);
+            ModularPopup.CreatePopup("Xuất PDF thành công", ModularPopup.PopupAsset.toastPopupComplete);
         }
         catch (System.Exception ex)
         {
             Debug.LogError("Failed to save PDF in fallback mode: " + ex.Message);
-            CreatePopup("Xuất PDF thất bại", ModularPopup.PopupAsset.toastPopupError);
+            ModularPopup.CreatePopup("Xuất PDF thất bại", ModularPopup.PopupAsset.toastPopupError);
         }
 #endif
     }
     
-    private void CreatePopup(string message, GameObject prefab)
-    {
-        if (prefab == null) return;
-
-        var popup = Instantiate(prefab).GetComponent<ModularPopup>();
-        popup.AutoFindCanvasAndSetup();
-        popup.AutoDestruct();
-        popup.Header = message;
-    }
+   
 
     void ExPDFx()
     {

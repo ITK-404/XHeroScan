@@ -24,6 +24,7 @@ public class CreateRoomCommand : IUndoRedoCommand
         CheckpointManager.Instance.ClearRoomById(roomID);
     }
 }
+
 public class DeleteRoomCommand : IUndoRedoCommand
 {
     public Room room;

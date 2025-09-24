@@ -47,6 +47,7 @@ public partial class FurnitureItem : MonoBehaviour
     public bool isUsingCenterPosToSnap = false; // khi biến này = false và allow snap to wall = true, furniture sẽ gắn vào tường bằng bottom anchor
     public bool alwayMakeSquare = false; // nếu kích hoạt thì hình dạng luôn tạo thành hình vuông
     public LineType lineType;
+   
     [Header("References")]
     public DrawingInstanced data;
     public Transform modelContainer;
@@ -75,6 +76,8 @@ public partial class FurnitureItem : MonoBehaviour
 
     public FurnitureMergeToWall furnitureMergeToWall;
     public GameObject textContainer;
+
+    public LineRenderer lineRenderer;
 
     private Quaternion currentRotation
     {
@@ -159,10 +162,13 @@ public partial class FurnitureItem : MonoBehaviour
 
         rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
     }
-
+    [SerializeField] private LineRenderer lrPrefab;
 
     public void InitLineAndText()
     {
+        lineRenderer = Instantiate(lrPrefab);
+        lineRenderer.transform.parent = checkPointParent.transform.parent;
+
         var topLine = new Outline(CreateLineRenderer(),
             topLeftPoint.gameObject,
             topRightPoint.gameObject);
@@ -292,6 +298,8 @@ public partial class FurnitureItem : MonoBehaviour
             furnitureMergeToWall.Update();
         }
         model2D.flipX = data.isFlipHorizontal;
+
+
     }
     /// <summary>
     /// Hàm này được gọi khi người dùng muốn điều chỉnh kích thước bằng tay

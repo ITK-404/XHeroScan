@@ -919,6 +919,7 @@ public class RoomInfoDisplay : MonoBehaviour
                     );
         foreach (var lr in all)
         {
+            if (lr.transform.parent != null) continue;
             if (!lr || lr.positionCount < 2) continue;
             Vector3 a = lr.GetPosition(0);
             Vector3 b = lr.GetPosition(lr.positionCount - 1);

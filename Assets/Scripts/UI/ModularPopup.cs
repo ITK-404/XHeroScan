@@ -19,6 +19,31 @@ public class ModularPopup : MonoBehaviour
         }
     }
 
+    public static ModularPopup CreatePopup(string message, GameObject prefab)
+    {
+        if (prefab == null) return null;
+
+        var popup = Instantiate(prefab).GetComponent<ModularPopup>();
+        popup.AutoFindCanvasAndSetup();
+        popup.AutoDestruct();
+        popup.Header = message;
+
+        return popup;
+    }
+
+    public static ModularPopup CreatePopup(string message,string description, GameObject prefab)
+    {
+        if (prefab == null) return null;
+
+        var popup = Instantiate(prefab).GetComponent<ModularPopup>();
+        popup.AutoFindCanvasAndSetup();
+        popup.AutoDestruct();
+        popup.Header = message;
+        popup.Description = description;
+
+        return popup;
+    }
+
     private static PopupAsset popupAsset;
 
     [SerializeField] private TextMeshProUGUI headerText;
