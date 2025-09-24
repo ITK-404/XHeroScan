@@ -878,7 +878,6 @@ public class MovePointManager : MonoBehaviour
     {
         if (room == null) return false;
 
-        // Lấy danh sách checkpoint GO của phòng
         if (!placedPointsByRoom.TryGetValue(room.ID, out var goList) || goList == null || goList.Count == 0)
             return false;
 
@@ -895,7 +894,6 @@ public class MovePointManager : MonoBehaviour
             return false;
         }
 
-        // Duyệt các manual line
         foreach (var line in room.wallLines)
         {
             if (!line.isManualConnection || !line.isVisible) continue;
@@ -903,14 +901,39 @@ public class MovePointManager : MonoBehaviour
             bool aMain = IsAtMain(line.start);
             bool bMain = IsAtMain(line.end);
 
-            // Cả hai đầu đều là MAIN (và dĩ nhiên không cùng 1 GO vì khoảng cách line > 0)
+            // --- CASE 1: cả hai đầu đều main ---
             if (aMain && bMain)
             {
-                // Giao cho split manager (bạn đã xử lý polygon ở trong đó)
                 splitRoomManager?.DetectAndSplitRoomIfNecessary(room);
                 return true;
             }
+
+            // --- CASE 2: một đầu main, một đầu extra ---
+            if (aMain ^ bMain)
+            {
+                // giả sử extra vừa được promote -> coi như đủ điều kiện
+                splitRoomManager?.DetectAndSplitRoomIfNecessary(room);
+                return true;
+            }
+
+            // --- CASE 3: cả hai đầu là extra ---
+            if (!aMain && !bMain)
+            {
+                // nếu sau khi promote 2 điểm này đều trở thành main -> coi như đủ
+                // ở đây chỉ check đơn giản: cả 2 điểm đều đã nằm gần đỉnh polygon
+                foreach (var cp in room.checkpoints)
+                {
+                    if (Vector3.Distance(new Vector3(cp.x, 0, cp.y), line.start) <= tolWorld) aMain = true;
+                    if (Vector3.Distance(new Vector3(cp.x, 0, cp.y), line.end) <= tolWorld) bMain = true;
+                }
+                if (aMain && bMain)
+                {
+                    splitRoomManager?.DetectAndSplitRoomIfNecessary(room);
+                    return true;
+                }
+            }
         }
+
         return false;
     }
 
