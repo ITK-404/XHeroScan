@@ -59,8 +59,10 @@ public class PenManager : MonoBehaviour
     {
         if (CreateRoomOnFloor.IsCreateRooom) return;
         if (ConnectManager.isConnectActive) return;
-        if (FurnitureItem.OnDragFurniture) return;
-        if (FurnitureItem.OnDragPoint) return;
+        if (InteractionFlags.OnDragFurniture) return;
+        if (InteractionFlags.OnDragPoint) return;
+
+
         // KHÔNG bật zoom/pan nếu đang kéo room HOẶC đang kéo point floor
         bool blockZoomPan = InteractionFlags.IsRoomFloorDragging || InteractionFlags.IsFloorHandleDragging;
 
@@ -81,26 +83,26 @@ public class PenManager : MonoBehaviour
 
                 if (checkpointManager.selectedCheckpoint != null)
                 {
-                   _dragRoom = false;
-                   _dragRoomID = null;
+                    _dragRoom = false;
+                    _dragRoomID = null;
 
-                   // đang kéo checkpoint -> gán cờ handle dragging (nếu checkpoint là handle floor)
-                   InteractionFlags.IsFloorHandleDragging = true;
+                    // đang kéo checkpoint -> gán cờ handle dragging (nếu checkpoint là handle floor)
+                    InteractionFlags.IsFloorHandleDragging = true;
 
-                   _lastWorld = GetWorldOnXZ(Input.mousePosition);
+                    _lastWorld = GetWorldOnXZ(Input.mousePosition);
                 }
                 else if (TryHitRoomFloor(out _dragRoomID))
                 {
-                   _dragRoom = true;
-                   isRoomFloorBeingDragged = true;
-                   InteractionFlags.IsRoomFloorDragging = true;
+                    _dragRoom = true;
+                    isRoomFloorBeingDragged = true;
+                    InteractionFlags.IsRoomFloorDragging = true;
 
-                   checkpointManager.DeselectCheckpoint();
-                   checkpointManager.selectedCheckpoint = null;
-                   checkpointManager.isMovingCheckpoint = false;
+                    checkpointManager.DeselectCheckpoint();
+                    checkpointManager.selectedCheckpoint = null;
+                    checkpointManager.isMovingCheckpoint = false;
 
-                   _lastWorld = GetWorldOnXZ(Input.mousePosition);
-                    
+                    _lastWorld = GetWorldOnXZ(Input.mousePosition);
+
                     furnitureDraggingByRoom.SetRoomID(_dragRoomID);
                     furnitureDraggingByRoom.StartDrag();
                 }
@@ -113,6 +115,7 @@ public class PenManager : MonoBehaviour
 
                 if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
                 {
+                    if (InteractionFlags.IsOpenBottomSheetUI) return;
                     Debug.Log("Dragging room floor " + _dragRoomID);
                     movePointManager.MoveRoomSnap(_dragRoomID, delta);
 
@@ -216,7 +219,7 @@ public class PenManager : MonoBehaviour
                 return true;
             }
 
-            foreach(var item in actionsList)
+            foreach (var item in actionsList)
             {
 
             }
@@ -312,9 +315,9 @@ public class PenManager : MonoBehaviour
         {
 
 
-            if (FurnitureItem.OnDragPoint || FurnitureItem.OnDragFurniture)
+            if (InteractionFlags.OnDragPoint || InteractionFlags.OnDragFurniture)
             {
-                Debug.Log($"Dang drag vat the, khong the di chuyen camera {FurnitureItem.OnDragPoint} {FurnitureItem.OnDragFurniture}");
+                Debug.Log($"Dang drag vat the, khong the di chuyen camera {InteractionFlags.OnDragPoint} {InteractionFlags.OnDragFurniture}");
                 return;
             }
             Touch touch = Input.GetTouch(0);

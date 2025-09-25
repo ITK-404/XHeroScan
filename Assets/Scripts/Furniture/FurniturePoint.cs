@@ -55,13 +55,13 @@ public class FurniturePoint : MonoBehaviour
             return;
         }
 
-        FurnitureItem.OnDragPoint = true;
+        InteractionFlags.OnDragPoint = true;
         furniture.DragPoint(this);
     }
 
     private void OnMouseUp()
     {
-        FurnitureItem.OnDragPoint = false;
+        InteractionFlags.OnDragPoint = false;
 
         if(width != furniture.width || length != furniture.length)
         {

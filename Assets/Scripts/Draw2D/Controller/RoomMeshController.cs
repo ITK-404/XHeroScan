@@ -37,7 +37,6 @@ public class RoomMeshController : MonoBehaviour
     void Update()
     {
         if (!PenManager.isPenActive) return;
-
         if (Input.touchCount == 1)
         {
             Touch touch = Input.GetTouch(0);
@@ -52,6 +51,7 @@ public class RoomMeshController : MonoBehaviour
 
                 case TouchPhase.Moved:
                     if (!isDragging) return;
+                    Debug.Log("Dang drag mesh controller");
                     DragRoom(touch.position); // nếu muốn bật drag trên mobile, bỏ comment
                     break;
 
@@ -80,6 +80,8 @@ public class RoomMeshController : MonoBehaviour
     // Hàm di chuyển Room theo vị trí chạm for Android
     void DragRoom(Vector2 screenPos)
     {
+        if (InteractionFlags.IsOpenBottomSheetUI) return;
+
         if (this == null || !this) return;                // Đã bị destroy
         if (gameObject == null || !gameObject.activeInHierarchy) return;
         if (transform == null) return;
@@ -260,6 +262,8 @@ public class RoomMeshController : MonoBehaviour
 
     private void OnStartDrag(Vector3 startDragPosition)
     {
+        if (InteractionFlags.IsOpenBottomSheetUI) return;
+
         if (!CheckTouchHitThisObject(startDragPosition))
         {
             return;
@@ -304,6 +308,8 @@ public class RoomMeshController : MonoBehaviour
 
     private void OnEndDrag(Vector2 screenPosition)
     {
+        if (InteractionFlags.IsOpenBottomSheetUI) return;
+
         isDragging = false;
 
         if (checkPointManager != null)

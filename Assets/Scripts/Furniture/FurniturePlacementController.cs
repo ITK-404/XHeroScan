@@ -35,7 +35,7 @@ public partial class FurnitureManager : MonoBehaviour
                 Debug.LogWarning("Furniture item with ID " + ItemID + " not found.");
                 return;
             }
-            FurnitureItem.OnDragFurniture = true;
+            InteractionFlags.OnDragFurniture = true;
 
         }
 
@@ -56,7 +56,7 @@ public partial class FurnitureManager : MonoBehaviour
             tempDragItem = null;
 
             SaveLoadManager.MakeDirty();
-            FurnitureItem.OnDragFurniture = false;
+            InteractionFlags.OnDragFurniture = false;
 
             BottomSheetPageManager.Instance.blockTouchImage.raycastTarget = true;
         }

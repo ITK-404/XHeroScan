@@ -1,6 +1,4 @@
-using Org.BouncyCastle.Ocsp;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class FurnitureRotate : MonoBehaviour
 {
@@ -14,14 +12,14 @@ public class FurnitureRotate : MonoBehaviour
 
     private void OnMouseDrag()
     {
-        FurnitureItem.OnDragPoint = true;
+        InteractionFlags.OnDragPoint = true;
         furnitureItem.RotateToMouse();
         
     }
 
     private void OnMouseUp()
     {
-        FurnitureItem.OnDragPoint = false;
+        InteractionFlags.OnDragPoint = false;
 
         if (rotate.Equals(furnitureItem.data.size.rotation) == false)
         {

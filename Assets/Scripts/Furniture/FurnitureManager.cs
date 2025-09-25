@@ -150,7 +150,7 @@ public partial class FurnitureManager : MonoBehaviour
         return furniture;
     }
 
-    private void Update()
+    private void LateUpdate()
     {
 
         placementController.Update();
@@ -158,9 +158,11 @@ public partial class FurnitureManager : MonoBehaviour
         if (Input.touchCount >= 2)
         {
             SelectFurniture(null);
+
             return;
         }
         // select handle
+
         if (currentFurniture && Input.GetMouseButtonDown(0))
         {
             if (EventSystem.current.IsPointerOverGameObject())
@@ -180,8 +182,8 @@ public partial class FurnitureManager : MonoBehaviour
             SpawnFurnitureCenterScreen("bed_1");
         }
 
-        onDragItem = FurnitureItem.OnDragFurniture;
-        onDragPoint = FurnitureItem.OnDragPoint;
+        onDragItem = InteractionFlags.OnDragFurniture;
+        onDragPoint = InteractionFlags.OnDragPoint;
     }
 
     public void ClearAllFurnitures()

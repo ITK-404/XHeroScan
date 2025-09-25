@@ -21,8 +21,7 @@ public enum FurnitureState
 }
 public partial class FurnitureItem : MonoBehaviour
 {
-    public static bool OnDragFurniture = false;
-    public static bool OnDragPoint = false;
+ 
 
     private static Camera mainCam;
     public static DrawingInstanced SnapShotTemp;
@@ -168,7 +167,7 @@ public partial class FurnitureItem : MonoBehaviour
     {
         lineRenderer = Instantiate(lrPrefab);
         lineRenderer.transform.parent = checkPointParent.transform.parent;
-
+        lineRenderer.gameObject.SetActive(false);
         var topLine = new Outline(CreateLineRenderer(),
             topLeftPoint.gameObject,
             topRightPoint.gameObject);
@@ -427,7 +426,7 @@ public partial class FurnitureItem : MonoBehaviour
     public void DeActiveDrag()
     {
         furnitureMergeToWall.EndSnap();
-        OnDragPoint = false;
+        InteractionFlags.OnDragPoint = false;
     }
 
     /// <summary>
@@ -451,7 +450,7 @@ public partial class FurnitureItem : MonoBehaviour
     public void StartDrag()
     {
         startPos = GetWorldMousePosition();
-        OnDragPoint = true;
+        InteractionFlags.OnDragPoint = true;
 
     }
 
