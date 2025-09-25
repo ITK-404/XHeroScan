@@ -88,6 +88,8 @@ public partial class FurnitureItem : MonoBehaviour
     private FurniturePoint[] pointsArray;
     private Vector3 startPos;
 
+    public FurniturePoint[] PointArray => pointsArray;
+
     public float width
     {
         get => data.size.width;

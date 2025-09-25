@@ -1,5 +1,6 @@
 using Org.BouncyCastle.Ocsp;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class FurnitureDrag : MonoBehaviour
 {
@@ -53,9 +54,14 @@ public class FurnitureDrag : MonoBehaviour
 
     private void OnMouseUp()
     {
+        Dragging();
+    }
+
+    private void Dragging()
+    {
         furnitureItem.DeActiveDrag();
 
-        if(startPosition != furnitureItem.GetWorldPosition() && canCreateCommand)
+        if (startPosition != furnitureItem.GetWorldPosition() && canCreateCommand)
         {
             furnitureItem.CreareEditCommandBySnapShot();
         }
