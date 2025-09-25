@@ -24,7 +24,8 @@ public class CreateItemCommand : IUndoRedoCommand
         }
 
         item.FetchData(itemData);
-        item.furnitureMergeToWall.ForceSnapToWall();
+        if (item.lineType != LineType.None)
+            item.furnitureMergeToWall.ForceSnapToWall();
 
     }
 
@@ -64,7 +65,8 @@ public class DeleteItemCommand : IUndoRedoCommand
         }
 
         item.FetchData(itemData);
-        item.furnitureMergeToWall.ForceSnapToWall();
+        if (item.lineType != LineType.None)
+            item.furnitureMergeToWall.ForceSnapToWall();
     }
 }
 
@@ -94,6 +96,7 @@ public class EditItemCommand : IUndoRedoCommand
         var item = FurnitureManager.Instance.GetFurnitureByInstanceID(data.instanceID);
         item.furnitureMergeToWall.ResetAttached();
         item.FetchData(data);
-        item.furnitureMergeToWall.TryToMergeAndSnapInAllWall();
+        if(item.lineType != LineType.None)
+            item.furnitureMergeToWall.TryToMergeAndSnapInAllWall();
     }
 }
