@@ -101,7 +101,7 @@ public class RoomLoopDetector
         if (changedRooms.Count > 0)
         {
             Color[] palette = { new(1f, .95f, .6f), new(.7f, 1f, .7f), new(.7f, .9f, 1f), new(1f, .75f, .85f) };
-            splitRoomManager.RebuildSplitRoom(changedRooms, palette);
+            // splitRoomManager.RebuildSplitRoom(changedRooms, palette);
         }
     }
 
