@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class FurnitureDragPointWarperUI : MonoBehaviour
 {
+    public static FurnitureDragPointWarperUI Instance;
     [SerializeField] private RectTransform pointPrefab;
     [SerializeField] private RectTransform pointUIContainer;
     private FurnitureManager furnitureManager;
@@ -14,12 +15,18 @@ public class FurnitureDragPointWarperUI : MonoBehaviour
 
     public float threadShold = 100;
     FurnitureItem currentItem => furnitureManager.CurrentFurnitureItem();
+
+    private void Awake()
+    {
+        Instance = this;
+    }
+
     private void Start()
     {
         mainCamera = Camera.main;
         furnitureManager = FurnitureManager.Instance;
-        list = new List<CheckpointType> { CheckpointType.Left, CheckpointType.Right, CheckpointType.Top, CheckpointType.Bottom };
-        //list = new List<CheckpointType> { CheckpointType.Top};
+        //list = new List<CheckpointType> { CheckpointType.Left, CheckpointType.Right, CheckpointType.Top, CheckpointType.Bottom };
+        list = new List<CheckpointType> { CheckpointType.Top };
         Inititialize();
     }
 
@@ -55,15 +62,16 @@ public class FurnitureDragPointWarperUI : MonoBehaviour
             {
                 if (point.checkpointType == item.Key)
                 {
-                    var screenPosition = mainCamera.WorldToScreenPoint(point.transform.position);
-                    var pointLocalPosition = GetLocalScreenPosition(screenPosition);
+                    var worldPointPosition = point.transform.position;
+                    var pointLocalPosition = GetLocalScreenPosition(worldPointPosition);
+                    var worldMousePosition = currentFurniture.GetWorldMousePosition();
+
                     float distance = Vector3.Distance(pointLocalPosition, screenCenterPosition);
-                    Debug.Log($"Local position: {point.transform.position}");
-                    Debug.Log($"Local position: {mainCamera.ScreenToWorldPoint(screenPosition)}");
+                    //Debug.Log($"Check distance: {distance}");
 
                     var direction = pointLocalPosition - screenCenterPosition;
                     direction.Normalize();
-                    Debug.Log($"Direction: " + direction);
+                    //Debug.Log($"Direction: " + direction);
                     if(distance < threadShold)
                     {
                         item.Value.anchoredPosition = pointLocalPosition + (pointOffsetFixed * direction);
@@ -72,17 +80,25 @@ public class FurnitureDragPointWarperUI : MonoBehaviour
                     {
                         item.Value.anchoredPosition = pointLocalPosition;
                     }
+
+                    worldPointPosition.y = 0;
+                    //worldMousePosition.y = 0;
+
+                    var mouseOffsetPosition = worldMousePosition - worldPointPosition;
+                    var correctPosition = worldMousePosition - mouseOffsetPosition;
+
+                    Debug.Log($"world mouse pos {worldMousePosition} Convert {correctPosition} {point.transform.position}");
                 }
             }
         }
     }
-
+    public Vector3 correctPosition;
 
     [SerializeField] private float pointOffsetFixed = 200;
 
-    private Vector2 GetLocalScreenPosition(Vector3 screenPosition)
+    private Vector2 GetLocalScreenPosition(Vector3 worldPosition)
     {
-        
+        var screenPosition = mainCamera.WorldToScreenPoint(worldPosition);
         Vector2 uiPosition;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             pointUIContainer as RectTransform,
@@ -106,13 +122,38 @@ public class FurnitureDragPointWarperUI : MonoBehaviour
     }
     public void Dragging(CheckpointType checkpoint)
     {
+
+        var currentFurniture = furnitureManager.CurrentFurnitureItem();
+        var worldCenterPosition = currentFurniture.GetWorldPosition();
+        var screenCenterPosition = GetLocalScreenPosition(worldCenterPosition);
+
         foreach (var point in currentItem.PointArray)
         {
             if (point.checkpointType == checkpoint)
             {
+                //var worldPointPosition = point.transform.position;
+                //var pointLocalPosition = GetLocalScreenPosition(worldPointPosition);
+                //var worldMousePosition = currentFurniture.GetWorldMousePosition();
+
+                //float distance = Vector3.Distance(pointLocalPosition, screenCenterPosition);
+                ////Debug.Log($"Check distance: {distance}");
+
+                //var direction = pointLocalPosition - screenCenterPosition;
+                //direction.Normalize();
+                ////Debug.Log($"Direction: " + direction);
+
+                //worldPointPosition.y = 0;
+                ////worldMousePosition.y = 0;
+
+                //var mouseOffsetPosition = worldMousePosition - worldPointPosition;
+                //var correctPosition = worldMousePosition - mouseOffsetPosition;
+                //Debug.Log($"{worldMousePosition - mouseOffsetPosition} {point.transform.position}");
+
+                //this.correctPosition = correctPosition;
                 point.Dragging();
             }
         }
+        
     }
 
     public void EndDrag(CheckpointType checkpoint)

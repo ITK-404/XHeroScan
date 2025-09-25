@@ -216,6 +216,7 @@ public partial class FurnitureItem : MonoBehaviour
     public void DragPoint(FurniturePoint currentDragPoint)
     {
         Vector3 newPos = GetWorldMousePosition();
+        //Vector3 newPos = FurnitureDragPointWarperUI.Instance.correctPosition;
         newPos = currentDragPoint.transform.parent.InverseTransformPoint(newPos);
 
         RefreshCheckPointsByBounds();
