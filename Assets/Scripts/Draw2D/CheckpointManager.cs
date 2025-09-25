@@ -53,9 +53,14 @@ public class CheckpointManager : MonoBehaviour
     // Map loop checkpoint list => Room ID
     public List<LoopMap> loopMappings = new List<LoopMap>();
     // Lưu lại tất cả các cửa / cửa sổ để chèn lại sau khi rebuild wallLines
+    // Quản lý các point đặt trong từng phòng (main + extra)
+    public Dictionary<string, List<GameObject>> placedPointsByRoom = new Dictionary<string, List<GameObject>>();
 
     // [RoomID] -> List<(WallLine, GameObject p1, GameObject p2)>
     public Dictionary<string, List<(WallLine line, GameObject p1, GameObject p2)>> tempDoorWindowPoints
+        = new Dictionary<string, List<(WallLine, GameObject, GameObject)>>();
+
+    public Dictionary<string, List<(WallLine line, GameObject p1, GameObject p2)>> tempManualLinePoints
         = new Dictionary<string, List<(WallLine, GameObject, GameObject)>>();
     public string lastSelectedRoomID = null;
     #endregion
