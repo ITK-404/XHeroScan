@@ -6,6 +6,7 @@ public class RoomInfoDisplay : MonoBehaviour
 {
     [Header("Reference")]
     private CheckpointManager checkpointManager;
+    private RoomMidpointEditor midpointEditor;
 
     [Header("Pick/Raycast")]
     [SerializeField] private LayerMask floorRaycastMask = ~0;
@@ -73,6 +74,7 @@ public class RoomInfoDisplay : MonoBehaviour
     {
         roomToggle.gameObject.SetActive(false);
         checkpointManager = FindFirstObjectByType<CheckpointManager>();
+        midpointEditor = FindFirstObjectByType<RoomMidpointEditor>();
         lastRoomsCount = RoomStorage.rooms.Count;
 
         if (ActionSpace)
@@ -84,6 +86,8 @@ public class RoomInfoDisplay : MonoBehaviour
 
     void Update()
     {
+        if (RoomMidpointEditor.IsDraggingMidpoint)
+    return;
         if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
         {
             if (FurnitureManager.Instance.TryPickFurniture())
@@ -330,6 +334,11 @@ public class RoomInfoDisplay : MonoBehaviour
         suppressAutoPick = false;
 
         roomToggle.SelectRoom(roomId);
+        if (midpointEditor)
+        {
+            Debug.Log($"[RoomInfoDisplay] Show midpoint editor for room {roomId}");
+            midpointEditor.ShowForRoomID(roomId);
+        }
     }
 
     private void SelectFloor(string floorId)
@@ -339,6 +348,7 @@ public class RoomInfoDisplay : MonoBehaviour
             HideRoomLabel(selectedRoomID);
             selectedRoomID = "";
             roomToggle.DeSelectect();
+            if (midpointEditor) midpointEditor.Hide();
         }
         if (!string.IsNullOrEmpty(highlightedID) && highlightedID != floorId)
             SetFloorColor(highlightedID, floorDefaultColor);
@@ -380,6 +390,7 @@ public class RoomInfoDisplay : MonoBehaviour
         if (popupWS) popupWS.SetActive(false);
 
         suppressAutoPick = true;
+        if (midpointEditor) midpointEditor.Hide();
     }
 
     public void ResetState()
@@ -402,6 +413,7 @@ public class RoomInfoDisplay : MonoBehaviour
         HideAllLabels();
         if (popupUI) popupUI.SetActive(false);
         if (popupWS) popupWS.SetActive(false);
+        if (midpointEditor) midpointEditor.Hide();
     }
 
     public void ResetAfterDelete()
@@ -424,6 +436,7 @@ public class RoomInfoDisplay : MonoBehaviour
         HideAllLabels();
         if (popupUI) popupUI.SetActive(false);
         if (popupWS) popupWS.SetActive(false);
+        if (midpointEditor) midpointEditor.Hide();
     }
 
     // ===================== LABELS =====================
