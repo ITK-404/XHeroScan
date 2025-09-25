@@ -22,7 +22,6 @@ public class RoomMeshController : MonoBehaviour
     [Header("Layering")]
     [SerializeField] public int index = 2;          // yêu cầu: index = 2
     [SerializeField] public float layerStepY = 0.002f; // bước cao độ mỗi layer (2mm)
-
     private void Awake()
     {
         if (mainCam == null)
@@ -165,6 +164,8 @@ public class RoomMeshController : MonoBehaviour
                             go.transform.position += delta;
                     }
                 }
+
+                FurnitureManager.Instance.MoveFurnitureInRoom(room,delta);
             }
         } 
     }

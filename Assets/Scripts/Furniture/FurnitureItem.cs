@@ -76,9 +76,8 @@ public partial class FurnitureItem : MonoBehaviour
 
     public FurnitureMergeToWall furnitureMergeToWall;
     public GameObject textContainer;
-
     public LineRenderer lineRenderer;
-
+    public FurnitureDrag furnitureDrag;
     private Quaternion currentRotation
     {
         get => data.size.rotation;
@@ -114,6 +113,7 @@ public partial class FurnitureItem : MonoBehaviour
     {
         data.size.ClampSize();
         resizer = GetComponentInChildren<ObjectResizer>();
+        furnitureDrag = GetComponentInChildren<FurnitureDrag>();
         resizer.Resize();
 
         furnitureVisuals = new FurnitureVisuals(this);
@@ -416,7 +416,6 @@ public partial class FurnitureItem : MonoBehaviour
         UpdateWorldSizeFromLocal();
         MakeDirty();
 
-        OnDragPoint = true;
 
         if(furnitureMergeToWall.IsInWall())
             furnitureMergeToWall.RotationToWallLine();
@@ -452,6 +451,8 @@ public partial class FurnitureItem : MonoBehaviour
     public void StartDrag()
     {
         startPos = GetWorldMousePosition();
+        OnDragPoint = true;
+
     }
 
     /// <summary>

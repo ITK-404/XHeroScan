@@ -25,7 +25,7 @@ public partial class FurnitureManager : MonoBehaviour
             tempDragItem.transform.position = worldMousePosition;
             tempDragItem?.InitLineAndText();
             // setup logic drag
-            furnitureDrag = tempDragItem.GetComponentInChildren<FurnitureDrag>();
+            furnitureDrag = tempDragItem.furnitureDrag;
             furnitureDrag.SetCanMove(canMove: true);
             furnitureDrag.StartMoveSetup();
 

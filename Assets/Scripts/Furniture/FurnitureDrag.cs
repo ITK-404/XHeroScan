@@ -38,13 +38,17 @@ public class FurnitureDrag : MonoBehaviour
         {
             return;
         }
-
         if (FurnitureManager.Instance.IsSelectFurniture(furnitureItem))
         {
-            var correctPosition = furnitureItem.GetWorldMousePosition() - offsetPosition;
-            //Debug.Log($"Correct position {correctPosition} {furnitureItem.GetWorldPosition()}");
-            furnitureItem.Dragging(correctPosition);
+            DraggingByPosition(furnitureItem.GetWorldMousePosition() - offsetPosition);
         }
+    }
+
+    public void DraggingByPosition(Vector3 position)
+    {
+        var correctPosition = position;
+        //Debug.Log($"Correct position {correctPosition} {furnitureItem.GetWorldPosition()}");
+        furnitureItem.Dragging(correctPosition);
     }
 
     private void OnMouseUp()

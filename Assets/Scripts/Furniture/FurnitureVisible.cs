@@ -24,7 +24,7 @@ public class FurnitureVisible : MonoBehaviour
 
     private void Update()
     {
-        if(currentState == false)
+        if(currentState == false || string.IsNullOrWhiteSpace(furnitureItem.data.roomID) == false)
         {
             var room = RoomStorage.GetRoomByID(furnitureItem.data.roomID);
             if (room == null)

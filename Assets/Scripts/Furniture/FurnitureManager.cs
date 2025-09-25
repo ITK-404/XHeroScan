@@ -366,6 +366,16 @@ public partial class FurnitureManager : MonoBehaviour
         }
     }
 
+    public List<FurnitureItem> GetRuntimeItemInsideRoom(string roomID)
+    {
+        List<FurnitureItem> itemInsideRoom = new();
+        foreach (var item in runtimeFurnitures)
+        {
+            itemInsideRoom.Add(item);
+        }
+        return null;
+    }
+
     public List<WallLine> GetPdfWallLine()
     {
         List<WallLine> exportList = new();
@@ -398,5 +408,10 @@ public partial class FurnitureManager : MonoBehaviour
     public List<FurnitureItem> GetAllFurniture()
     {
         return runtimeFurnitures;
+    }
+    
+    public void MoveFurnitureInRoom(Room room, Vector3 delta)
+    {
+        
     }
 }
