@@ -5,7 +5,6 @@ using UnityEngine.UI;
 
 public class FocusFunctionFieldUI : MonoBehaviour
 {
-    public bool isEdit = false;
     [SerializeField] private Transform container;
     [SerializeField] private Button btn;
     private Action clickButtonCallback;
@@ -32,7 +31,7 @@ public class FocusFunctionFieldUI : MonoBehaviour
 
     public void Open(Action callback)
     {
-        isEdit = true;
+        InteractionFlags.IsEdit = true;
         container.gameObject.SetActive(true);
         foreach(var UI in UIList)
         {
@@ -45,7 +44,7 @@ public class FocusFunctionFieldUI : MonoBehaviour
 
     public void Close()
     {
-        isEdit = false;
+        InteractionFlags.IsEdit = false;
         container.gameObject.SetActive(false);
 
         foreach (var UI in UIList)

@@ -152,15 +152,18 @@ public partial class FurnitureManager : MonoBehaviour
 
     private void LateUpdate()
     {
-
-        placementController.Update();
-
-        if (Input.touchCount >= 2)
+        if(InteractionFlags.IsEdit )
         {
             SelectFurniture(null);
-
-            return;
         }
+        placementController.Update();
+
+        //if (Input.touchCount >= 2)
+        //{
+        //    SelectFurniture(null);
+
+        //    return;
+        //}
         // select handle
 
         if (currentFurniture && Input.GetMouseButtonDown(0))

@@ -179,13 +179,6 @@ public class CreateRoomOnFloor : MonoBehaviour
         }
         placingActive = true;
 
-        if (CreateRoomButton != null)
-        {
-            var colors = CreateRoomButton.colors;
-            colors.normalColor = placingActive ? new Color(0.8f, 1f, 0.8f) : Color.white;
-            CreateRoomButton.colors = colors;
-        }
-
         focusFunctionField.Open(DeActivePacingMode);
     }
 
