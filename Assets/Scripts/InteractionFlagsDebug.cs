@@ -14,7 +14,7 @@ public class InteractionFlagsDebug : MonoBehaviour
         IsFloorHandleDragging = InteractionFlags.IsFloorHandleDragging;
         IsRoomFloorDragging = InteractionFlags.IsRoomFloorDragging;
         OnDragFurniture = InteractionFlags.OnDragFurniture;
-        OnDragPoint = InteractionFlags.OnDragPoint;
+        OnDragPoint = InteractionFlags.OnDragMovePoint;
         IsOpenBottomSheetUI = InteractionFlags.IsOpenBottomSheetUI;
     }
 }

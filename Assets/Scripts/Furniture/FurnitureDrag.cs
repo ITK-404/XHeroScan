@@ -1,5 +1,6 @@
 using Org.BouncyCastle.Ocsp;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class FurnitureDrag : MonoBehaviour
 {
@@ -40,6 +41,16 @@ public class FurnitureDrag : MonoBehaviour
         }
         if (FurnitureManager.Instance.IsSelectFurniture(furnitureItem))
         {
+            //if(FurnitureDragPointWarperUI.Instance.IsDragPoint())
+            //{
+            //    return;
+            //}
+
+            if(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+
             DraggingByPosition(furnitureItem.GetWorldMousePosition() - offsetPosition);
         }
     }
@@ -48,14 +59,20 @@ public class FurnitureDrag : MonoBehaviour
     {
         var correctPosition = position;
         //Debug.Log($"Correct position {correctPosition} {furnitureItem.GetWorldPosition()}");
+
         furnitureItem.Dragging(correctPosition);
     }
 
     private void OnMouseUp()
     {
+        Dragging();
+    }
+
+    private void Dragging()
+    {
         furnitureItem.DeActiveDrag();
 
-        if(startPosition != furnitureItem.GetWorldPosition() && canCreateCommand)
+        if (startPosition != furnitureItem.GetWorldPosition() && canCreateCommand)
         {
             furnitureItem.CreareEditCommandBySnapShot();
         }

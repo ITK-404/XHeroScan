@@ -265,7 +265,11 @@ public class RoomMeshController : MonoBehaviour
     private void OnStartDrag(Vector3 startDragPosition)
     {
         if (InteractionFlags.IsOpenBottomSheetUI) return;
-
+        if(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            Debug.Log("Đang nhấn UI -> Không move Mesh");
+            return;
+        }
         if (!CheckTouchHitThisObject(startDragPosition))
         {
             return;
