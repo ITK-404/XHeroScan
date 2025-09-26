@@ -6,8 +6,8 @@ using System.Collections.Generic;
 public class DragFromButtonSpawnRoom : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     [Header("Placement params")]
-    public float width = 20f;
-    public float depth = 5f;
+    private float width = 5f;
+    private float depth = 5f;
     public LayerMask pickLayer = ~0;      // cho phép ray trúng bất kỳ collider nào
     public float gridSnap = 0.1f;
     public GameObject distanceTextPrefab;
@@ -278,24 +278,24 @@ public void OnEndDrag(PointerEventData eventData)
         int w = Screen.width, h = Screen.height;
         int sw = Mathf.Min(w, h), sh = Mathf.Max(w, h);
 
-        if ((sw == 1170 && sh == 2532) || (sw == 2532 && sh == 1170)) { width = 5f; depth = 20f; return; }
-        if ((sw == 1812 && sh == 2176) || (sw == 2176 && sh == 1812)) { width = 20f; depth = 5f; return; }
+        if ((sw == 1170 && sh == 2532) || (sw == 2532 && sh == 1170)) { width = 5f; depth = 5f; return; }
+        if ((sw == 1812 && sh == 2176) || (sw == 2176 && sh == 1812)) { width = 5f; depth = 5f; return; }
 
         float tol = 0.04f;
         bool approxPhone = Mathf.Abs(sw - 1170) / 1170f <= tol && Mathf.Abs(sh - 2532) / 2532f <= tol;
         bool approxTablet = Mathf.Abs(sw - 1812) / 1812f <= tol && Mathf.Abs(sh - 2176) / 2176f <= tol;
-        if (approxPhone) { width = 5f; depth = 20f; return; }
-        if (approxTablet) { width = 20f; depth = 5f; return; }
+        if (approxPhone) { width = 5f; depth = 5f; return; }
+        if (approxTablet) { width = 5f; depth = 5f; return; }
 
         float aspect = (float)sh / (float)sw;
         if (aspect >= 1.8f || sw <= 1280)
         {
-            width = 5f; depth = 20f;
+            width = 5f; depth =5f;
             CameraResizeByFloor.Instance.isLandscape = false;
         }
         else
         {
-            width = 20f; depth = 5f;
+            width = 5f; depth = 5f;
             CameraResizeByFloor.Instance.isLandscape = true;
         }
     }
