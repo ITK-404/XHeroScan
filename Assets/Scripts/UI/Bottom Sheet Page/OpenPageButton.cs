@@ -6,6 +6,7 @@ public class OpenPageButton : MonoBehaviour
     public PageType pageType;
     private BottomSheetPageManager manager;
     private Button btn;
+    [SerializeField] private bool isHidePage = false;
     private void Awake()
     {
         btn = GetComponent<Button>();
@@ -20,7 +21,7 @@ public class OpenPageButton : MonoBehaviour
 
     private void OnOpenPage()
     {
-        if (pageType == PageType.None) return;
+        if (pageType == PageType.None && isHidePage == false) return;
         manager.Open(pageType);
     }
 }

@@ -26,7 +26,7 @@ public abstract class BaseAnimUI : MonoBehaviour
         rectContainer = container.gameObject.GetComponent<RectTransform>();
     }
 
-    private void OnValidate()
+    protected virtual void OnValidate()
     {
         if (container == null)
         {

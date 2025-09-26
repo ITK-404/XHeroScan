@@ -7,7 +7,7 @@ public class ToggleGroupUI : MonoBehaviour
     public DrawingTool drawingTool;
     public CheckpointManager checkpointManager;
     public PenManager penManager;
-    
+    public FocusFunctionFieldUI focusFunctionFieldUI;
     private void Start()
     {
         Setup();
@@ -22,9 +22,9 @@ public class ToggleGroupUI : MonoBehaviour
             item.btn.onClick.AddListener(() =>
             {
                 OnSelectThis(item);
-            });   
+            });
         }
-        
+
     }
 
     public void ShowFirstButton()
@@ -48,7 +48,7 @@ public class ToggleGroupUI : MonoBehaviour
         {
             return;
         }
-        
+
         if (btn.currentState == ToggleButtonUIBase.State.DeActive)
         {
             btn.ChangeState(ToggleButtonUIBase.State.Active);

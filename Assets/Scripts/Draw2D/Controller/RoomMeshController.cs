@@ -34,11 +34,16 @@ public class RoomMeshController : MonoBehaviour
 #if UNITY_STANDALONE
     // PC: vẫn dùng OnMouseDown/Drag/Up
 #else
-    void Update()
+    void LateUpdate()
     {
         if (!PenManager.isPenActive) return;
         if (Input.touchCount == 1)
         {
+            if (InteractionFlags.IsOpenBottomSheetUI) return;
+            if (InteractionFlags.OnDragFurniture) return;
+            if (InteractionFlags.OnDragMovePoint) return;
+            if (InteractionFlags.OnDragRotatePoint) return;
+
             Touch touch = Input.GetTouch(0);
             switch (touch.phase)
             {
@@ -80,6 +85,7 @@ public class RoomMeshController : MonoBehaviour
     // Hàm di chuyển Room theo vị trí chạm for Android
     void DragRoom(Vector2 screenPos)
     {        
+
         InteractionFlags.IsRoomFloorDragging = true; // dùng tạm khoa khóa để đặt
         if (InteractionFlags.IsOpenBottomSheetUI) return;
 
@@ -266,12 +272,7 @@ public class RoomMeshController : MonoBehaviour
 
     private void OnStartDrag(Vector3 startDragPosition)
     {
-        if (InteractionFlags.IsOpenBottomSheetUI) return;
-        if(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-        {
-            Debug.Log("Đang nhấn UI -> Không move Mesh");
-            return;
-        }
+    
         if (!CheckTouchHitThisObject(startDragPosition))
         {
             return;
