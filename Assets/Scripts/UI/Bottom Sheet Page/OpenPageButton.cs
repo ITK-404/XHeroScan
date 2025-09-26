@@ -7,11 +7,20 @@ public class OpenPageButton : MonoBehaviour
     private BottomSheetPageManager manager;
     private Button btn;
     [SerializeField] private bool isHidePage = false;
+    [SerializeField] private bool autoOpenPageWhenClick = true;
     private void Awake()
     {
         btn = GetComponent<Button>();
         if (btn == null) return;
-        btn.onClick.AddListener(OnOpenPage);
+        if(autoOpenPageWhenClick)
+            btn.onClick.AddListener(OnOpenPage);
+        
+    }
+
+    private void OnDestroy()
+    {
+        if (autoOpenPageWhenClick)
+            btn.onClick.RemoveListener(OnOpenPage);
     }
 
     private void Start()
@@ -19,7 +28,7 @@ public class OpenPageButton : MonoBehaviour
         manager = Instance;
     }
 
-    private void OnOpenPage()
+    public void OnOpenPage()
     {
         if (pageType == PageType.None && isHidePage == false) return;
         manager.Open(pageType);

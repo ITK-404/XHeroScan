@@ -1,3 +1,4 @@
+using DG.Tweening;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,11 +11,18 @@ public class FocusFunctionFieldUI : MonoBehaviour
     private Action clickButtonCallback;
     [Header("UI Component")]
     [SerializeField] BaseAnimUI[] UIList;
+
+    [SerializeField] private Color focusColor;
+    [SerializeField] private Color unFocusColor;
+
+    private Camera mainCamera;
+
     private void Awake()
     {
         btn.onClick.AddListener(OnClickButton);
 
         container.gameObject.SetActive(false);
+        mainCamera = Camera.main;
     }
 
     private void OnDestroy()
@@ -31,6 +39,8 @@ public class FocusFunctionFieldUI : MonoBehaviour
             UI.Close();
         }
         clickButtonCallback = callback;
+
+        mainCamera.DOColor(focusColor, 0.1f);
     }
 
     public void Close()
@@ -42,6 +52,8 @@ public class FocusFunctionFieldUI : MonoBehaviour
         {
             UI.Open();
         }
+        mainCamera.DOColor(unFocusColor, 0.1f);
+
     }
 
     private void OnClickButton()
