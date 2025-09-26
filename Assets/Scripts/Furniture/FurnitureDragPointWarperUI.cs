@@ -64,6 +64,7 @@ public class FurnitureDragPointWarperUI : MonoBehaviour
     private Vector3 previousPosition;
     private void Update()
     {
+
         if (Input.touchCount > 1)
         {
             rotatePoint?.OnEndDrag();

@@ -83,7 +83,13 @@ public class RoomMeshController : MonoBehaviour
 
     // Hàm di chuyển Room theo vị trí chạm for Android
     void DragRoom(Vector2 screenPos)
-    {        
+    {
+
+        if (EventSystem.current.IsPointerOverGameObject()) return;
+        if (CreateRoomOnFloor.IsCreateRooom) return;
+        if (ConnectManager.isConnectActive) return;
+        if (InteractionFlags.OnDragFurniture) return;
+        if (InteractionFlags.OnDragMovePoint) return;
 
         InteractionFlags.IsRoomFloorDragging = true; // dùng tạm khoa khóa để đặt
         if (InteractionFlags.IsOpenBottomSheetUI) return;

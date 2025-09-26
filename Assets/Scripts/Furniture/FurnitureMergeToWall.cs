@@ -45,11 +45,17 @@ public class FurnitureMergeToWall
     public void StartSnap() => allowSnap = true;
     public void EndSnap() => allowSnap = false;
 
+    private float timer;
     public void Update()
     {
         if (allowSnap)
         {
-            TryToMergeAndSnapInAllWall();
+            if(timer < 0)
+            {
+                TryToMergeAndSnapInAllWall();
+                timer = 0.05f;
+            }
+            timer -= Time.deltaTime;
         }
         else
         {

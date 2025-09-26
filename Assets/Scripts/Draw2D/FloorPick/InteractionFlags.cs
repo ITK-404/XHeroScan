@@ -13,4 +13,6 @@ public static class InteractionFlags
     public static bool OnDragMovePoint = false;
     public static bool OnDragRotatePoint = false;
     public static bool IsOpenBottomSheetUI = false;
+    public static bool IsEdit = false;
+
 }

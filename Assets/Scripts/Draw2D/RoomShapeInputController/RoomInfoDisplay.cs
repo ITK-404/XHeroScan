@@ -5,6 +5,7 @@ using TMPro;
 public class RoomInfoDisplay : MonoBehaviour
 {
     [Header("Reference")]
+
     private CheckpointManager checkpointManager;
     private MidpointController midpointEditor;
 
@@ -86,6 +87,11 @@ public class RoomInfoDisplay : MonoBehaviour
 
     void Update()
     {
+        if (InteractionFlags.IsEdit)
+        {
+            DeselectAll();
+            return;
+        }
         if (MidpointController.IsDraggingMidpoint)
     return;
         if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
