@@ -32,7 +32,7 @@ public class FurnitureDrag : MonoBehaviour
         canMove = true;
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         if (canMove == false) return;
         if (Input.touchCount > 1)
@@ -50,7 +50,10 @@ public class FurnitureDrag : MonoBehaviour
             {
                 return;
             }
-
+            if(FurnitureDragPointWarperUI.Instance.IsDragPoint())
+            {
+                return;
+            }
             DraggingByPosition(furnitureItem.GetWorldMousePosition() - offsetPosition);
         }
     }

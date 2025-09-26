@@ -106,6 +106,7 @@ public class RoomMeshController : MonoBehaviour
 
             // 1) Move sàn (mesh)
             transform.position += delta;
+            furnitureDraggingByRoom.Dragging(delta);
 
             // 2) Update DATA của room (world-space)
             Room room = RoomStorage.GetRoomByID(RoomID);
@@ -296,7 +297,11 @@ public class RoomMeshController : MonoBehaviour
         oldRoom = new Room(RoomStorage.GetRoomByID(RoomID));
         oldPosition = transform.position;
         oldCheckPointList = SaveCheckPointPosition(RoomID);
+
+        furnitureDraggingByRoom.SetRoomID(RoomID);
+        furnitureDraggingByRoom.StartDrag();
     }
+    private FurnitureDraggingByRoom furnitureDraggingByRoom = new FurnitureDraggingByRoom();
 
     private List<(Vector3, Vector3)> SaveCheckPointPosition(string RoomID)
     {
@@ -330,6 +335,9 @@ public class RoomMeshController : MonoBehaviour
             return;
         }
         CreateUndoCommand();
+
+        furnitureDraggingByRoom.EndDrag();
+        furnitureDraggingByRoom.Clear();
     }
 
 #if UNITY_EDITOR

@@ -54,7 +54,7 @@ public class PenManager : MonoBehaviour
         DrawTool = FindFirstObjectByType<DrawingTool>();
         roomInfoDisplay = FindFirstObjectByType<RoomInfoDisplay>();
     }
-    private FurnitureDraggingByRoom furnitureDraggingByRoom = new();
+
     void LateUpdate()
     {
         if (CreateRoomOnFloor.IsCreateRooom) return;
@@ -119,7 +119,6 @@ public class PenManager : MonoBehaviour
                     Debug.Log("Dragging room floor " + _dragRoomID);
                     movePointManager.MoveRoomSnap(_dragRoomID, delta);
 
-                    furnitureDraggingByRoom.Dragging(delta);
                 }
                 else if (checkpointManager.selectedCheckpoint != null)
                 {
@@ -147,9 +146,6 @@ public class PenManager : MonoBehaviour
                 InteractionFlags.IsFloorHandleDragging = false;
 
                 checkpointManager.CreateCommandHere();
-
-                furnitureDraggingByRoom.EndDrag();
-                furnitureDraggingByRoom.Clear();
 
             }
         }
