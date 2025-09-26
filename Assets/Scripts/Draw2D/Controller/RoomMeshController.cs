@@ -170,6 +170,8 @@ public class RoomMeshController : MonoBehaviour
                 FurnitureManager.Instance.MoveFurnitureInRoom(room,delta);
             }
         } 
+
+        checkPointManager.RedrawAllRooms();
     }
 
     public void Initialize(string roomID, Color color = default)
