@@ -97,7 +97,7 @@ public partial class FurnitureManager : MonoBehaviour
     {
         foreach (var item in furnitureItems)
         {
-            if (item.data.itemTemplateID == itemID )
+            if (item.data.itemTemplateID == itemID)
             {
                 return item.lineType;
             }
@@ -183,7 +183,7 @@ public partial class FurnitureManager : MonoBehaviour
         }
 
         onDragItem = InteractionFlags.OnDragFurniture;
-        onDragPoint = InteractionFlags.OnDragPoint;
+        onDragPoint = InteractionFlags.OnDragMovePoint;
     }
 
     public void ClearAllFurnitures()
@@ -290,6 +290,9 @@ public partial class FurnitureManager : MonoBehaviour
     public LayerMask furnitureLayerMask;
     public bool TryPickFurniture()
     {
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return false;
+
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         FurnitureItem item = null;
         if (Physics.Raycast(ray, out var hitInfo, 1000000f, furnitureLayerMask))
@@ -411,9 +414,9 @@ public partial class FurnitureManager : MonoBehaviour
     {
         return runtimeFurnitures;
     }
-    
+
     public void MoveFurnitureInRoom(Room room, Vector3 delta)
     {
-        
+
     }
 }
