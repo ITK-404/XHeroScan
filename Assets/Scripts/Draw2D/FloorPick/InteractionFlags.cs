@@ -10,7 +10,7 @@ public static class InteractionFlags
     // khi đang kéo vật thể
     public static bool OnDragFurniture = false;
     // khi đang kéo point để điều chỉnh kích thước
-    public static bool OnDragPoint = false;
-
+    public static bool OnDragMovePoint = false;
+    public static bool OnDragRotatePoint = false;
     public static bool IsOpenBottomSheetUI = false;
 }

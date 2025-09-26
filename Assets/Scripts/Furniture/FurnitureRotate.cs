@@ -4,22 +4,41 @@ public class FurnitureRotate : MonoBehaviour
 {
     [SerializeField] private FurnitureItem furnitureItem;
     private Quaternion rotate;
+
+    private void Awake()
+    {
+    }
+
     private void OnMouseDown()
+    {
+        StartRotate();
+    }
+
+    public void StartRotate()
     {
         FurnitureItem.SnapShotTemp = furnitureItem.data;
         rotate = furnitureItem.data.size.rotation;
     }
 
-    private void OnMouseDrag()
+    public void OnMouseDrag()
     {
-        InteractionFlags.OnDragPoint = true;
+        Dragging();
+    }
+
+    public void Dragging()
+    {
+        InteractionFlags.OnDragMovePoint = true;
         furnitureItem.RotateToMouse();
-        
     }
 
     private void OnMouseUp()
     {
-        InteractionFlags.OnDragPoint = false;
+        OnEndDrag();
+    }
+
+    public void OnEndDrag()
+    {
+        InteractionFlags.OnDragMovePoint = false;
 
         if (rotate.Equals(furnitureItem.data.size.rotation) == false)
         {

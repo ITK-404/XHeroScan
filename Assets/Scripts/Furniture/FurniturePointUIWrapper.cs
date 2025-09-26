@@ -7,16 +7,16 @@ public class FurniturePointUIWrapper : MonoBehaviour, IBeginDragHandler, IDragHa
     public FurnitureDragPointWarperUI warperUI;
     public void OnBeginDrag(PointerEventData eventData)
     {
-        warperUI.StartDrag(checkpointType); 
+        warperUI.StartDragResize(checkpointType); 
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        warperUI.Dragging(checkpointType);
+        warperUI.DraggingResize(checkpointType);
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        warperUI.EndDrag(checkpointType);
+        warperUI.EndDragResize(checkpointType);
     }
 }

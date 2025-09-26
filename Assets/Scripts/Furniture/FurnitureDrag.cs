@@ -41,6 +41,16 @@ public class FurnitureDrag : MonoBehaviour
         }
         if (FurnitureManager.Instance.IsSelectFurniture(furnitureItem))
         {
+            //if(FurnitureDragPointWarperUI.Instance.IsDragPoint())
+            //{
+            //    return;
+            //}
+
+            if(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+
             DraggingByPosition(furnitureItem.GetWorldMousePosition() - offsetPosition);
         }
     }
@@ -49,6 +59,7 @@ public class FurnitureDrag : MonoBehaviour
     {
         var correctPosition = position;
         //Debug.Log($"Correct position {correctPosition} {furnitureItem.GetWorldPosition()}");
+
         furnitureItem.Dragging(correctPosition);
     }
 

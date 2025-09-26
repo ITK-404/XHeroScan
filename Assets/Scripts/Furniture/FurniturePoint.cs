@@ -66,7 +66,7 @@ public class FurniturePoint : MonoBehaviour
             return;
         }
 
-        InteractionFlags.OnDragPoint = true;
+        InteractionFlags.OnDragMovePoint = true;
         furniture.DragPoint(this);
     }
 
@@ -77,7 +77,7 @@ public class FurniturePoint : MonoBehaviour
 
     public void EndDrag()
     {
-        InteractionFlags.OnDragPoint = false;
+        InteractionFlags.OnDragMovePoint = false;
 
         if (width != furniture.width || length != furniture.length)
         {

@@ -41,7 +41,7 @@ public partial class FurnitureItem : MonoBehaviour
     [Header("Cấu hình để phân biệt cửa/cửa sổ và đồ nội thất")]
     [SerializeField] private bool allowSnapToWall = false; // có thể gắn vào tường
     [SerializeField] private bool allowShowAllCheckPoint = false; // hiển thị 1 phần check point (chỉ bật cho cửa, cửa sổ )
-    [SerializeField] private bool allowRotationByCheckPoint = false; // bật point điều khiển rotation
+    public bool allowRotationByCheckPoint = false; // bật point điều khiển rotation
     public bool allowEditWhenSnapToWall = false; // chỉ cho phép điểu chỉnh kích thước khi gắn vào tường
     public bool isUsingCenterPosToSnap = false; // khi biến này = false và allow snap to wall = true, furniture sẽ gắn vào tường bằng bottom anchor
     public bool alwayMakeSquare = false; // nếu kích hoạt thì hình dạng luôn tạo thành hình vuông
@@ -64,7 +64,7 @@ public partial class FurnitureItem : MonoBehaviour
     [SerializeField] private FurniturePoint topLeftPoint;
     [SerializeField] private FurniturePoint topRightPoint;
 
-    [SerializeField] private FurnitureRotate rotatePoint;
+    public FurnitureRotate rotatePoint;
 
     [Header("Bounds")]
     [SerializeField] private Bounds bounds;
@@ -160,8 +160,19 @@ public partial class FurnitureItem : MonoBehaviour
             topPoint.gameObject.SetActive(false);
             bottomPoint.gameObject.SetActive(false);
         }
+        else
+        {
+            topLeftPoint.gameObject.SetActive(false);
+            topRightPoint.gameObject.SetActive(false);
+            leftPoint.gameObject.SetActive(true);
+            rightPoint.gameObject.SetActive(true);
+            bottomLeftPoint.gameObject.SetActive(false);
+            bottomRightPoint.gameObject.SetActive(false);
+            topPoint.gameObject.SetActive(true);
+            bottomPoint.gameObject.SetActive(true);
+        }
 
-        rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
+            rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
     }
     [SerializeField] private LineRenderer lrPrefab;
 
@@ -215,8 +226,8 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void DragPoint(FurniturePoint currentDragPoint)
     {
-        Vector3 newPos = GetWorldMousePosition();
-        //Vector3 newPos = FurnitureDragPointWarperUI.Instance.correctPosition;
+        //Vector3 newPos = GetWorldMousePosition();
+        Vector3 newPos = FurnitureDragPointWarperUI.Instance.correctPosition;
         newPos = currentDragPoint.transform.parent.InverseTransformPoint(newPos);
 
         RefreshCheckPointsByBounds();
@@ -429,7 +440,7 @@ public partial class FurnitureItem : MonoBehaviour
     public void DeActiveDrag()
     {
         furnitureMergeToWall.EndSnap();
-        InteractionFlags.OnDragPoint = false;
+        InteractionFlags.OnDragMovePoint = false;
     }
 
     /// <summary>
@@ -453,7 +464,7 @@ public partial class FurnitureItem : MonoBehaviour
     public void StartDrag()
     {
         startPos = GetWorldMousePosition();
-        InteractionFlags.OnDragPoint = true;
+        InteractionFlags.OnDragMovePoint = true;
 
     }
 
@@ -462,7 +473,7 @@ public partial class FurnitureItem : MonoBehaviour
     /// </summary>
     public void RotateToMouse()
     {
-        Vector3 mouseWorld = GetWorldMousePosition();
+        Vector3 mouseWorld = FurnitureDragPointWarperUI.Instance.correctPosition;
 
         // Nếu bounds.center được lưu là local position relative tới THIS transform:
         Vector3 centerWorld = transform.TransformPoint(bounds.center);

@@ -60,7 +60,7 @@ public class PenManager : MonoBehaviour
         if (CreateRoomOnFloor.IsCreateRooom) return;
         if (ConnectManager.isConnectActive) return;
         if (InteractionFlags.OnDragFurniture) return;
-        if (InteractionFlags.OnDragPoint) return;
+        if (InteractionFlags.OnDragMovePoint) return;
 
 
         // KHÔNG bật zoom/pan nếu đang kéo room HOẶC đang kéo point floor
@@ -315,9 +315,9 @@ public class PenManager : MonoBehaviour
         {
 
 
-            if (InteractionFlags.OnDragPoint || InteractionFlags.OnDragFurniture)
+            if (InteractionFlags.OnDragMovePoint || InteractionFlags.OnDragFurniture)
             {
-                Debug.Log($"Dang drag vat the, khong the di chuyen camera {InteractionFlags.OnDragPoint} {InteractionFlags.OnDragFurniture}");
+                Debug.Log($"Dang drag vat the, khong the di chuyen camera {InteractionFlags.OnDragMovePoint} {InteractionFlags.OnDragFurniture}");
                 return;
             }
             Touch touch = Input.GetTouch(0);
