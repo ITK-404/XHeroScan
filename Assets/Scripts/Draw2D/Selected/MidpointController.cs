@@ -3,12 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Hiển thị 4 midpoint cho Room đang được chọn trong CheckpointManager
-/// và cho phép kéo midpoint để co giãn phòng theo cạnh tương ứng.
-/// Quy ước thứ tự đỉnh (room.checkpoints):
-///   0 = Bottom-Left (BL), 1 = Top-Left (TL), 2 = Top-Right (TR), 3 = Bottom-Right (BR)
+/// Hiển thị 4 midpoint cho Room đang được chọn
 /// </summary>
-public class RoomMidpointEditor : MonoBehaviour
+public class MidpointController : MonoBehaviour
 {
     [Header("Refs")]
     private CheckpointManager checkPointManager;
@@ -86,6 +83,7 @@ public class RoomMidpointEditor : MonoBehaviour
             _isDragging = false;
             _activeEdge = -1;
             IsDraggingMidpoint = false;
+            InteractionFlags.IsRoomFloorDragging = false;
         }
     }
 
@@ -126,21 +124,31 @@ public class RoomMidpointEditor : MonoBehaviour
 
     private Vector3[] GetEdgeMidpoints(Room room)
     {
-        var p = room.checkpoints;
+        var pts = room.checkpoints;
         float y = _baseRoomY + roomWallLift;
+        if (pts == null || pts.Count < 4)
+            return new[] { Vector3.zero, Vector3.zero, Vector3.zero, Vector3.zero };
 
-        // BL, TL, TR, BR
-        Vector3 v0 = new Vector3(p[0].x, y, p[0].y);
-        Vector3 v1 = new Vector3(p[1].x, y, p[1].y);
-        Vector3 v2 = new Vector3(p[2].x, y, p[2].y);
-        Vector3 v3 = new Vector3(p[3].x, y, p[3].y);
+        float minX = float.PositiveInfinity, maxX = float.NegativeInfinity;
+        float minZ = float.PositiveInfinity, maxZ = float.NegativeInfinity;
+        for (int i = 0; i < pts.Count; i++)
+        {
+            var v = pts[i];
+            if (v.x < minX) minX = v.x; if (v.x > maxX) maxX = v.x;
+            if (v.y < minZ) minZ = v.y; if (v.y > maxZ) maxZ = v.y;
+        }
+
+        Vector3 bl = new Vector3(minX, y, minZ);
+        Vector3 tl = new Vector3(minX, y, maxZ);
+        Vector3 tr = new Vector3(maxX, y, maxZ);
+        Vector3 br = new Vector3(maxX, y, minZ);
 
         return new[]
         {
-            (v0 + v1) * 0.5f, // Left
-            (v1 + v2) * 0.5f, // Top
-            (v2 + v3) * 0.5f, // Right
-            (v3 + v0) * 0.5f  // Bottom
+            (bl + tl) * 0.5f, // Left
+            (tl + tr) * 0.5f, // Top
+            (tr + br) * 0.5f, // Right
+            (br + bl) * 0.5f  // Bottom
         };
     }
 
@@ -211,38 +219,78 @@ public class RoomMidpointEditor : MonoBehaviour
     }
 
     // ===== Resize logic khi kéo midpoint =====
+    private static void NormalizeRectOrder(List<Vector2> pts)
+    {
+        if (pts == null || pts.Count < 4) return;
+
+        // Tìm min/max theo X/Z
+        float minX = float.PositiveInfinity, maxX = float.NegativeInfinity;
+        float minZ = float.PositiveInfinity, maxZ = float.NegativeInfinity;
+        for (int i = 0; i < 4; i++)
+        {
+            var v = pts[i];
+            if (v.x < minX) minX = v.x;
+            if (v.x > maxX) maxX = v.x;
+            if (v.y < minZ) minZ = v.y;
+            if (v.y > maxZ) maxZ = v.y;
+        }
+
+        // Gán lại đúng thứ tự BL, TL, TR, BR
+        pts[0] = new Vector2(minX, minZ); // BL
+        pts[1] = new Vector2(minX, maxZ); // TL
+        pts[2] = new Vector2(maxX, maxZ); // TR
+        pts[3] = new Vector2(maxX, minZ); // BR
+    }
+
+    // Resize an toàn theo edgeIdx (0=Left,1=Top,2=Right,3=Bottom)
     private void ApplyEdgeDrag(Room room, Vector3 mouseWorld, int edgeIdx)
     {
         if (room == null || room.checkpoints == null || room.checkpoints.Count < 4) return;
 
+        // 1) Chuẩn hoá lại thứ tự trước khi tính
+        NormalizeRectOrder(room.checkpoints);
+
         var p = room.checkpoints; // BL(0), TL(1), TR(2), BR(3)
-
-        float leftX = p[0].x;
-        float rightX = p[2].x;
+        float leftX   = p[0].x;
+        float rightX  = p[2].x;
         float bottomZ = p[0].y;
-        float topZ = p[1].y;
+        float topZ    = p[2].y;
 
-        float newLeftX = leftX;
-        float newRightX = rightX;
-        float newTopZ = topZ;
+        // 2) Tính new bounds theo cạnh đang kéo + clamp minRoomSide
+        float newLeftX   = leftX;
+        float newRightX  = rightX;
+        float newTopZ    = topZ;
         float newBottomZ = bottomZ;
 
         switch (edgeIdx)
         {
-            case 0: newLeftX = Mathf.Min(mouseWorld.x, rightX - minRoomSide); break; // Left
-            case 1: newTopZ = Mathf.Max(mouseWorld.z, bottomZ + minRoomSide); break; // Top
-            case 2: newRightX = Mathf.Max(mouseWorld.x, leftX + minRoomSide); break; // Right
-            case 3: newBottomZ = Mathf.Min(mouseWorld.z, topZ - minRoomSide); break; // Bottom
-            default: return;
+            case 0: // Left
+                newLeftX = Mathf.Min(mouseWorld.x, rightX - minRoomSide);
+                break;
+            case 1: // Top
+                newTopZ = Mathf.Max(mouseWorld.z, bottomZ + minRoomSide);
+                break;
+            case 2: // Right
+                newRightX = Mathf.Max(mouseWorld.x, leftX + minRoomSide);
+                break;
+            case 3: // Bottom
+                newBottomZ = Mathf.Min(mouseWorld.z, topZ - minRoomSide);
+                break;
+            default:
+                return;
         }
 
-        // cập nhật rectangle (giữ thứ tự BL,TL,TR,BR)
-        p[0] = new Vector2(newLeftX, newBottomZ);
-        p[1] = new Vector2(newLeftX, newTopZ);
+        // 3) Guard: không cho width/height <= 0 (phòng co thành line)
+        if (newRightX - newLeftX < minRoomSide * 0.999f) return;
+        if (newTopZ   - newBottomZ < minRoomSide * 0.999f) return;
+
+        // 4) Gán lại 4 đỉnh theo BL,TL,TR,BR
+        p[0] = new Vector2(newLeftX,  newBottomZ);
+        p[1] = new Vector2(newLeftX,  newTopZ);
         p[2] = new Vector2(newRightX, newTopZ);
         p[3] = new Vector2(newRightX, newBottomZ);
 
-        // cập nhật wallLines (nổi nhẹ)
+        // 5) Cập nhật wallLines & mesh như bạn đang làm
         float yShow = _baseRoomY + roomWallLift;
         Vector3 v0 = new Vector3(p[0].x, yShow, p[0].y);
         Vector3 v1 = new Vector3(p[1].x, yShow, p[1].y);
@@ -268,14 +316,11 @@ public class RoomMidpointEditor : MonoBehaviour
             wl[3].start = v3; wl[3].end = v0;
         }
 
-        // center + rebuild visuals (mesh + labels)
         room.center = GeoUtil.Centroid(room.checkpoints);
 
-        // VẼ LẠI: dùng đúng hệ thống sẵn có trong project
         if (checkPointManager != null)
         {
             checkPointManager.DrawWallLineByRoom(room);
-            // Nếu bạn có RoomMeshController theo ID:
             var meshCtrl = FindMeshCtrl(room.ID);
             if (meshCtrl != null)
             {
@@ -286,7 +331,6 @@ public class RoomMidpointEditor : MonoBehaviour
             checkPointManager.RedrawAllRooms();
         }
 
-        // Đồng bộ 4 checkpoint GameObject của room (nếu bạn dùng hệ checkpoint đỏ)
         SyncCornerCheckpointGOs(room, v0, v1, v2, v3);
     }
     
@@ -339,6 +383,11 @@ public class RoomMidpointEditor : MonoBehaviour
         _externalRoomId = roomId;
         var r = RoomStorage.GetRoomByID(roomId);
         if (r == null) { Hide(); return; }
+
+        // Nếu không đúng HCN 4 đỉnh thì đừng bật editor
+        if (r.checkpoints == null || r.checkpoints.Count != 4) { Hide(); return; }
+
+        NormalizeRectOrder(r.checkpoints); // <-- thêm dòng này
 
         _editingRoom = r;
         _baseRoomY = roomIndex * layerStepY;

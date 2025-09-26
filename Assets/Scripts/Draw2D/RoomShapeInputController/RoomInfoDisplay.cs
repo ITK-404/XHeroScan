@@ -6,7 +6,7 @@ public class RoomInfoDisplay : MonoBehaviour
 {
     [Header("Reference")]
     private CheckpointManager checkpointManager;
-    private RoomMidpointEditor midpointEditor;
+    private MidpointController midpointEditor;
 
     [Header("Pick/Raycast")]
     [SerializeField] private LayerMask floorRaycastMask = ~0;
@@ -74,7 +74,7 @@ public class RoomInfoDisplay : MonoBehaviour
     {
         roomToggle.gameObject.SetActive(false);
         checkpointManager = FindFirstObjectByType<CheckpointManager>();
-        midpointEditor = FindFirstObjectByType<RoomMidpointEditor>();
+        midpointEditor = FindFirstObjectByType<MidpointController>();
         lastRoomsCount = RoomStorage.rooms.Count;
 
         if (ActionSpace)
@@ -86,7 +86,7 @@ public class RoomInfoDisplay : MonoBehaviour
 
     void Update()
     {
-        if (RoomMidpointEditor.IsDraggingMidpoint)
+        if (MidpointController.IsDraggingMidpoint)
     return;
         if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
         {
