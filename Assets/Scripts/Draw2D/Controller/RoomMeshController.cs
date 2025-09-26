@@ -18,10 +18,9 @@ public class RoomMeshController : MonoBehaviour
     [Header("Floor Material (optional)")]
     [SerializeField] private Material floorMaterial;
 
-    // ==== NEW: Layer index (tối giản) ====
     [Header("Layering")]
     [SerializeField] public int index = 2;          // yêu cầu: index = 2
-    [SerializeField] public float layerStepY = 0.002f; // bước cao độ mỗi layer (2mm)
+    [SerializeField] public float layerStepY = 0.002f; // bước cao độ mỗi layer (2mm) 
     private void Awake()
     {
         if (mainCam == null)
