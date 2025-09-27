@@ -189,8 +189,6 @@ public class RoomMeshController : MonoBehaviour
                         go.transform.position += delta;
                 }
             }
-
-            FurnitureManager.Instance.MoveFurnitureInRoom(room, delta);
         }
     }
 
@@ -285,6 +283,7 @@ public class RoomMeshController : MonoBehaviour
         return new Vector2(sumX / points.Count, sumY / points.Count);
     }
 
+    private List<DrawingInstanced> oldList = new();
     private void OnStartDrag(Vector3 startDragPosition)
     {
 
@@ -310,7 +309,9 @@ public class RoomMeshController : MonoBehaviour
             isDragging = true;
         }
 
+        oldList = FurnitureManager.Instance.GetFurnitureInsideRoom(RoomID); 
         oldRoom = new Room(RoomStorage.GetRoomByID(RoomID));
+
         oldPosition = transform.position;
         oldCheckPointList = SaveCheckPointPosition(RoomID);
 
@@ -350,6 +351,13 @@ public class RoomMeshController : MonoBehaviour
         {
             return;
         }
+
+        if (Vector3.Distance(oldPosition, transform.position) > 0.1f)
+        {
+            var newRoom = RoomStorage.GetRoomByID(RoomID);
+            UndoRedoController.Instance.AddToUndo(new EditRoomCommand(oldRoom, oldList, new Room(newRoom)));
+        }
+
         CreateUndoCommand();
 
         furnitureDraggingByRoom.EndDrag();

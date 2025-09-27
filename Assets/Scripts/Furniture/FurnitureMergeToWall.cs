@@ -17,7 +17,7 @@ public class FurnitureMergeToWall
 
     private WallLine typedWallLine;
     public WallLine PDFWallLine => typedWallLine;
-    private float ratio => furnitureItem.data.ratio;
+    private float ratio = 0;
 
     public FurnitureMergeToWall(FurnitureItem furnitureItem)
     {
@@ -141,7 +141,7 @@ public class FurnitureMergeToWall
         //Debug.Log($"Thông số {wallLine.start} {wallLine.end}");
         furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, firstDoorPoint);
 
-        furnitureItem.data.ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
+        ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
     }
 
     public void SnapToNearestWallOfCurrentRoom()
@@ -159,7 +159,7 @@ public class FurnitureMergeToWall
         if (wallLine == null)
         {
             Debug.Log("không kiếm được wallline để snap vào");
-            furnitureItem.data.ratio = 0;
+            ratio = 0;
             return;
         }
 
