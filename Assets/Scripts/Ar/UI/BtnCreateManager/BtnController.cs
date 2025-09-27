@@ -97,7 +97,7 @@ public class BtnController : MonoBehaviour
         toggleButton.onClick.AddListener(TogglePointVisibility);
 
         if (planeManager != null)
-            planeManager.planesChanged += OnPlanesChanged;
+            planeManager.trackablesChanged.AddListener(OnTrackablesChanged);
     }
 
     void Update()
@@ -393,7 +393,7 @@ public class BtnController : MonoBehaviour
         }
     }
 
-    void OnPlanesChanged(ARPlanesChangedEventArgs args)
+    void OnTrackablesChanged(ARTrackablesChangedEventArgs<ARPlane> args)
     {
         if (planeManager.trackables.count > 0)
         {
@@ -1072,7 +1072,7 @@ public class BtnController : MonoBehaviour
 
             if (flag == 1)
             {
-                RoomModelBuilder roomBuilder1 = FindObjectOfType<RoomModelBuilder>();
+                RoomModelBuilder roomBuilder1 = FindFirstObjectByType<RoomModelBuilder>();
                 if (roomBuilder1 != null)
                 {
                     List<Vector3> basePositions = GetBasePoints();
@@ -1202,7 +1202,7 @@ public class BtnController : MonoBehaviour
         // Nối Pn với Pn' (điểm chiều cao)
         lineManager.DrawLineAndDistance(newBasePoint.transform.position, newHeightPoint.transform.position, newBasePoint, newHeightPoint);
 
-        RoomModelBuilder roomBuilder = FindObjectOfType<RoomModelBuilder>();
+        RoomModelBuilder roomBuilder = FindFirstObjectByType<RoomModelBuilder>();
         if (roomBuilder != null)
         {
             List<Vector3> basePositions = GetBasePoints();

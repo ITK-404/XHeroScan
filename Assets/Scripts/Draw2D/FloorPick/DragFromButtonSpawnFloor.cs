@@ -23,9 +23,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     public float layerStepY = 0.002f; // mỗi index lệch 2mm
     public float lineLift = 0.0005f; // line nổi hơn mesh 0.5mm
     public float labelLift = 0.01f;   // label nổi hơn mesh 1cm
-    
-[SerializeField] private GameObject ButtomPanel;
-[SerializeField] private bool requireExitPanelToActivate = true;
+
+    [SerializeField] private GameObject ButtomPanel;
+    [SerializeField] private bool requireExitPanelToActivate = true;
 
     private bool isDragging = false;
     private bool dragActivated = false;
@@ -61,7 +61,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     private GameObject[] edgeHandles = new GameObject[4]; // AB,BD,DE,EA
 
     private string currentFloorId;
-    [SerializeField]private bool autoSizeByDevice = true; // bật tắt chế độ tìm theo màn hình.
+    [SerializeField] private bool autoSizeByDevice = true; // bật tắt chế độ tìm theo màn hình.
 
     // đánh dấu handle
     private class HandleTag : MonoBehaviour
@@ -80,8 +80,10 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     private static readonly Dictionary<string, GameObject> s_floorVisuals = new();
 
     private RectTransform _bottomPanelRect;
-    private Camera UiCamForPanel {
-        get {
+    private Camera UiCamForPanel
+    {
+        get
+        {
             var canvas = ButtomPanel ? ButtomPanel.GetComponentInParent<Canvas>() : null;
             if (canvas == null) return null; // overlay => trả null là đúng
             return canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null
@@ -277,7 +279,6 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
     {
         ApplySizeByDevice();
         // store previous
-        previousFloor = FloorStorage.floors.Count > 0 ? FloorStorage.floors[0] : null;
 
         ResetSingleFloor();
 
@@ -425,7 +426,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         if (!dragActivated && requireExitPanelToActivate)
         {
             isDragging = false;
-            
+
             if (previewGO) previewGO.SetActive(false);
             return;
         }
@@ -455,8 +456,6 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
             var floor = new Floor();
 
-            floor.width = width;
-            floor.length = depth;
 
             floor.checkpoints.Add(new Vector2(a.x, a.z));
             floor.checkpoints.Add(new Vector2(b.x, b.z));
@@ -517,8 +516,9 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
         {
             if (previewGO) previewGO.SetActive(true);
         }
+        previousFloor = FloorStorage.floors.Count > 0 ? Floor.Clone(FloorStorage.floors[0]) : null;
 
-        UndoRedoController.Instance.AddToUndo(new EditFloorCommand(previousFloor));
+        UndoRedoController.Instance.AddToUndo(new CreateFloorCommand(previousFloor));
 
 
         Debug.Log("Trước khi tạo" + FloorStorage.floors.Count);
@@ -562,7 +562,7 @@ public class DragFromButtonSpawnFloor : MonoBehaviour, IBeginDragHandler, IDragH
 
             Vector3 pos = mid + inwardN * LABEL_TOWARD_INWARD;
             pos.y += LABEL_LIFT_Y;
-            
+
             float dxEdge = Mathf.Abs(p1.x - p0.x);
             float dzEdge = Mathf.Abs(p1.z - p0.z);
 

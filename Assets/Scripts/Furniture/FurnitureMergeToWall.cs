@@ -6,7 +6,6 @@ using UnityEngine;
 [Serializable]
 public class FurnitureMergeToWall
 {
-    public float ratio;
     private FurnitureItem furnitureItem;
 
     private FurniturePoint leftPoint;
@@ -18,6 +17,8 @@ public class FurnitureMergeToWall
 
     private WallLine typedWallLine;
     public WallLine PDFWallLine => typedWallLine;
+    private float ratio = 0;
+
     public FurnitureMergeToWall(FurnitureItem furnitureItem)
     {
         this.furnitureItem = furnitureItem;
@@ -40,8 +41,16 @@ public class FurnitureMergeToWall
     }
 
     private bool allowSnap = false;
-    public void StartSnap() => allowSnap = true;
-    public void EndSnap() => allowSnap = false;
+    public void StartSnap()
+    {
+        Debug.Log("Start Snap");
+        allowSnap = true;
+    }
+    public void EndSnap()
+    {
+        Debug.Log("End Snap");
+        allowSnap = false;
+    }
 
     public void Update()
     {
@@ -69,20 +78,47 @@ public class FurnitureMergeToWall
         UpdateOwnWallLine();
         UpdateRoomAttaced();
         ProcessWidthForWindow();
-    }
 
+        bool isInWall = IsInWall();
+        lineRenderer.gameObject.SetActive(IsInWall());
+
+        if (isInWall && attachedRoom != null)
+        {
+            Vector3 startPosition = leftPoint.transform.position;
+            Vector3 endPosition = rightPoint.transform.position;
+
+            startPosition.y = 5;
+            endPosition.y = 5;
+
+            lineRenderer.SetPosition(0, startPosition);
+            lineRenderer.SetPosition(1, endPosition);
+            lineRenderer.widthMultiplier = attachedRoom.thickness;
+            lineRenderer.startColor = Color.white;
+            lineRenderer.endColor = Color.white;
+        }
+    }
+    private LineRenderer lineRenderer => furnitureItem.lineRenderer;
     public Vector3 GetCenterPosition()
     {
-        return furnitureItem.isUsingCenterPosToSnap ? furnitureItem.GetWorldPosition() : bottomPoint.transform.position;
+        return furnitureItem.correctPosition;
+        //return furnitureItem.isUsingCenterPosToSnap ? furnitureItem.correctPosition : bottomPoint.transform.position;
     }
 
     public void TryToMergeAndSnapInAllWall()
     {
+        //if (furnitureItem.lineType == LineType.None)
+        //{
+        //    return;
+        //}
         SnapTemp(allowSnap);
     }
 
     public void ForceSnapToWall()
     {
+        //if(furnitureItem.lineType == LineType.None)
+        //{
+        //    return;
+        //}
         SnapTemp(true);
     }
 
@@ -92,15 +128,14 @@ public class FurnitureMergeToWall
 
         //Debug.Log("bắt đầu check để snap wall line");
 
-        SnapToNearestWallLine(RoomStorage.rooms, 0.2f, out var wallLine, out var firstDoorPoint);
-        SetAttachedWallLine(wallLine);
+        SnapToNearestWallLine(RoomStorage.rooms, 10, out var wallLine, out var firstDoorPoint);
 
         if (wallLine == null)
         {
             //Debug.Log("không kiếm được wallline để snap vào");
-            ratio = 0;
             return;
         }
+        SetAttachedWallLine(wallLine);
 
         //Debug.Log("Kiếm được wall line để snap vào");
         //Debug.Log($"Thông số {wallLine.start} {wallLine.end}");
@@ -111,7 +146,11 @@ public class FurnitureMergeToWall
 
     public void SnapToNearestWallOfCurrentRoom()
     {
-        if (attachedRoom == null) return;
+        if (attachedRoom == null)
+        {
+            Debug.Log("Phòng bị null, không thể snap vào");
+            return;
+        }
 
         SnapToNearestWallLine(new[] { attachedRoom }, float.MaxValue, out var wallLine, out var firstDoorPoint);
 
@@ -189,7 +228,7 @@ public class FurnitureMergeToWall
             }
         }
     }
-  
+
     float GetPointRatio(Vector3 start, Vector3 end, Vector3 point)
     {
         Vector3 ab = end - start;
@@ -198,7 +237,7 @@ public class FurnitureMergeToWall
         return Mathf.Clamp01(t);
     }
 
-   
+
     private void ProcessWidthForWindow()
     {
         // xử lý độ dày cho cửa sổ
@@ -221,7 +260,7 @@ public class FurnitureMergeToWall
     }
 
 
-    private void RotationToWallLine()
+    public void RotationToWallLine()
     {
         //var flipOffset = 0;
         var flipOffset = furnitureItem.data.isFlipVertical ? 180 : 0;
@@ -259,6 +298,11 @@ public class FurnitureMergeToWall
         }
 
         return wallLine != null;
+    }
+
+    public void SetAttachedRoom(Room room)
+    {
+        attachedRoom = room;
     }
 }
 

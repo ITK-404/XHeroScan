@@ -15,7 +15,13 @@ public class BottomSheetUI : BaseAnimUI
     private BlockPopupBackground blockPopupBackground;
     private void Start()
     {
-        blockPopupBackground = GetComponentInChildren<BlockPopupBackground>();
+
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
+
         float height = rectContainer.rect.height;
 
         // Vị trí mở (ngay vị trí hiện tại)
@@ -28,15 +34,17 @@ public class BottomSheetUI : BaseAnimUI
         rectContainer.anchoredPosition = closedPos;
 
         rectContainer.gameObject.SetActive(false);
-        if(blockPopupBackground)
+        blockPopupBackground = GetComponentInChildren<BlockPopupBackground>();
+        if (blockPopupBackground)
             blockPopupBackground.OnClickBackgroundEvent += Close;
     }
 
     private void OnDestroy()
     {
-        if(blockPopupBackground)
+        if (blockPopupBackground)
             blockPopupBackground.OnClickBackgroundEvent -= Close;
     }
+
     public override void Open()
     {
         if (container.gameObject.activeSelf) return;
@@ -48,7 +56,7 @@ public class BottomSheetUI : BaseAnimUI
         });
         OnStartShowAnim?.Invoke();
 
-        Debug.Log("Bottom Sheet Open "+gameObject.name);
+        Debug.Log("Bottom Sheet Open " + gameObject.name);
     }
 
     public override void Close()

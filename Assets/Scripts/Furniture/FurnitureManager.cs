@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -28,6 +29,10 @@ public partial class FurnitureManager : MonoBehaviour
 
     public FurnitureItem TempDragItem => placementController.tempDragItem;
     public FurniturePlacementController placementController;
+
+    [SerializeField] private bool onDragPoint;
+    [SerializeField] private bool onDragItem;
+
     private void Awake()
     {
         Instance = this;
@@ -84,7 +89,22 @@ public partial class FurnitureManager : MonoBehaviour
 
     public void StartDragItem(string ItemID)
     {
+
         placementController.StartDrag(ItemID);
+
+    }
+
+    public LineType IsItemCanDragToWall(string itemID)
+    {
+        foreach (var item in furnitureItems)
+        {
+            if (item.data.itemTemplateID == itemID)
+            {
+                return item.lineType;
+            }
+        }
+
+        return LineType.None;
     }
 
     private FurnitureItem InitItemByID(string ItemID)
@@ -112,7 +132,7 @@ public partial class FurnitureManager : MonoBehaviour
         var worldPointFromViewPort = mainCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f));
         var centerPosition = new Vector3(worldPointFromViewPort.x, SpawnHeight, worldPointFromViewPort.z);
         var item = SpawnFurniture(itemID, centerPosition);
-        UndoRedoController.Instance.AddToUndo(new CreateItemCommand(item.data.instanceID));
+        UndoRedoController.Instance.AddToUndo(new CreateItemCommand(item.data));
 
     }
 
@@ -123,25 +143,30 @@ public partial class FurnitureManager : MonoBehaviour
         if (!furniture) return null;
 
         furniture.transform.position = position;
+        //furniture.SetWorldPosition(position);
         furniture.InitLineAndText();
         runtimeFurnitures.Add(furniture);
-        Debug.Log("Spawn Position: " + position);
 
 
         return furniture;
     }
 
-    private void Update()
+    private void LateUpdate()
     {
-
-        placementController.Update();
-
-        if (Input.touchCount >= 2)
+        if(InteractionFlags.IsEdit)
         {
             SelectFurniture(null);
-            return;
         }
+        placementController.Update();
+
+        //if (Input.touchCount >= 2)
+        //{
+        //    SelectFurniture(null);
+
+        //    return;
+        //}
         // select handle
+
         if (currentFurniture && Input.GetMouseButtonDown(0))
         {
             if (EventSystem.current.IsPointerOverGameObject())
@@ -160,6 +185,9 @@ public partial class FurnitureManager : MonoBehaviour
         {
             SpawnFurnitureCenterScreen("bed_1");
         }
+
+        onDragItem = InteractionFlags.OnDragFurniture;
+        onDragPoint = InteractionFlags.OnDragMovePoint;
     }
 
     public void ClearAllFurnitures()
@@ -176,10 +204,10 @@ public partial class FurnitureManager : MonoBehaviour
 
     public void SelectFurniture(FurnitureItem furniture)
     {
-        if (placementController.IsDragTempFurniture())
-        {
-            return;
-        }
+        //if (placementController.IsDragTempFurniture())
+        //{
+        //    return;
+        //}
         if (currentFurniture == null)
         {
             currentFurniture = furniture;
@@ -203,17 +231,34 @@ public partial class FurnitureManager : MonoBehaviour
 
     public FurnitureItem GetFurnitureByInstanceID(string instanceID)
     {
-        Debug.Log("Instance: ID" + instanceID);
+        Debug.Log("Đang tìm Instance: ID" + instanceID);
         foreach (var item in runtimeFurnitures)
         {
             if (item.data.instanceID.Equals(instanceID))
             {
+                Debug.Log("Đã tìm thấy Instance: ID" + instanceID);
                 return item;
             }
         }
 
+       Debug.Log("Không tìm thấy Instance: ID" + instanceID);
         return null;
     }
+
+    public void RestoreDrawingInstanced(List<DrawingInstanced> drawingInstanceds)
+    {
+        Debug.Log("Bắt đầu hoàn lại furniture: "+drawingInstanceds.Count);
+        foreach (var instacedData in drawingInstanceds)
+        {
+            var furniture = InitItemByID(instacedData.itemTemplateID);
+            if (furniture == null) continue;
+            furniture.FetchData(instacedData);
+            runtimeFurnitures.Add(furniture);
+            Debug.Log($"World Position: {furniture.data.worldPosition}",gameObject);
+            Debug.Log($"Hoàn lại furniture {furniture.data.instanceID}");
+        }
+    }
+
     [SerializeField] private Vector3 offset = Vector3.zero;
     private Vector3 GetWorldMousePosition()
     {
@@ -266,6 +311,9 @@ public partial class FurnitureManager : MonoBehaviour
     public LayerMask furnitureLayerMask;
     public bool TryPickFurniture()
     {
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return false;
+
         Ray ray = mainCam.ScreenPointToRay(Input.mousePosition);
         FurnitureItem item = null;
         if (Physics.Raycast(ray, out var hitInfo, 1000000f, furnitureLayerMask))
@@ -344,6 +392,16 @@ public partial class FurnitureManager : MonoBehaviour
         }
     }
 
+    public List<FurnitureItem> GetRuntimeItemInsideRoom(string roomID)
+    {
+        List<FurnitureItem> itemInsideRoom = new();
+        foreach (var item in runtimeFurnitures)
+        {
+            itemInsideRoom.Add(item);
+        }
+        return itemInsideRoom;
+    }
+
     public List<WallLine> GetPdfWallLine()
     {
         List<WallLine> exportList = new();
@@ -376,5 +434,27 @@ public partial class FurnitureManager : MonoBehaviour
     public List<FurnitureItem> GetAllFurniture()
     {
         return runtimeFurnitures;
+    }
+
+
+    public void ClearWindowAndDoorAttached(string currentRoomID)
+    {
+        List<FurnitureItem> destroyList = new();
+        foreach(var item in runtimeFurnitures)
+        {
+            if(item.data.roomID == currentRoomID)
+            {
+                var lineType = item.lineType;
+                if(lineType== LineType.Door || lineType == LineType.Window)
+                {
+                    destroyList.Add(item);
+                }
+            }
+        }
+
+        foreach(var item in destroyList)
+        {
+            item.Destroy();
+        }
     }
 }

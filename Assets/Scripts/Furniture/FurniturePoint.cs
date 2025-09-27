@@ -43,11 +43,22 @@ public class FurniturePoint : MonoBehaviour
     private float width, length;
     private void OnMouseDown()
     {
+        StartDragPoint();
+    }
+
+    public void StartDragPoint()
+    {
         FurnitureItem.SnapShotTemp = furniture.data;
         width = furniture.width;
         length = furniture.length;
     }
+
     private void OnMouseDrag()
+    {
+        Dragging();
+    }
+
+    public void Dragging()
     {
         if (furniture == null)
         {
@@ -55,15 +66,20 @@ public class FurniturePoint : MonoBehaviour
             return;
         }
 
-        FurnitureItem.OnDragPoint = true;
+        InteractionFlags.OnDragMovePoint = true;
         furniture.DragPoint(this);
     }
 
     private void OnMouseUp()
     {
-        FurnitureItem.OnDragPoint = false;
+        EndDrag();
+    }
 
-        if(width != furniture.width || length != furniture.length)
+    public void EndDrag()
+    {
+        InteractionFlags.OnDragMovePoint = false;
+
+        if (width != furniture.width || length != furniture.length)
         {
             furniture.CreareEditCommandBySnapShot();
         }

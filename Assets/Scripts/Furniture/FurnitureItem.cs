@@ -21,8 +21,7 @@ public enum FurnitureState
 }
 public partial class FurnitureItem : MonoBehaviour
 {
-    public static bool OnDragFurniture = false;
-    public static bool OnDragPoint = false;
+
 
     private static Camera mainCam;
     public static DrawingInstanced SnapShotTemp;
@@ -36,15 +35,18 @@ public partial class FurnitureItem : MonoBehaviour
     {
         get => data.size.lengthMinMax.x / 2;
     }
+
+
     [SerializeField] private Vector2 hitBoxSizeBuffer = Vector2.one;
     [Header("Cấu hình để phân biệt cửa/cửa sổ và đồ nội thất")]
     [SerializeField] private bool allowSnapToWall = false; // có thể gắn vào tường
     [SerializeField] private bool allowShowAllCheckPoint = false; // hiển thị 1 phần check point (chỉ bật cho cửa, cửa sổ )
-    [SerializeField] private bool allowRotationByCheckPoint = false; // bật point điều khiển rotation
+    public bool allowRotationByCheckPoint = false; // bật point điều khiển rotation
     public bool allowEditWhenSnapToWall = false; // chỉ cho phép điểu chỉnh kích thước khi gắn vào tường
     public bool isUsingCenterPosToSnap = false; // khi biến này = false và allow snap to wall = true, furniture sẽ gắn vào tường bằng bottom anchor
     public bool alwayMakeSquare = false; // nếu kích hoạt thì hình dạng luôn tạo thành hình vuông
     public LineType lineType;
+
     [Header("References")]
     public DrawingInstanced data;
     public Transform modelContainer;
@@ -62,7 +64,7 @@ public partial class FurnitureItem : MonoBehaviour
     [SerializeField] private FurniturePoint topLeftPoint;
     [SerializeField] private FurniturePoint topRightPoint;
 
-    [SerializeField] private FurnitureRotate rotatePoint;
+    public FurnitureRotate rotatePoint;
 
     [Header("Bounds")]
     [SerializeField] private Bounds bounds;
@@ -73,7 +75,8 @@ public partial class FurnitureItem : MonoBehaviour
 
     public FurnitureMergeToWall furnitureMergeToWall;
     public GameObject textContainer;
-
+    public LineRenderer lineRenderer;
+    public FurnitureDrag furnitureDrag;
     private Quaternion currentRotation
     {
         get => data.size.rotation;
@@ -84,6 +87,8 @@ public partial class FurnitureItem : MonoBehaviour
     private IUpdateWhenMove[] IUpdateWhenMoves;
     private FurniturePoint[] pointsArray;
     private Vector3 startPos;
+
+    public FurniturePoint[] PointArray => pointsArray;
 
     public float width
     {
@@ -109,6 +114,7 @@ public partial class FurnitureItem : MonoBehaviour
     {
         data.size.ClampSize();
         resizer = GetComponentInChildren<ObjectResizer>();
+        furnitureDrag = GetComponentInChildren<FurnitureDrag>();
         resizer.Resize();
 
         furnitureVisuals = new FurnitureVisuals(this);
@@ -154,13 +160,30 @@ public partial class FurnitureItem : MonoBehaviour
             topPoint.gameObject.SetActive(false);
             bottomPoint.gameObject.SetActive(false);
         }
+        else
+        {
+            topLeftPoint.gameObject.SetActive(false);
+            topRightPoint.gameObject.SetActive(false);
+            leftPoint.gameObject.SetActive(true);
+            rightPoint.gameObject.SetActive(true);
+            bottomLeftPoint.gameObject.SetActive(false);
+            bottomRightPoint.gameObject.SetActive(false);
+            topPoint.gameObject.SetActive(true);
+            bottomPoint.gameObject.SetActive(true);
+        }
 
         rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
     }
-
-
+    [SerializeField] private LineRenderer lrPrefab;
+    private bool isCallInit = false;
     public void InitLineAndText()
     {
+        if (isCallInit) return;
+        isCallInit = true;
+
+        lineRenderer = Instantiate(lrPrefab);
+        lineRenderer.transform.parent = checkPointParent.transform.parent;
+        lineRenderer.gameObject.SetActive(false);
         var topLine = new Outline(CreateLineRenderer(),
             topLeftPoint.gameObject,
             topRightPoint.gameObject);
@@ -206,7 +229,8 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void DragPoint(FurniturePoint currentDragPoint)
     {
-        Vector3 newPos = GetWorldMousePosition();
+        //Vector3 newPos = GetWorldMousePosition();
+        Vector3 newPos = FurnitureDragPointWarperUI.Instance.correctPosition;
         newPos = currentDragPoint.transform.parent.InverseTransformPoint(newPos);
 
         RefreshCheckPointsByBounds();
@@ -246,6 +270,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void RefreshCheckPointsByBounds()
     {
+        if (furnitureVisuals == null) return;
         // tính toán vị trí của check point dựa theo bound
         foreach (var item in pointsArray)
         {
@@ -290,6 +315,8 @@ public partial class FurnitureItem : MonoBehaviour
             furnitureMergeToWall.Update();
         }
         model2D.flipX = data.isFlipHorizontal;
+
+
     }
     /// <summary>
     /// Hàm này được gọi khi người dùng muốn điều chỉnh kích thước bằng tay
@@ -343,6 +370,10 @@ public partial class FurnitureItem : MonoBehaviour
         sizeLocal = furnitureVisuals.ClampSizeToBounds(
             sizeLocal, resizeAxis, dragLocalUnrot, anchorLocalUnrot, alwayMakeSquare);
 
+        // Giả sử bạn có maxSizeX, maxSizeZ trong furnitureItem
+        sizeLocal.x = Mathf.Clamp(sizeLocal.x, minSizeX, data.size.widthMinMax.y);
+        sizeLocal.z = Mathf.Clamp(sizeLocal.z, minSizeZ, data.size.lengthMinMax.y);
+
         // --- Chuyển center trở về không gian local (có xoay) và cập nhật bounds ---
         bounds.center = originalCenter + rotation * centerLocalUnrot;
         bounds.size = sizeLocal;
@@ -385,7 +416,6 @@ public partial class FurnitureItem : MonoBehaviour
         var delta = currentPos - startPos;
         this.correctPosition = correctPosition;
         //dragTransform.localPosition += delta;
-        SetWorldPosition(correctPosition);
 
         if (allowSnapToWall)
         {
@@ -393,6 +423,7 @@ public partial class FurnitureItem : MonoBehaviour
         }
         else
         {
+            SetWorldPosition(correctPosition);
         }
 
         startPos = currentPos;
@@ -402,7 +433,9 @@ public partial class FurnitureItem : MonoBehaviour
         UpdateWorldSizeFromLocal();
         MakeDirty();
 
-        OnDragPoint = true;
+
+        if (furnitureMergeToWall.IsInWall())
+            furnitureMergeToWall.RotationToWallLine();
     }
 
     /// <summary>
@@ -411,7 +444,7 @@ public partial class FurnitureItem : MonoBehaviour
     public void DeActiveDrag()
     {
         furnitureMergeToWall.EndSnap();
-        OnDragPoint = false;
+        InteractionFlags.OnDragMovePoint = false;
     }
 
     /// <summary>
@@ -435,6 +468,8 @@ public partial class FurnitureItem : MonoBehaviour
     public void StartDrag()
     {
         startPos = GetWorldMousePosition();
+        InteractionFlags.OnDragMovePoint = true;
+
     }
 
     /// <summary>
@@ -442,7 +477,7 @@ public partial class FurnitureItem : MonoBehaviour
     /// </summary>
     public void RotateToMouse()
     {
-        Vector3 mouseWorld = GetWorldMousePosition();
+        Vector3 mouseWorld = FurnitureDragPointWarperUI.Instance.correctPosition;
 
         // Nếu bounds.center được lưu là local position relative tới THIS transform:
         Vector3 centerWorld = transform.TransformPoint(bounds.center);
@@ -509,10 +544,12 @@ public partial class FurnitureItem : MonoBehaviour
     /// <param name="furnitureData"></param>
     public void FetchData(DrawingInstanced furnitureData)
     {
+        // item được gọi hàm này luônn là object3 mới
         data = furnitureData;
 
         // Cập nhật các thuộc tính từ dữ liệu
-
+        var room = RoomStorage.GetRoomByID(data.roomID);
+        furnitureMergeToWall.SetAttachedRoom(room);
         // Cập nhật vị trí và kích thước của sprite
         data.size.ClampSize();
         // set from data
@@ -525,6 +562,13 @@ public partial class FurnitureItem : MonoBehaviour
         bounds.size = new Vector3(width, 1, length);
         // cập nhật lại rotation và position theo check point
         RefreshCheckPointsByBounds();
+        InitLineAndText();
+
+
+        if (lineType == LineType.Door || lineType == LineType.Window)
+        {
+            furnitureMergeToWall.TryToMergeAndSnapInAllWall();
+        }
     }
 
     /// <summary>
@@ -649,7 +693,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void CreareEditCommandBySnapShot()
     {
-        
-        UndoRedoController.Instance.AddToUndo(new EditItemCommand(SnapShotTemp));
+
+        UndoRedoController.Instance.AddToUndo(new EditItemCommand(SnapShotTemp, this.data));
     }
 }

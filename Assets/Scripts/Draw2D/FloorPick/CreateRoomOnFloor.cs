@@ -65,11 +65,12 @@ public class CreateRoomOnFloor : MonoBehaviour
     private LineRenderer arrowD, arrowDHead;   // P1 -> P2 (tuỳ chọn)
     private TextMesh arrowXText, arrowZText, arrowDText;
 
+    [SerializeField] private FocusFunctionFieldUI focusFunctionField;
     void Start()
     {
         checkPointManager = FindFirstObjectByType<CheckpointManager>();
-        if (CreateRoomButton != null) CreateRoomButton.onClick.AddListener(TogglePlacingMode);
-        OnClickCreateRoomEvent += TogglePlacingMode;
+        if (CreateRoomButton != null) CreateRoomButton.onClick.AddListener(ActivePacingMode);
+        OnClickCreateRoomEvent += ActivePacingMode;
         // Material Unlit để tô màu LineRenderer/TextMesh
         var unlit = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
         previewLineMat = new Material(unlit);
@@ -77,7 +78,7 @@ public class CreateRoomOnFloor : MonoBehaviour
 
     void OnDestroy()
     {
-        if (CreateRoomButton != null) CreateRoomButton.onClick.RemoveListener(TogglePlacingMode);
+        if (CreateRoomButton != null) CreateRoomButton.onClick.RemoveListener(ActivePacingMode);
         DestroyPreviewImmediate();
         if (firstMarker) Destroy(firstMarker);
         IsCreateRooom = false;
@@ -164,26 +165,33 @@ public class CreateRoomOnFloor : MonoBehaviour
                 Debug.LogError("[CreateRoom] MouseUp nhưng không còn ở cùng RoomFloor -> huỷ.");
                 ResetDragState(keepPlacing: true);
             }
-            IsCreateRooom = false;
+            //IsCreateRooom = false;
         }
     }
 
     // ===== Toggle =====
-    private void TogglePlacingMode()
+    public void ActivePacingMode()
     {
-        placingActive = !placingActive;
+        if (FloorStorage.floors.Count == 0)
+        {
+            ModularPopup.CreatePopup(MessageLog.ErrorMessage_CreateRoom, "Phòng chỉ có thể đặt trên nền", ModularPopup.PopupAsset.toastPopupError);
+            return;
+        }
+        placingActive = true;
+
+        focusFunctionField.Open(DeActivePacingMode);
+    }
+
+
+    public void DeActivePacingMode()
+    {
+        placingActive = false;
         if (!placingActive)
         {
             ResetDragState(keepPlacing: false);
             IsCreateRooom = false;
         }
 
-        if (CreateRoomButton != null)
-        {
-            var colors = CreateRoomButton.colors;
-            colors.normalColor = placingActive ? new Color(0.8f, 1f, 0.8f) : Color.white;
-            CreateRoomButton.colors = colors;
-        }
     }
 
     // ===== Raycast chuột -> world pos + collider + RoomFloor root =====
@@ -252,12 +260,12 @@ public class CreateRoomOnFloor : MonoBehaviour
         }
 
         // Arrow renderers + text
-        if (arrowX == null)      arrowX      = CreateLR("ArrowX", arrowWidth, 20);
-        if (arrowXHead == null)  arrowXHead  = CreateLR("ArrowXHead", arrowWidth, 21);
-        if (arrowZ == null)      arrowZ      = CreateLR("ArrowZ", arrowWidth, 20);
-        if (arrowZHead == null)  arrowZHead  = CreateLR("ArrowZHead", arrowWidth, 21);
-        if (arrowD == null)      arrowD      = CreateLR("ArrowD", arrowWidth, 30);
-        if (arrowDHead == null)  arrowDHead  = CreateLR("ArrowDHead", arrowWidth, 31);
+        if (arrowX == null) arrowX = CreateLR("ArrowX", arrowWidth, 20);
+        if (arrowXHead == null) arrowXHead = CreateLR("ArrowXHead", arrowWidth, 21);
+        if (arrowZ == null) arrowZ = CreateLR("ArrowZ", arrowWidth, 20);
+        if (arrowZHead == null) arrowZHead = CreateLR("ArrowZHead", arrowWidth, 21);
+        if (arrowD == null) arrowD = CreateLR("ArrowD", arrowWidth, 30);
+        if (arrowDHead == null) arrowDHead = CreateLR("ArrowDHead", arrowWidth, 31);
 
         if (arrowXText == null) arrowXText = CreateText("ArrowXText", 22, arrowTextFontSize, arrowTextCharSize, arrowColor);
         if (arrowZText == null) arrowZText = CreateText("ArrowZText", 22, arrowTextFontSize, arrowTextCharSize, arrowColor);
@@ -483,7 +491,7 @@ public class CreateRoomOnFloor : MonoBehaviour
         Debug.Log($"[CreateRoom] Tạo room {room.ID} thuộc floor {floor.ID} | 4 đỉnh: {l0}, {l1}, {l2}, {l3}");
 
         ResetDragState(keepPlacing: false);
-        placingActive = false;
+        //placingActive = false;
         if (CreateRoomButton != null)
         {
             var colors = CreateRoomButton.colors;
@@ -491,12 +499,12 @@ public class CreateRoomOnFloor : MonoBehaviour
             CreateRoomButton.colors = colors;
         }
 
-        UndoRedoController.Instance.AddToUndo(new CreateRoomCommand(room.ID));
+        UndoRedoController.Instance.AddToUndo(new CreateRoomCommand(room));
     }
 
     public void CreateRoomByRoomData(Room room)
     {
-        
+
     }
 
     private void ResetDragState(bool keepPlacing)

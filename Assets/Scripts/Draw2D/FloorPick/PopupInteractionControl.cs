@@ -7,14 +7,22 @@ public class PopupInteractionControl : MonoBehaviour
     public bool IsFloorHandleDragging = false;
 
     public bool IsRoomFloorDragging = false;
+    public bool IsOpenBottomSheetUI = false;
 
-    private void Update()
+    
+
+    private void OnEnable()
     {
-        if (gameObject.activeSelf)
-        {
-            InteractionFlags.IsFloorHandleDragging = IsFloorHandleDragging;
-            InteractionFlags.IsRoomFloorDragging = IsRoomFloorDragging;
-        }
+        InteractionFlags.IsFloorHandleDragging = IsFloorHandleDragging;
+        InteractionFlags.IsRoomFloorDragging = IsRoomFloorDragging;
+        InteractionFlags.IsOpenBottomSheetUI = IsOpenBottomSheetUI;
     }
-  
+
+    private void OnDisable()
+    {
+        InteractionFlags.IsFloorHandleDragging = !IsFloorHandleDragging;
+        InteractionFlags.IsRoomFloorDragging = !IsRoomFloorDragging;
+        InteractionFlags.IsOpenBottomSheetUI = !IsOpenBottomSheetUI;
+    }
+
 }

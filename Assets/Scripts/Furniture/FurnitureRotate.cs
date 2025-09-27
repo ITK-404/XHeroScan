@@ -1,27 +1,44 @@
-using Org.BouncyCastle.Ocsp;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class FurnitureRotate : MonoBehaviour
 {
     [SerializeField] private FurnitureItem furnitureItem;
     private Quaternion rotate;
+
+    private void Awake()
+    {
+    }
+
     private void OnMouseDown()
+    {
+        StartRotate();
+    }
+
+    public void StartRotate()
     {
         FurnitureItem.SnapShotTemp = furnitureItem.data;
         rotate = furnitureItem.data.size.rotation;
     }
 
-    private void OnMouseDrag()
+    public void OnMouseDrag()
     {
-        FurnitureItem.OnDragPoint = true;
+        Dragging();
+    }
+
+    public void Dragging()
+    {
+        InteractionFlags.OnDragMovePoint = true;
         furnitureItem.RotateToMouse();
-        
     }
 
     private void OnMouseUp()
     {
-        FurnitureItem.OnDragPoint = false;
+        OnEndDrag();
+    }
+
+    public void OnEndDrag()
+    {
+        InteractionFlags.OnDragMovePoint = false;
 
         if (rotate.Equals(furnitureItem.data.size.rotation) == false)
         {

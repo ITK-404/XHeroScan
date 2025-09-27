@@ -28,7 +28,6 @@ public class FurnitureEditFunction : MonoBehaviour
     private BottomSheetInputUI BottomSheetInputUI;
 
     private ToggleFlipGroup toggleFlipGroup;
-
     private void Start()
     {
         furnitureManager = FurnitureManager.Instance;
@@ -40,10 +39,11 @@ public class FurnitureEditFunction : MonoBehaviour
         thicknessInputField = settingPanel.GetParameterInputField(IntParameterType.Thickness);
         distanceFromGroundInputField = settingPanel.GetParameterInputField(IntParameterType.DistanceFromGround);
         
-        widthInputField = settingPanel.GetParameterInputField(IntParameterType.Width);
-        lengthInputField = settingPanel.GetParameterInputField(IntParameterType.Length);
-        heightInputField = settingPanel.GetParameterInputField(IntParameterType.Height);
-
+        
+        if(heightInputField == null)
+        {
+            Debug.Log("height innput field is ull");
+        }
 
         settingPanel.OnApplyAction += OnChangeSize;
 
@@ -53,6 +53,10 @@ public class FurnitureEditFunction : MonoBehaviour
         popupEdit.doubleBtn.onClick.AddListener(DoubleFurniture);
 
         bottomSheetUI.OnStartShowAnim.AddListener(OnRefreshValue);
+
+        widthInputField = settingPanel.GetParameterInputField(IntParameterType.Width);
+        lengthInputField = settingPanel.GetParameterInputField(IntParameterType.Length);
+        heightInputField = settingPanel.GetParameterInputField(IntParameterType.Height);
 
     }
 
@@ -78,7 +82,7 @@ public class FurnitureEditFunction : MonoBehaviour
         if(currentFurniture != null)
         {
             var furniture = currentFurniture.InitClone();
-            UndoRedoController.Instance.AddToUndo(new CreateItemCommand(furniture.data.instanceID));
+            UndoRedoController.Instance.AddToUndo(new CreateItemCommand(furniture.data));
 
         }
     }
@@ -179,6 +183,8 @@ public class FurnitureEditFunction : MonoBehaviour
 
             // maybe create world space canvas
         }
+        if (furnitureManager.placementController.tempDragItem != null) return;
+
         currentPopup.gameObject.SetActive(currentFurniture);
 
         //if (currentFurniture != null)

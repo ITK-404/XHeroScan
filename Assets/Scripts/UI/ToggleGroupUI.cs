@@ -7,7 +7,7 @@ public class ToggleGroupUI : MonoBehaviour
     public DrawingTool drawingTool;
     public CheckpointManager checkpointManager;
     public PenManager penManager;
-    
+    public FocusFunctionFieldUI focusFunctionFieldUI;
     private void Start()
     {
         Setup();
@@ -21,15 +21,14 @@ public class ToggleGroupUI : MonoBehaviour
             if (item.btn == null) continue;
             item.btn.onClick.AddListener(() =>
             {
-                OnSelectThis(item);
-            });   
+                Active(item);
+            });
         }
-        
+
     }
 
     public void ShowFirstButton()
     {
-        OnSelectThis(list[0]);
     }
 
     public void ToggleOffAll()
@@ -42,36 +41,36 @@ public class ToggleGroupUI : MonoBehaviour
     }
 
     [SerializeField] private GameObject toastUI;
-    private void OnSelectThis(ToggleButtonLineType btn)
+
+    public void Active(ToggleButtonLineType btn)
     {
         if (RoomStorage.rooms.Count == 0)
         {
+            ModularPopup.CreatePopup("Không thể kích hoạt tạo tường", "Cần ít nhất một phòng", ModularPopup.PopupAsset.toastPopupError);
             return;
         }
-        
+
         if (btn.currentState == ToggleButtonUIBase.State.DeActive)
         {
             btn.ChangeState(ToggleButtonUIBase.State.Active);
             // lock pen
             penManager.ChangeState(false);
         }
-        else
-        {
-            // unlock pen, do chỉ 1 btn được bật nên không cần chạy code ở dưới
-            btn.ChangeState(ToggleButtonUIBase.State.DeActive);
-            penManager.ChangeState(true);
-            return;
-        }
-
-        foreach (var item in list)
-        {
-            if (item != btn)
-            {
-                item.ChangeState(ToggleButtonUIBase.State.DeActive);
-            }
-        }
 
         drawingTool.currentLineType = btn.lineType;
         checkpointManager.currentLineType = btn.lineType;
+
+        focusFunctionFieldUI.Open(() =>
+        {
+            DeActive(btn);
+        });
     }
+
+    public void DeActive(ToggleButtonLineType btn)
+    {
+        btn.ChangeState(ToggleButtonUIBase.State.DeActive);
+        penManager.ChangeState(true);
+        return;
+    }
+
 }

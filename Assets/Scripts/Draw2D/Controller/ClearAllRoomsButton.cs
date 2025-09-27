@@ -44,22 +44,35 @@ public class ClearAllRoomsButton : MonoBehaviour
             var room = RoomStorage.GetRoomByID(currentRoomID);
             string displayName = !string.IsNullOrEmpty(room?.roomName) ? room.roomName : currentRoomID;
 
-            var popupOne = Instantiate(ModularPopup.PopupAsset.modularPopupWarningDelete).GetComponent<ModularPopup>();
-            popupOne.AutoFindCanvasAndSetup();
-            popupOne.Header = string.Format(CLEAR_ONE_WARNING, displayName);
-            popupOne.ClickYesEvent = () =>
-            {
-                Debug.Log($"Người dùng xác nhận: Xóa phòng {displayName} ({currentRoomID})");
-                UndoRedoController.Instance.AddToUndo(new DeleteRoomCommand(new Room(room)));
-                checkpointManager.ClearRoomById(currentRoomID);
-                checkpointManager?.ClearSelectedRoom();
+            //var popupOne = Instantiate(ModularPopup.PopupAsset.modularPopupWarningDelete).GetComponent<ModularPopup>();
+            //popupOne.AutoFindCanvasAndSetup();
+            //popupOne.Header = string.Format(CLEAR_ONE_WARNING, displayName);
+            //popupOne.ClickYesEvent = () =>
+            //{
+            //    Debug.Log($"Người dùng xác nhận: Xóa phòng {displayName} ({currentRoomID})");
+            //    UndoRedoController.Instance.AddToUndo(new DeleteRoomCommand(new Room(room)));
+            //    checkpointManager.ClearRoomById(currentRoomID);
+            //    checkpointManager?.ClearSelectedRoom();
 
-                // Reset UI
-                if (toggleGroupUI != null) toggleGroupUI.ToggleOffAll();
-                if (penManager != null) penManager.ChangeState(true);
-                if (roomInfoDisplay != null) roomInfoDisplay.ResetState();
-            };
-            popupOne.autoClearWhenClick = true;
+            //    // Reset UI
+            //    if (toggleGroupUI != null) toggleGroupUI.ToggleOffAll();
+            //    if (penManager != null) penManager.ChangeState(true);
+            //    if (roomInfoDisplay != null) roomInfoDisplay.ResetState();
+            //};
+            //popupOne.autoClearWhenClick = true;
+
+
+            Debug.Log($"Người dùng xác nhận: Xóa phòng {displayName} ({currentRoomID})");
+            UndoRedoController.Instance.AddToUndo(new DeleteRoomCommand(new Room(room)));
+            checkpointManager.ClearRoomById(currentRoomID);
+            checkpointManager?.ClearSelectedRoom();
+            FurnitureManager.Instance.ClearWindowAndDoorAttached(currentRoomID);
+
+
+            // Reset UI
+            if (toggleGroupUI != null) toggleGroupUI.ToggleOffAll();
+            if (penManager != null) penManager.ChangeState(true);
+            if (roomInfoDisplay != null) roomInfoDisplay.ResetState();
             return;
         }
 

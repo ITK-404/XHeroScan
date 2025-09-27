@@ -28,20 +28,30 @@ public class InputCustomers : MonoBehaviour
     [Header("Rebuild Settings")]
     [Tooltip("Độ nhô của line/marker so với nền phòng khi rebuild (fallback nếu không tìm thấy CreateRoomOnFloor).")]
     [SerializeField] private float fallbackRoomWallLift = 0.003f;
-
+    private BottomSheetUI BottomSheetUI;
     private void Awake()
     {
         if (!roomInfoDisplay) roomInfoDisplay = FindFirstObjectByType<RoomInfoDisplay>();
         if (!checkpointManager) checkpointManager = FindFirstObjectByType<CheckpointManager>();
-        if (!spawnFloor) spawnFloor = FindFirstObjectByType<DragFromButtonSpawnFloor>();
+        if (!spawnFloor) spawnFloor = FindFirstObjectByType<DragFromButtonSpawnFloor>(FindObjectsInactive.Include);
         //if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedRoom);
         //if (buttonOk) buttonOk.onClick.AddListener(ApplyDimensionsForSelectedFloor);
+        BottomSheetUI = GetComponent<BottomSheetUI>();
 
         floorSettingPanel.OnApplyAction += ApplyDimensionsForSelectedRoom;
         floorSettingPanel.OnApplyAction += ApplyDimensionsForSelectedFloor;
 
-
+        BottomSheetUI.OnStartShowAnim.AddListener(TryLoadDataToFields);
     }
+
+    private void OnDestroy()
+    {
+        floorSettingPanel.OnApplyAction -= ApplyDimensionsForSelectedRoom;
+        floorSettingPanel.OnApplyAction -= ApplyDimensionsForSelectedFloor;
+
+        BottomSheetUI.OnStartShowAnim.RemoveListener(TryLoadDataToFields);
+    }
+
     private void Start()
     {
         Invoke(nameof(Find), 0.5f);
@@ -53,17 +63,12 @@ public class InputCustomers : MonoBehaviour
         inputHeight = floorSettingPanel.GetParameterInputField(IntParameterType.Height).InputField;
         inputWidth = floorSettingPanel.GetParameterInputField(IntParameterType.Width).InputField;
         thicknessInput = floorSettingPanel.GetParameterInputField(IntParameterType.Thickness).InputField;
-    
+
         heightInputController = floorSettingPanel.GetParameterInputField(IntParameterType.Thickness).GetComponent<HeightInputController>();
     }
 
-    private void OnDestroy()
-    {
-        //if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedRoom);
-        //if (buttonOk) buttonOk.onClick.RemoveListener(ApplyDimensionsForSelectedFloor);
-    }
 
-    public void LoadDataWhenShow()
+    public void TryLoadDataToFields()
     {
         if (!roomInfoDisplay.TryGetSelection(out RoomInfoDisplay.SelType kind, out string roomId))
         {
@@ -71,34 +76,43 @@ public class InputCustomers : MonoBehaviour
             return;
         }
 
-        if (kind != RoomInfoDisplay.SelType.Room || string.IsNullOrEmpty(roomId))
+        if (kind == RoomInfoDisplay.SelType.Room && !string.IsNullOrEmpty(roomId))
         {
-            Debug.LogWarning($"[DimOK] Đang chọn {kind}, không phải ROOM hoặc ID rỗng -> không áp dụng.");
+            Debug.Log("Update Data when load");
+            var room = RoomStorage.GetRoomByID(roomId);
+            LoadData(room.thickness, room.center, room.checkpoints);
+            if (room.heights.Count > 0)
+            {
+                inputHeight.text = room.heights[0].ToString();
+            }
+            else
+            {
+                inputHeight.text = "0.0";
+            }
             return;
         }
-        var room = RoomStorage.GetRoomByID(roomId);
-        heightInputController.SetHeight(room.thickness);
-        UpdateInputWhenShow(room.center,room.checkpoints);
-      
-        if(room.heights.Count > 0)
-        {
-            inputHeight.text = room.heights[0].ToString();
-        }
-        else
-        {
-            inputHeight.text = "0.0";
-        }
 
+        if (kind == RoomInfoDisplay.SelType.Floor && !string.IsNullOrEmpty(roomId))
+        {
+            Debug.Log("Update Data when load");
+            var room = FloorStorage.GetFloorByID(roomId);
+            LoadData(0.1f, room.center, room.checkpoints);
+            if (room.heights.Count > 0)
+            {
+                inputHeight.text = room.heights[0].ToString();
+            }
+            else
+            {
+                inputHeight.text = "0.0";
+            }
+            return;
+        }
     }
 
-    private void UpdateInputWhenShow(Vector3 center, List<Vector2> checkPoints)
+    private void LoadData(float thickness, Vector3 center, List<Vector2> checkPoints)
     {
-        //Bounds bounds = new(checkPoints[0],Vector3.zero);
-        //bounds.center = center;
-        //foreach (var item in checkPoints)
-        //{
-        //    bounds.Encapsulate(item);
-        //}
+        heightInputController.SetHeight(thickness);
+
         GetWidthHeight(checkPoints, out var height, out var width);
         inputWidth.text = width.ToString();
         inputLength.text = height.ToString();
@@ -171,7 +185,7 @@ public class InputCustomers : MonoBehaviour
             Debug.LogWarning("[DimOK] Không tìm thấy input Length/Width trong FloorSettingPanel.");
             return (0, 0, 0, false);
         }
-        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W)|| !TryParse(inputHeight?.text, out float H))
+        if (!TryParse(inputLength?.text, out float L) || !TryParse(inputWidth?.text, out float W) || !TryParse(inputHeight?.text, out float H))
         {
             Debug.LogWarning("[DimOK] Cần nhập đủ Chiều dài & Chiều rộng cho FLOOR.");
             return (0, 0, 0, false);
@@ -205,8 +219,10 @@ public class InputCustomers : MonoBehaviour
             Debug.Log("This is same, does not create it againt");
             return;
         }
+        var oldRoom = new Room(room);
+        var oldList = FurnitureManager.Instance.GetFurnitureInsideRoom(room.ID);
 
-        UndoRedoController.Instance.AddToUndo(new EditRoomCommand(new Room(room)));
+
         if (room == null)
         {
             Debug.LogWarning($"[DimOK] Không tìm thấy ROOM với ID={roomId}");
@@ -242,7 +258,7 @@ public class InputCustomers : MonoBehaviour
         Vector3 v1 = new Vector3(rect[1].x, baseY + roomWallLift, rect[1].y);
         Vector3 v2 = new Vector3(rect[2].x, baseY + roomWallLift, rect[2].y);
         Vector3 v3 = new Vector3(rect[3].x, baseY + roomWallLift, rect[3].y);
-        
+
         room.wallLines.Add(new WallLine(v0, v1, LineType.Wall));
         room.wallLines.Add(new WallLine(v1, v2, LineType.Wall));
         room.wallLines.Add(new WallLine(v2, v3, LineType.Wall));
@@ -307,6 +323,9 @@ public class InputCustomers : MonoBehaviour
         //CameraResizeByFloor.Instance.Resize(room.checkpoints);
         // === HEIGHT update ===
         room.heights.Clear(); // xóa cũ để tránh dư
+
+        UndoRedoController.Instance.AddToUndo(new EditRoomCommand(oldRoom, oldList, new Room(room)));
+
         for (int i = 0; i < room.wallLines.Count; i++)
         {
             // đồng bộ list heights
@@ -357,8 +376,6 @@ public class InputCustomers : MonoBehaviour
         var target = FindFloor(floorId);
         if (target == null) return;
         var cloneOfTarget = Floor.Clone(target);
-        float prevousWidth = target.width;
-        float previousLength = target.length;
         // chú ý: length = chiều dọc (Z), width = chiều ngang (X)
         // Đọc L & W
 
@@ -367,9 +384,9 @@ public class InputCustomers : MonoBehaviour
         if (!ok) return;
 
         // W và L bị đảo ngươc4
-        if (TryUpdateFloor(target, L, W))
+        if (TryUpdateFloor(target, W, L))
         {
-            UndoRedoController.Instance.AddToUndo(new EditFloorCommand(cloneOfTarget));
+            UndoRedoController.Instance.AddToUndo(new EditFloorCommand(cloneOfTarget, Floor.Clone(FindFloor(floorId))));
             floorSettingPanel.ResetAllParameters();
         }
     }
@@ -402,8 +419,6 @@ public class InputCustomers : MonoBehaviour
         // Tính centroid hiện có
         Vector2 centroid = ComputeCentroid2D(target.checkpoints);
         // Input của hàm bị ngược lúc truyền vào S
-        target.width = L;
-        target.length = W;
         // Ghi lại polygon L×W (axis-aligned theo world) vào storage
         float hx = L * 0.5f, hy = W * 0.5f;
         target.checkpoints = new List<Vector2>(4)
@@ -415,9 +430,9 @@ public class InputCustomers : MonoBehaviour
         };
 
         // UPDATE POINTS + LINE bằng công cụ hiện trường
+        spawnFloor.LoadStateFromFloorId(floorId);
         if (spawnFloor != null)
         {
-            spawnFloor.LoadStateFromFloorId(floorId);
         }
         else
         {
