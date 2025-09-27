@@ -76,6 +76,7 @@ public struct DrawingInstanced
     public bool isFlipVertical;
     public bool isFlipHorizontal;
 
+    public float ratio;
     public void InitNewInstanceID()
     {
         instanceID = Guid.NewGuid().ToString();

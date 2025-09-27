@@ -35,25 +35,25 @@ public class UndoRedoController : MonoBehaviour
         scanARTempList = new List<IUndoRedoCommand>(undoList);
         loadFromScanAR = true;
     }
-#if UNITY_EDITOR
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.F))
-        {
-            Undo();
-        }
+//#if UNITY_EDITOR
+//    private void Update()
+//    {
+//        if (Input.GetKeyDown(KeyCode.F))
+//        {
+//            Undo();
+//        }
 
-        if (Input.GetKeyDown(KeyCode.G))
-        {
-            Redo();
-        }
+//        if (Input.GetKeyDown(KeyCode.G))
+//        {
+//            Redo();
+//        }
 
-        if (Input.GetKeyDown(KeyCode.H))
-        {
-            RoomStorage.CheckDuplicateRoomID();
-        }
-    }
-#endif
+//        if (Input.GetKeyDown(KeyCode.H))
+//        {
+//            RoomStorage.CheckDuplicateRoomID();
+//        }
+//    }
+//#endif
 
     public bool CanUndo() => undoList.Count > 0;
     public bool CanRedo() => redoList.Count > 0;

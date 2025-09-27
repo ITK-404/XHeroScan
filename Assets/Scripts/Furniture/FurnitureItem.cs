@@ -21,7 +21,7 @@ public enum FurnitureState
 }
 public partial class FurnitureItem : MonoBehaviour
 {
- 
+
 
     private static Camera mainCam;
     public static DrawingInstanced SnapShotTemp;
@@ -46,7 +46,7 @@ public partial class FurnitureItem : MonoBehaviour
     public bool isUsingCenterPosToSnap = false; // khi biến này = false và allow snap to wall = true, furniture sẽ gắn vào tường bằng bottom anchor
     public bool alwayMakeSquare = false; // nếu kích hoạt thì hình dạng luôn tạo thành hình vuông
     public LineType lineType;
-   
+
     [Header("References")]
     public DrawingInstanced data;
     public Transform modelContainer;
@@ -172,12 +172,15 @@ public partial class FurnitureItem : MonoBehaviour
             bottomPoint.gameObject.SetActive(true);
         }
 
-            rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
+        rotatePoint.gameObject.SetActive(allowRotationByCheckPoint);
     }
     [SerializeField] private LineRenderer lrPrefab;
-
+    private bool isCallInit = false;
     public void InitLineAndText()
     {
+        if (isCallInit) return;
+        isCallInit = true;
+
         lineRenderer = Instantiate(lrPrefab);
         lineRenderer.transform.parent = checkPointParent.transform.parent;
         lineRenderer.gameObject.SetActive(false);
@@ -267,6 +270,7 @@ public partial class FurnitureItem : MonoBehaviour
 
     public void RefreshCheckPointsByBounds()
     {
+        if (furnitureVisuals == null) return;
         // tính toán vị trí của check point dựa theo bound
         foreach (var item in pointsArray)
         {
@@ -430,7 +434,7 @@ public partial class FurnitureItem : MonoBehaviour
         MakeDirty();
 
 
-        if(furnitureMergeToWall.IsInWall())
+        if (furnitureMergeToWall.IsInWall())
             furnitureMergeToWall.RotationToWallLine();
     }
 
@@ -540,10 +544,12 @@ public partial class FurnitureItem : MonoBehaviour
     /// <param name="furnitureData"></param>
     public void FetchData(DrawingInstanced furnitureData)
     {
+        // item được gọi hàm này luônn là object3 mới
         data = furnitureData;
 
         // Cập nhật các thuộc tính từ dữ liệu
-
+        var room = RoomStorage.GetRoomByID(data.roomID);
+        furnitureMergeToWall.SetAttachedRoom(room);
         // Cập nhật vị trí và kích thước của sprite
         data.size.ClampSize();
         // set from data
@@ -556,6 +562,13 @@ public partial class FurnitureItem : MonoBehaviour
         bounds.size = new Vector3(width, 1, length);
         // cập nhật lại rotation và position theo check point
         RefreshCheckPointsByBounds();
+        InitLineAndText();
+
+
+        if (lineType == LineType.Door || lineType == LineType.Window)
+        {
+            furnitureMergeToWall.TryToMergeAndSnapInAllWall();
+        }
     }
 
     /// <summary>

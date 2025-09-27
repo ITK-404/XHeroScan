@@ -52,6 +52,7 @@ public class FurnitureDraggingByRoom
         foreach(var item in validFurnitureToDrag)
         {
             item.furnitureDrag.SetCanMove(canMove: false);
+            item.furnitureMergeToWall.EndSnap();
         }
     }
 

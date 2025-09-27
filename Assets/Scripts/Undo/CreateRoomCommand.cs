@@ -28,20 +28,31 @@ public class CreateRoomCommand : IUndoRedoCommand
 public class DeleteRoomCommand : IUndoRedoCommand
 {
     public Room room;
-
+    private List<DrawingInstanced> doorAndWindows = new();
     public DeleteRoomCommand(Room room)
     {
         this.room = room;
+        var furnitureInsideRoom = FurnitureManager.Instance.GetRuntimeItemInsideRoom(room.ID);
+        foreach(var item in furnitureInsideRoom)
+        {
+            if(item.lineType == LineType.Window || item.lineType == LineType.Door)
+            {
+                Debug.Log("Stored furniture data for restore");
+                doorAndWindows.Add(item.data);
+            }
+        }
     }
 
     public void Redo()
     {
         CheckpointManager.Instance.ClearRoomById(room.ID);
+        FurnitureManager.Instance.ClearWindowAndDoorAttached(room.ID);
     }
 
     public void Undo()
     {
         CheckpointManager.Instance.RestoreRoom(room);
+        FurnitureManager.Instance.RestoreDrawingInstanced(doorAndWindows);
     }
 }
 public class MovePointRoomCommand : IUndoRedoCommand
@@ -86,13 +97,7 @@ public class MovePointRoomCommand : IUndoRedoCommand
         }
 
         // restore lại vị trí các furniture bên trong phòng
-        foreach (var instacedData in drawingInstanceds)
-        {
-            var furniture = FurnitureManager.Instance.GetFurnitureByInstanceID(instacedData.instanceID);
-            if (furniture == null) continue;
-            furniture.FetchData(instacedData);
-            Debug.Log($"World Position: {furniture.data.worldPosition}");
-        }
+        FurnitureManager.Instance.RestoreDrawingInstanced(drawingInstanceds);
         FurnitureManager.Instance.ForceSnapAllToNearestRoom();
         Debug.Log("After Total room count:  " + RoomStorage.rooms.Count);
     }
@@ -137,12 +142,11 @@ public class EditRoomCommand : IUndoRedoCommand
         Debug.Log("After Total room count:  " + RoomStorage.rooms.Count);
 
         var _room = RoomStorage.GetRoomByID(oldRoom.ID);
-        CameraResizeByFloor.Instance.Resize(room.checkpoints);
+        //CameraResizeByFloor.Instance.Resize(room.checkpoints);
     }
 
     private void RestoreFurnitureInRoom(List<DrawingInstanced> drawList)
     {
-
         // restore lại vị trí các furniture bên trong phòng
         foreach (var instacedData in drawList)
         {
@@ -151,6 +155,5 @@ public class EditRoomCommand : IUndoRedoCommand
             Debug.Log(furniture.name + " Restore furniture in room ");
             furniture.FetchData(instacedData);
         }
-        //FurnitureManager.Instance.ForceSnapAllToNearestRoom();
     }
 }

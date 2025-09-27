@@ -6,7 +6,6 @@ using UnityEngine;
 [Serializable]
 public class FurnitureMergeToWall
 {
-    public float ratio;
     private FurnitureItem furnitureItem;
 
     private FurniturePoint leftPoint;
@@ -18,7 +17,7 @@ public class FurnitureMergeToWall
 
     private WallLine typedWallLine;
     public WallLine PDFWallLine => typedWallLine;
-
+    private float ratio => furnitureItem.data.ratio;
 
     public FurnitureMergeToWall(FurnitureItem furnitureItem)
     {
@@ -42,20 +41,22 @@ public class FurnitureMergeToWall
     }
 
     private bool allowSnap = false;
-    public void StartSnap() => allowSnap = true;
-    public void EndSnap() => allowSnap = false;
+    public void StartSnap()
+    {
+        Debug.Log("Start Snap");
+        allowSnap = true;
+    }
+    public void EndSnap()
+    {
+        Debug.Log("End Snap");
+        allowSnap = false;
+    }
 
-    private float timer;
     public void Update()
     {
         if (allowSnap)
         {
-            if(timer < 0)
-            {
-                TryToMergeAndSnapInAllWall();
-                timer = 0.05f;
-            }
-            timer -= Time.deltaTime;
+            TryToMergeAndSnapInAllWall();
         }
         else
         {
@@ -105,11 +106,19 @@ public class FurnitureMergeToWall
 
     public void TryToMergeAndSnapInAllWall()
     {
+        //if (furnitureItem.lineType == LineType.None)
+        //{
+        //    return;
+        //}
         SnapTemp(allowSnap);
     }
 
     public void ForceSnapToWall()
     {
+        //if(furnitureItem.lineType == LineType.None)
+        //{
+        //    return;
+        //}
         SnapTemp(true);
     }
 
@@ -132,12 +141,16 @@ public class FurnitureMergeToWall
         //Debug.Log($"Thông số {wallLine.start} {wallLine.end}");
         furnitureItem.MoveAnchorToPositionWithoutChangeShape(CheckpointType.Bottom, firstDoorPoint);
 
-        ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
+        furnitureItem.data.ratio = GetPointRatio(wallLine.start, wallLine.end, firstDoorPoint);
     }
 
     public void SnapToNearestWallOfCurrentRoom()
     {
-        if (attachedRoom == null) return;
+        if (attachedRoom == null)
+        {
+            Debug.Log("Phòng bị null, không thể snap vào");
+            return;
+        }
 
         SnapToNearestWallLine(new[] { attachedRoom }, float.MaxValue, out var wallLine, out var firstDoorPoint);
 
@@ -146,7 +159,7 @@ public class FurnitureMergeToWall
         if (wallLine == null)
         {
             Debug.Log("không kiếm được wallline để snap vào");
-            ratio = 0;
+            furnitureItem.data.ratio = 0;
             return;
         }
 
@@ -215,7 +228,7 @@ public class FurnitureMergeToWall
             }
         }
     }
-  
+
     float GetPointRatio(Vector3 start, Vector3 end, Vector3 point)
     {
         Vector3 ab = end - start;
@@ -224,7 +237,7 @@ public class FurnitureMergeToWall
         return Mathf.Clamp01(t);
     }
 
-   
+
     private void ProcessWidthForWindow()
     {
         // xử lý độ dày cho cửa sổ
@@ -285,6 +298,11 @@ public class FurnitureMergeToWall
         }
 
         return wallLine != null;
+    }
+
+    public void SetAttachedRoom(Room room)
+    {
+        attachedRoom = room;
     }
 }
 
