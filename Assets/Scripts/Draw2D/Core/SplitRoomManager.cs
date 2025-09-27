@@ -37,6 +37,7 @@ public class SplitRoomManager : MonoBehaviour
         if (uniqueLoops.Count == 0) return;
 
         string gid = !string.IsNullOrEmpty(originalRoom.groupID) ? originalRoom.groupID : originalRoom.ID;
+        string fid = !string.IsNullOrEmpty(originalRoom.floorID) ? originalRoom.floorID : originalRoom.ID;
 
         // === 1) BACKUP TOÀN BỘ TƯỜNG (giữ nguyên hết) ===
         var allWallsBackup = originalRoom.wallLines?.Select(w => new WallLine(w)).ToList() ?? new List<WallLine>();
@@ -47,6 +48,7 @@ public class SplitRoomManager : MonoBehaviour
         // loop0 -> giữ lại originalRoom.ID để tránh đổi id
         var loop0 = uniqueLoops[0];
         originalRoom.groupID = gid;
+        originalRoom.floorID = fid;
         originalRoom.checkpoints = loop0;
         originalRoom.center = GeoUtil.Centroid(originalRoom.checkpoints);
         // Tạm thời để trống, sẽ gán khi rebuild
@@ -62,6 +64,7 @@ public class SplitRoomManager : MonoBehaviour
             Room r = new Room();
             r.SetID(Guid.NewGuid().ToString());
             r.groupID = gid;
+            r.floorID = fid;
             r.checkpoints = lp;
             r.center = GeoUtil.Centroid(r.checkpoints);
             r.wallLines = new List<WallLine>();

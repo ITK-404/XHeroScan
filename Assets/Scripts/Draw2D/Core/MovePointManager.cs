@@ -129,15 +129,15 @@ public class MovePointManager : MonoBehaviour
     }
     
     private static Floor FindFloorById(string id)
+    {
+        if (string.IsNullOrEmpty(id) || FloorStorage.floors == null) return null;
+        for (int i = 0; i < FloorStorage.floors.Count; i++)
         {
-            if (string.IsNullOrEmpty(id) || FloorStorage.floors == null) return null;
-            for (int i = 0; i < FloorStorage.floors.Count; i++)
-            {
-                var f = FloorStorage.floors[i];
-                if (f != null && f.ID == id) return f;
-            }
-            return null;
+            var f = FloorStorage.floors[i];
+            if (f != null && f.ID == id) return f;
         }
+        return null;
+    }
 
     private static bool IsInsideFloorXZ(Vector3 p, Floor floor, float boundaryEps = 1e-4f)
     {
