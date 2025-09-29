@@ -42,6 +42,8 @@ public class RoomMeshController : MonoBehaviour
             if (InteractionFlags.OnDragFurniture) return;
             if (InteractionFlags.OnDragMovePoint) return;
             if (InteractionFlags.OnDragRotatePoint) return;
+            
+            if(PencilLine.isDragging) return;
 
             Touch touch = Input.GetTouch(0);
             switch (touch.phase)

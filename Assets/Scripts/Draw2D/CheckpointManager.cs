@@ -693,7 +693,8 @@ public class CheckpointManager : MonoBehaviour
             }
 
         if (room.wallLines != null) {
-            foreach (var wl in room.wallLines) {
+            foreach (var wl in room.wallLines)
+            {
                 Vector3 s2 = R * (wl.start - c3) + c3;
                 Vector3 e2 = R * (wl.end - c3) + c3;
                 wl.start = new Vector3(s2.x, wl.start.y, s2.z);
