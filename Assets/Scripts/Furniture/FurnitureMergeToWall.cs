@@ -17,7 +17,7 @@ public class FurnitureMergeToWall
 
     private WallLine typedWallLine;
     public WallLine PDFWallLine => typedWallLine;
-    private float ratio = 0;
+    private float ratio { get => furnitureItem.data.Ratio; set => furnitureItem.data.Ratio = value; }
 
     public FurnitureMergeToWall(FurnitureItem furnitureItem)
     {

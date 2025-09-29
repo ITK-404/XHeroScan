@@ -259,6 +259,19 @@ public partial class FurnitureManager : MonoBehaviour
         }
     }
 
+    public void UpdateFurnitureState(List<DrawingInstanced> drawList)
+    {
+        // restore lại vị trí các furniture bên trong phòng
+        foreach (var instacedData in drawList)
+        {
+            var furniture = FurnitureManager.Instance.GetFurnitureByInstanceID(instacedData.instanceID);
+            if (furniture == null) continue;
+            Debug.Log(furniture.name + $" Restore furniture in room {furniture.GetWorldPosition()} {instacedData.worldPosition}");
+            furniture.furnitureMergeToWall.ResetAttached();
+            furniture.FetchData(instacedData);
+        }
+    }
+
     [SerializeField] private Vector3 offset = Vector3.zero;
     private Vector3 GetWorldMousePosition()
     {
@@ -360,6 +373,8 @@ public partial class FurnitureManager : MonoBehaviour
 
     public void SetVisibleObjects(string roomID, bool state)
     {
+
+        // Hàm này đang có 2 nhiệm vụ là kiểm tra và set item vào room (nghĩa là set roomID của item nếu nằm trong phòng tương ứng)
         Debug.Log("Set visible objects");
         var room = RoomStorage.GetRoomByID(roomID);
 
@@ -387,8 +402,6 @@ public partial class FurnitureManager : MonoBehaviour
             {
                 item.data.roomID = roomID;
             }
-
-
         }
     }
 
@@ -423,6 +436,7 @@ public partial class FurnitureManager : MonoBehaviour
         List<DrawingInstanced> furnitures = new List<DrawingInstanced>();
         foreach (var item in runtimeFurnitures)
         {
+            Debug.Log($"Item {item.data.instanceID} {item.data.roomID}", item.gameObject);
             if (item.data.roomID == iD)
             {
                 furnitures.Add(item.data);
@@ -437,18 +451,14 @@ public partial class FurnitureManager : MonoBehaviour
     }
 
 
-    public void ClearWindowAndDoorAttached(string currentRoomID)
+    public void ClearItemInRoom(string currentRoomID)
     {
         List<FurnitureItem> destroyList = new();
         foreach(var item in runtimeFurnitures)
         {
             if(item.data.roomID == currentRoomID)
             {
-                var lineType = item.lineType;
-                if(lineType== LineType.Door || lineType == LineType.Window)
-                {
-                    destroyList.Add(item);
-                }
+                destroyList.Add(item);
             }
         }
 
