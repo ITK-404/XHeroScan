@@ -66,7 +66,7 @@ public class ClearAllRoomsButton : MonoBehaviour
             UndoRedoController.Instance.AddToUndo(new DeleteRoomCommand(new Room(room)));
             checkpointManager.ClearRoomById(currentRoomID);
             checkpointManager?.ClearSelectedRoom();
-            FurnitureManager.Instance.ClearWindowAndDoorAttached(currentRoomID);
+            FurnitureManager.Instance.ClearItemInRoom(currentRoomID);
 
 
             // Reset UI

@@ -553,6 +553,7 @@ public partial class FurnitureItem : MonoBehaviour
         // Cập nhật vị trí và kích thước của sprite
         data.size.ClampSize();
         // set from data
+        correctPosition = data.worldPosition;
         SetWorldPosition(data.worldPosition);
         modelContainer.transform.localScale = new Vector3(width, length, 1 * length * 0.5f);
 
@@ -567,7 +568,7 @@ public partial class FurnitureItem : MonoBehaviour
 
         if (lineType == LineType.Door || lineType == LineType.Window)
         {
-            furnitureMergeToWall.TryToMergeAndSnapInAllWall();
+            furnitureMergeToWall.SnapToNearestWallOfCurrentRoom();
         }
     }
 

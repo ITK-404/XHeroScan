@@ -29,15 +29,23 @@ public class FurnitureDraggingByRoom
             Debug.Log("RoomID đang null hoặc rỗng");
             return;
         }
+        // set visible if room is off
         furnitureManager.SetVisibleObjects(roomID, true);
+
         foreach(var item in furnitureManager.GetAllFurniture())
         {
+            // filer right here
             Debug.Log($"{item.data.roomID == roomID} {item.furnitureMergeToWall.IsInWall()}");
-            if(item.data.roomID == roomID && item.furnitureMergeToWall.IsInWall() == false)
+            
+            if (item.lineType == LineType.None)
             {
-                Debug.Log($"Find item to dragging with room: ", item.gameObject);   
-                validFurnitureToDrag.Add(item);
+                if (item.data.roomID == roomID)
+                {
+                    Debug.Log($"Find item to dragging with room: ", item.gameObject);
+                    validFurnitureToDrag.Add(item);
+                }
             }
+            
         }
 
         foreach(var item in validFurnitureToDrag)

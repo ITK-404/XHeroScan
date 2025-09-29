@@ -309,14 +309,16 @@ public class RoomMeshController : MonoBehaviour
             isDragging = true;
         }
 
-        oldList = FurnitureManager.Instance.GetFurnitureInsideRoom(RoomID); 
-        oldRoom = new Room(RoomStorage.GetRoomByID(RoomID));
 
         oldPosition = transform.position;
         oldCheckPointList = SaveCheckPointPosition(RoomID);
 
         furnitureDraggingByRoom.SetRoomID(RoomID);
         furnitureDraggingByRoom.StartDrag();
+      
+        oldList = FurnitureManager.Instance.GetFurnitureInsideRoom(RoomID);
+        Debug.Log("Start drag with item count inside room: " + oldList.Count);
+        oldRoom = new Room(RoomStorage.GetRoomByID(RoomID));
     }
     private FurnitureDraggingByRoom furnitureDraggingByRoom = new FurnitureDraggingByRoom();
 
@@ -354,8 +356,10 @@ public class RoomMeshController : MonoBehaviour
 
         if (Vector3.Distance(oldPosition, transform.position) > 0.1f)
         {
-            var newRoom = RoomStorage.GetRoomByID(RoomID);
-            UndoRedoController.Instance.AddToUndo(new EditRoomCommand(oldRoom, oldList, new Room(newRoom)));
+            var newRoom = new Room(RoomStorage.GetRoomByID(RoomID));
+            var oldRoom = new Room(this.oldRoom);
+            var list = new List<DrawingInstanced>(oldList);
+            UndoRedoController.Instance.AddToUndo(new EditRoomCommand(oldRoom, list, newRoom));
         }
 
         CreateUndoCommand();
@@ -365,26 +369,26 @@ public class RoomMeshController : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    private void OnMouseDown()
-    {
-        if (!PenManager.isPenActive) return;
-        if (isDragging) return;
-        OnStartDrag(Input.mousePosition);
-    }
+    //private void OnMouseDown()
+    //{
+    //    if (!PenManager.isPenActive) return;
+    //    if (isDragging) return;
+    //    OnStartDrag(Input.mousePosition);
+    //}
 
-    private void OnMouseUp()
-    {
-        OnEndDrag(Input.mousePosition);
-    }
+    //private void OnMouseUp()
+    //{
+    //    OnEndDrag(Input.mousePosition);
+    //}
 
-    private void OnMouseDrag()
-    {
-        if (this == null || gameObject == null || transform == null)
-            return;
-        if (!PenManager.isPenActive) return;
-        if (!isDragging) return;
-        DragRoom(Input.mousePosition);
-    }
+    //private void OnMouseDrag()
+    //{
+    //    if (this == null || gameObject == null || transform == null)
+    //        return;
+    //    if (!PenManager.isPenActive) return;
+    //    if (!isDragging) return;
+    //    DragRoom(Input.mousePosition);
+    //}
 #endif
 
     // ==== đổi sang Vector3 để khớp transform.position (tránh lỗi ép kiểu) ====

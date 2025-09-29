@@ -1,4 +1,3 @@
-using Org.BouncyCastle.Ocsp;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -7,7 +6,7 @@ public class FurnitureDrag : MonoBehaviour
     [SerializeField] private FurnitureItem furnitureItem;
     private Vector3 startPosition;
     private Vector3 touchPosition;
-    private Vector3 offsetPosition;
+    public Vector3 offsetPosition;
 
     private bool canMove = false;
     private bool canCreateCommand = false;
