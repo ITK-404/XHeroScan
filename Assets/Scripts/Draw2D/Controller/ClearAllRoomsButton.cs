@@ -120,26 +120,6 @@ public class ClearAllRoomsButton : MonoBehaviour
                         roomsOnFloor.Add(r);
                 }
 
-                // Undo data
-                List<Delete_RoomData> deleteRoomDataList = new();
-                if (isCreateCommand)
-                {
-                    var meshes = GameObject.FindObjectsByType<RoomMeshController>(FindObjectsSortMode.None);
-                    foreach (var r in roomsOnFloor)
-                    {
-                        Vector3 meshPos = Vector3.zero;
-                        foreach (var m in meshes)
-                        {
-                            if (m != null && m.RoomID == r.ID)
-                            {
-                                meshPos = m.transform.position;
-                                break;
-                            }
-                        }
-                        deleteRoomDataList.Add(new Delete_RoomData(new Room(r), meshPos));
-                    }
-                }
-
                 // Xoá room
                 for (int i = 0; i < roomsOnFloor.Count; i++)
                     checkpointManager.ClearRoomById(roomsOnFloor[i].ID);
@@ -182,14 +162,6 @@ public class ClearAllRoomsButton : MonoBehaviour
                 }
                 if (drawingTool != null) drawingTool.currentLineType = LineType.Wall;
 
-                // Undo
-                if (isCreateCommand && deleteRoomDataList.Count > 0)
-                {
-                    var deleteAllRoomCommand = new DeleteAllRoomCommand(deleteRoomDataList);
-                    deleteAllRoomCommand.ClearAllRoom = this;
-                    //UndoRedoController.Instance.AddToUndo(deleteAllRoomCommand);
-                }
-
                 FurnitureManager.Instance?.ClearAllFurnitures();
                 Debug.Log($"Đã xoá floor {floorId} và {roomsOnFloor.Count} phòng trên sàn.");
                 return;
@@ -198,10 +170,25 @@ public class ClearAllRoomsButton : MonoBehaviour
         // === TRƯỜNG HỢP: Không chọn gì -> Xoá TẤT CẢ floors & rooms ===
 
         if (RoomStorage.rooms.Count == 0 && (FloorStorage.floors == null || FloorStorage.floors.Count == 0))
-            isCreateCommand = false;
+        {
+            return;
+        }
 
+
+        ClearAll(true);
         // Gom Undo cho rooms hiện có
-        List<Delete_RoomData> deleteAllRoomDataList = new();
+
+    }
+
+    public static void ClearAll(bool withCommand = false)
+    {
+        // dùng để tạo undo redo
+        if (withCommand)
+        {
+            UndoRedoController.Instance.AddToUndo(new ClearAllCommand());
+        }
+
+
         var roomMeshes = GameObject.FindObjectsByType<RoomMeshController>(FindObjectsSortMode.None);
         foreach (var rm in roomMeshes)
         {
@@ -227,6 +214,9 @@ public class ClearAllRoomsButton : MonoBehaviour
         FloorStorage.floors?.Clear();
 
         // Dọn checkpoints - line
+        var checkpointManager = CheckpointManager.Instance;
+        var drawingTool = DrawingTool.Instance;
+      
         if (checkpointManager != null)
         {
             foreach (var loop in checkpointManager.AllCheckpoints)
@@ -242,15 +232,7 @@ public class ClearAllRoomsButton : MonoBehaviour
         Debug.Log("Đã xoá toàn bộ Floor, Room, checkpoint, mesh, line!");
         if (drawingTool != null) drawingTool.currentLineType = LineType.Wall;
 
-        if (isCreateCommand)
-        {
-            var cmd = new DeleteAllRoomCommand(deleteAllRoomDataList);
-            cmd.ClearAllRoom = this;
-            //UndoRedoController.Instance.AddToUndo(cmd);
-        }
-
         FurnitureManager.Instance.ClearAllFurnitures();
     }
-
     
 }
