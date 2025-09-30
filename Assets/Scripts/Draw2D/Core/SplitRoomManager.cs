@@ -11,7 +11,6 @@ public class SplitRoomManager : MonoBehaviour
     {
         checkPointManager = FindFirstObjectByType<CheckpointManager>();
     }
-
     public void DetectAndSplitRoomIfNecessary(Room originalRoom)
     {
         if (originalRoom == null) return;
@@ -42,7 +41,7 @@ public class SplitRoomManager : MonoBehaviour
         // === 1) BACKUP TOÀN BỘ TƯỜNG (giữ nguyên hết) ===
         var allWallsBackup = originalRoom.wallLines?.Select(w => new WallLine(w)).ToList() ?? new List<WallLine>();
 
-        // === 2) Tạo danh sách các room mới theo loops (chưa gán wallLines ở đây) ===
+        // === 2) Tạo danh sách các room mới theo loops ===
         List<Room> newRooms = new List<Room>();
 
         // loop0 -> giữ lại originalRoom.ID để tránh đổi id
@@ -94,64 +93,95 @@ public class SplitRoomManager : MonoBehaviour
         Color[] palette = null; // có thể set palette nếu muốn
         RebuildSplitRoom(affectedRooms, allWallsBackup, palette);
     }
-
-public void RebuildSplitRoom(List<Room> rooms, List<WallLine> allWallsBackup, Color[] colors = null)
-{
-    if (rooms == null || rooms.Count == 0) return;
-
-    const float EPS_EDGE = 1e-3f;
-
-    // Đảm bảo có map lưu extra points
-    if (checkPointManager.placedPointsByRoom == null)
-        checkPointManager.placedPointsByRoom = new Dictionary<string, List<GameObject>>();
-
-    // Dọn extra points cũ (nếu có) để tránh trùng
-    foreach (var room in rooms)
+    public void RebuildSplitRoom(List<Room> rooms, List<WallLine> allWallsBackup, Color[] colors = null)
     {
-        if (checkPointManager.placedPointsByRoom.TryGetValue(room.ID, out var oldExtras) && oldExtras != null)
+        if (rooms == null || rooms.Count == 0) return;
+
+        const float EPS_EDGE   = 1e-3f;  // nhận biết điểm nằm trên biên
+        const float TOL_ATTACH = 0.08f;  // khoảng cách "hít" line vào cạnh
+        const float TOL_ONEDGE = 0.02f;  // coi như nằm trên biên
+
+        // đảm bảo map extra
+        if (checkPointManager.placedPointsByRoom == null)
+            checkPointManager.placedPointsByRoom = new Dictionary<string, List<GameObject>>();
+
+        // dọn extra cũ
+        foreach (var room in rooms)
         {
-            foreach (var go in oldExtras) if (go) Destroy(go);
-            checkPointManager.placedPointsByRoom.Remove(room.ID);
+            if (checkPointManager.placedPointsByRoom.TryGetValue(room.ID, out var oldExtras) && oldExtras != null)
+            {
+                foreach (var go in oldExtras) if (go) Destroy(go);
+                checkPointManager.placedPointsByRoom.Remove(room.ID);
+            }
         }
-    }
 
-    for (int i = 0; i < rooms.Count; i++)
-    {
-        var room = rooms[i];
-
-        // 1) Gán lại tường cho room từ backup
-        room.wallLines = PickWallsForRoom(allWallsBackup, room.checkpoints);
-
-        // 2) Spawn lại checkpoint GO cho polygon
-        var loopGO = new List<GameObject>();
-        foreach (var pt in room.checkpoints)
+        // dọn loop mapping cũ cho từng phòng
+        if (checkPointManager.loopMappings != null)
         {
-            Vector3 worldPos = new Vector3(pt.x, 0, pt.y);
-            var cp = Instantiate(checkPointManager.checkpointPrefab, worldPos, Quaternion.identity);
-            loopGO.Add(cp);
+            for (int k = checkPointManager.loopMappings.Count - 1; k >= 0; k--)
+            {
+                var lm = checkPointManager.loopMappings[k];
+                if (lm == null) continue;
+                if (rooms.Any(r => r.ID == lm.RoomID))
+                    checkPointManager.loopMappings.RemoveAt(k);
+            }
         }
-        checkPointManager.AllCheckpoints.Add(loopGO);
-        checkPointManager.loopMappings.Add(new LoopMap(room.ID, loopGO));
 
-        // 3) Floor
-        var floorGO = new GameObject($"RoomFloor_{room.ID}");
-        floorGO.transform.position = Vector3.zero;
-        var meshCtrl = floorGO.AddComponent<RoomMeshController>();
-        var floorColor = (colors != null && i < colors.Length) ? colors[i] : Color.white;
-        meshCtrl.Initialize(room.ID, floorColor);
+        if (checkPointManager.RoomFloorMap == null)
+            checkPointManager.RoomFloorMap = new Dictionary<string, GameObject>();
 
-        // 4) Vẽ lại tường & tạo EXTRA POINTS cho tường NỘI BỘ (không tạo trên biên)
-        if (room.wallLines != null)
+        for (int i = 0; i < rooms.Count; i++)
         {
+            var room = rooms[i];
+
+            // Xoá line/distance cũ của room này (nếu còn sót)
+            ClearRoomLinesAndDistances(room.ID);
+
+            var perimeter = BuildPerimeterWallsFromPolygon(room, room.checkpoints);
+
+            // GHÉP line nội bộ từ backup
+            var internalLines = AttachFromBackupToRoom(allWallsBackup, room.checkpoints, TOL_ATTACH, TOL_ONEDGE, EPS_EDGE);
+
+            room.wallLines = new List<WallLine>();
+            room.wallLines.AddRange(perimeter);
+            room.wallLines.AddRange(internalLines);
+
+            // SPAWN checkpoint GO chu vi
+            var loopGO = new List<GameObject>();
+            foreach (var pt in room.checkpoints)
+            {
+                Vector3 worldPos = new Vector3(pt.x, 0f, pt.y);
+                var cp = Instantiate(checkPointManager.checkpointPrefab, worldPos, Quaternion.identity);
+                loopGO.Add(cp);
+            }
+            checkPointManager.AllCheckpoints.Add(loopGO);
+            checkPointManager.loopMappings.Add(new LoopMap(room.ID, loopGO));
+
+            // FLOOR
+            var floorGO = new GameObject($"RoomFloor_{room.ID}");
+            floorGO.tag = "RoomFloor";
+            floorGO.transform.position = Vector3.zero;
+            var meshCtrl = floorGO.AddComponent<RoomMeshController>();
+            var floorColor = (colors != null && i < colors.Length) ? colors[i] : Color.white;
+            meshCtrl.Initialize(room.ID, floorColor);
+            checkPointManager.RoomFloorMap[room.ID] = floorGO;
+
+            // VẼ lại line (visual). Nếu DrawingTool có SetParents, gán parent để lần sau xoá gọn.
+            var lineRoot = new GameObject($"RoomLines_{room.ID}");
+            lineRoot.transform.SetParent(floorGO.transform, false);
+            var distRoot = new GameObject($"RoomDists_{room.ID}");
+            distRoot.transform.SetParent(floorGO.transform, false);
+
+            var extras = new List<GameObject>();
+            var seen = new HashSet<string>(); // chống trùng extra
+
             foreach (var wl in room.wallLines)
             {
-                // vẽ line
                 checkPointManager.DrawingTool.currentLineType = wl.type;
                 checkPointManager.DrawLineAndDistance(wl.start, wl.end, room.thickness);
 
                 if (wl.type != LineType.Wall) continue;
 
-                // Phân loại: trong/biên cho 2 đầu mút
                 Vector2 s2 = new Vector2(wl.start.x, wl.start.z);
                 Vector2 e2 = new Vector2(wl.end.x,   wl.end.z);
 
@@ -160,68 +190,147 @@ public void RebuildSplitRoom(List<Room> rooms, List<WallLine> allWallsBackup, Co
 
                 bool sInsideStrict = PointInPolygonStrict(s2, room.checkpoints) && !sOnB;
                 bool eInsideStrict = PointInPolygonStrict(e2, room.checkpoints) && !eOnB;
+
+                // extra cho tường nội bộ (không trên biên)
+                void TrySpawnExtra(Vector3 pos)
+                {
+                    string key = $"{Mathf.Round(pos.x*1000f)}|{Mathf.Round(pos.z*1000f)}";
+                    if (seen.Contains(key)) return;
+                    seen.Add(key);
+
+                    var go = Instantiate(checkPointManager.checkpointPrefab, pos, Quaternion.identity);
+                    go.tag = "CheckpointExtra";
+                    extras.Add(go);
+                }
+
+                if (sInsideStrict) TrySpawnExtra(wl.start);
+                if (eInsideStrict) TrySpawnExtra(wl.end);
             }
+
+            if (extras.Count > 0)
+                checkPointManager.placedPointsByRoom[room.ID] = extras;
+
+            // STORAGE
+            RoomStorage.UpdateOrAddRoom(room);
         }
-
-        // 5) Cập nhật storage
-        RoomStorage.UpdateOrAddRoom(room);
     }
-}
-// "Trong" kiểu ray casting (strict): không nới lỏng sát biên
-private static bool PointInPolygonStrict(Vector2 p, List<Vector2> poly)
-{
-    if (poly == null || poly.Count < 3) return false;
-    bool inside = false;
-    for (int i = 0, j = poly.Count - 1; i < poly.Count; j = i++)
-    {
-        var pi = poly[i];
-        var pj = poly[j];
-        bool intersect = ((pi.y > p.y) != (pj.y > p.y)) &&
-                         (p.x < (pj.x - pi.x) * (p.y - pi.y) / ((pj.y - pi.y) == 0 ? float.Epsilon : (pj.y - pi.y)) + pi.x);
-        if (intersect) inside = !inside;
-    }
-    return inside;
-}
 
-// Điểm có nằm trên bất kỳ cạnh nào của polygon (khoảng cách < eps)?
-private static bool IsOnBoundaryPoint(Vector2 p, List<Vector2> poly, float eps)
-{
-    if (poly == null || poly.Count < 2) return false;
-    for (int i = 0; i < poly.Count; i++)
+    private void ClearRoomLinesAndDistances(string roomID)
     {
-        var a = poly[i];
-        var b = poly[(i + 1) % poly.Count];
-        if (DistancePointToSegment2D(p, a, b) <= eps) return true;
-    }
-    return false;
-}
-    private List<WallLine> PickWallsForRoom(List<WallLine> allWalls, List<Vector2> roomLoop)
-    {
-        const float EPS_IN = 1e-3f;
-        const float EPS_EDGE = 1e-3f;
+        var oldLines = GameObject.Find($"RoomLines_{roomID}");
+        if (oldLines) Destroy(oldLines);
 
-        var result = new List<WallLine>();
-        foreach (var w in allWalls)
+        var oldDists = GameObject.Find($"RoomDists_{roomID}");
+        if (oldDists) Destroy(oldDists);
+    }
+
+    private List<WallLine> BuildPerimeterWallsFromPolygon(Room room, List<Vector2> poly)
+    {
+        var res = new List<WallLine>();
+        if (poly == null || poly.Count < 2) return res;
+
+        for (int i = 0; i < poly.Count; i++)
         {
-            Vector2 s = new Vector2(w.start.x, w.start.z);
-            Vector2 e = new Vector2(w.end.x, w.end.z);
+            int j = (i + 1) % poly.Count;
+            Vector3 A = new Vector3(poly[i].x, 0f, poly[i].y);
+            Vector3 B = new Vector3(poly[j].x, 0f, poly[j].y);
 
-            bool onBoundary = GeometryUtils.EdgeInLoop(roomLoop, s, e);
-
-            bool sInside = PointInPolygonEps(s, roomLoop, EPS_IN);
-            bool eInside = PointInPolygonEps(e, roomLoop, EPS_IN);
-            bool bothInside = sInside && eInside;
-
-            bool sOnBoundary = IsOnBoundary(s, roomLoop, EPS_EDGE);
-            bool eOnBoundary = IsOnBoundary(e, roomLoop, EPS_EDGE);
-            bool oneInsideOneBoundary = (sInside && eOnBoundary) || (eInside && sOnBoundary);
-
-            bool midpointInside = MidSampleInside(s, e, roomLoop, EPS_IN);
-
-            if (onBoundary || bothInside || oneInsideOneBoundary || midpointInside)
-                result.Add(new WallLine(w)); // clone
+            var wl = new WallLine(A, B, LineType.Wall, 0f);
+            wl.isManualConnection = false;
+            res.Add(wl);
         }
+        return res;
+    }
+
+    private List<WallLine> AttachFromBackupToRoom(List<WallLine> backup, List<Vector2> poly, float tolAttach, float tolOnEdge, float epsEdge)
+    {
+        var result = new List<WallLine>();
+        if (backup == null || backup.Count == 0 || poly == null || poly.Count < 2) return result;
+
+        // dựng cạnh chu vi
+        var edges = new List<(Vector3 A, Vector3 B)>();
+        for (int i = 0; i < poly.Count; i++)
+        {
+            int j = (i + 1) % poly.Count;
+            edges.Add((new Vector3(poly[i].x, 0f, poly[i].y),
+                    new Vector3(poly[j].x, 0f, poly[j].y)));
+        }
+
+        foreach (var w in backup)
+        {
+            // bỏ chu vi cũ
+            if (w.type == LineType.Wall && !w.isManualConnection) continue;
+            Vector2 mid = new Vector2((w.start.x + w.end.x) * 0.5f, (w.start.z + w.end.z) * 0.5f);
+            if (IsOnBoundaryPoint(mid, poly, Mathf.Max(epsEdge, tolOnEdge)))
+                continue;
+            bool attached = false;
+            Vector3 s = w.start, e = w.end;
+
+            foreach (var (A, B) in edges)
+            {
+                (Vector3 ps, float ts, float ds) = ProjectToSegment(s, A, B);
+                (Vector3 pe, float te, float de) = ProjectToSegment(e, A, B);
+
+                if (ts >= 0f && ts <= 1f && te >= 0f && te <= 1f && ds <= tolAttach && de <= tolAttach)
+                {
+                    var nw = new WallLine(ps, pe, w.type);
+                    nw.isManualConnection = w.isManualConnection;
+                    result.Add(nw);
+                    attached = true;
+                    break;
+                }
+            }
+            if (attached) continue;
+
+            // midpoint trong/sát polygon thì giữ cho phòng này
+            Vector2 mid2 = new Vector2((w.start.x + w.end.x) * 0.5f, (w.start.z + w.end.z) * 0.5f);
+            bool midInside = PointInPolygonStrict(mid2, poly) || IsOnBoundaryPoint(mid2, poly, Mathf.Max(epsEdge, tolOnEdge));
+
+            if (midInside) result.Add(new WallLine(w));
+        }
+
         return result;
+    }
+
+    private (Vector3 proj, float t, float dist) ProjectToSegment(Vector3 P, Vector3 A, Vector3 B)
+    {
+        Vector3 AB = B - A;
+        float ab2 = Vector3.Dot(AB, AB);
+        if (ab2 < 1e-9f) return (A, 0f, Vector3.Distance(P, A));
+        float t = Mathf.Clamp01(Vector3.Dot(P - A, AB) / ab2);
+        Vector3 proj = A + t * AB;
+        float d = Vector3.Distance(P, proj);
+        return (proj, t, d);
+    }
+
+
+    // // "Trong" kiểu ray casting (strict): không nới lỏng sát biên
+    private static bool PointInPolygonStrict(Vector2 p, List<Vector2> poly)
+    {
+        if (poly == null || poly.Count < 3) return false;
+        bool inside = false;
+        for (int i = 0, j = poly.Count - 1; i < poly.Count; j = i++)
+        {
+            var pi = poly[i];
+            var pj = poly[j];
+            bool intersect = ((pi.y > p.y) != (pj.y > p.y)) &&
+                            (p.x < (pj.x - pi.x) * (p.y - pi.y) / ((pj.y - pi.y) == 0 ? float.Epsilon : (pj.y - pi.y)) + pi.x);
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    // // Điểm có nằm trên bất kỳ cạnh nào của polygon (khoảng cách < eps)?
+    private static bool IsOnBoundaryPoint(Vector2 p, List<Vector2> poly, float eps)
+    {
+        if (poly == null || poly.Count < 2) return false;
+        for (int i = 0; i < poly.Count; i++)
+        {
+            var a = poly[i];
+            var b = poly[(i + 1) % poly.Count];
+            if (DistancePointToSegment2D(p, a, b) <= eps) return true;
+        }
+        return false;
     }
     
     void ClearRoomVisuals(List<Room> roomsToClear)
@@ -283,27 +392,6 @@ private static bool IsOnBoundaryPoint(Vector2 p, List<Vector2> poly, float eps)
         }
     }
 
-    private static bool PointInPolygonEps(Vector2 p, List<Vector2> poly, float eps = 1e-4f)
-    {
-        if (poly == null || poly.Count < 3) return false;
-
-        // Ray casting basic + chấp nhận sát biên
-        bool inside = false;
-        for (int i = 0, j = poly.Count - 1; i < poly.Count; j = i++)
-        {
-            var pi = poly[i];
-            var pj = poly[j];
-
-            // Nếu sát biên thì coi là "trong"
-            if (DistancePointToSegment2D(p, pj, pi) <= eps) return true;
-
-            bool intersect = ((pi.y > p.y) != (pj.y > p.y)) &&
-                             (p.x < (pj.x - pi.x) * (p.y - pi.y) / ((pj.y - pi.y) == 0 ? float.Epsilon : (pj.y - pi.y)) + pi.x);
-            if (intersect) inside = !inside;
-        }
-        return inside;
-    }
-
     private static float DistancePointToSegment2D(Vector2 p, Vector2 a, Vector2 b)
     {
         var ab = b - a;
@@ -313,27 +401,5 @@ private static bool IsOnBoundaryPoint(Vector2 p, List<Vector2> poly, float eps)
         t = Mathf.Clamp01(t);
         var proj = a + t * ab;
         return Vector2.Distance(p, proj);
-    }
-
-    private static bool IsOnBoundary(Vector2 p, List<Vector2> poly, float eps)
-    {
-        if (poly == null || poly.Count < 2) return false;
-        for (int i = 0; i < poly.Count; i++)
-        {
-            var a = poly[i];
-            var b = poly[(i + 1) % poly.Count];
-            if (DistancePointToSegment2D(p, a, b) <= eps) return true;
-        }
-        return false;
-    }
-
-    private static bool MidSampleInside(Vector2 s, Vector2 e, List<Vector2> poly, float eps)
-    {
-        Vector2 m = 0.5f * (s + e);
-        if (PointInPolygonEps(m, poly, eps)) return true;
-
-        Vector2 m1 = Vector2.Lerp(s, e, 0.4f);
-        Vector2 m2 = Vector2.Lerp(s, e, 0.6f);
-        return PointInPolygonEps(m1, poly, eps) || PointInPolygonEps(m2, poly, eps);
     }
 }

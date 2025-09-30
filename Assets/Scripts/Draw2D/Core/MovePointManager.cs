@@ -1141,33 +1141,8 @@ public class MovePointManager : MonoBehaviour
             Vector2 b = room.checkpoints[(i + 1) % n];
             room.wallLines[i].start = new Vector3(a.x, lineY, a.y);
             room.wallLines[i].end = new Vector3(b.x, lineY, b.y);
-            //newWalls.Add(new WallLine
-            //{
-            //    start = new Vector3(a.x, lineY, a.y),
-            //    end = new Vector3(b.x, lineY, b.y),
-            //    type = LineType.Wall,
-            //    isManualConnection = false,
-            //    distanceHeight = 0f,
-            //    Height = 3f,
-            //    materialFront = "Default",
-            //    materialBack = "Default"
-            //});
         }
-
-        // Giữ lại line phụ & cửa/cửa sổ, nhưng chuẩn hoá Y = lineY để không bị chìm
-        //var preserved = room.wallLines
-        //    .Where(w => w.isManualConnection || w.type != LineType.Wall)
-        //    .Select(w =>
-        //    {
-        //        var s = w.start; s.y = lineY;
-        //        var e = w.end; e.y = lineY;
-        //        w.start = s; w.end = e;
-        //        return w;
-        //    })
-        //    .ToList();
-
-        // Gộp & lưu
-        //room.wallLines = newWalls.Concat(preserved).ToList();
+        
         RoomStorage.UpdateOrAddRoom(room);
         
         // Cập nhật mesh sàn phòng: đặt holder lên baseY rồi build lại
