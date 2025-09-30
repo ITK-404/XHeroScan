@@ -707,20 +707,24 @@ public class CheckpointManager : MonoBehaviour
     public void AddGameObjectCheckPointToGlobalVariable(Room room)
     {
         var loopGO = new List<GameObject>();
+        var center = GeoUtil.Centroid(room.checkpoints);
+
         foreach (var p in room.checkpoints)
         {
             var wp = new Vector3(p.x, roomIndexY, p.y);
-            loopGO.Add(Instantiate(checkpointPrefab, wp, Quaternion.identity));
+            var cp = Instantiate(checkpointPrefab, wp, Quaternion.identity);
+            loopGO.Add(cp);
         }
         loopMappings.Add(new LoopMap(room.ID, loopGO));
         allCheckpoints.Add(loopGO);
     }
 
-    public void CreateRoomMeshCtrl(Room room)
+    public RoomMeshController CreateRoomMeshCtrl(Room room)
     {
         GameObject floorGO = new GameObject($"RoomFloor_{room.ID}");
         RoomMeshController meshCtrl = floorGO.AddComponent<RoomMeshController>();
-        Vector2 centerPostion = GeoUtil.Centroid(room.checkpoints);
+        //Vector2 centerPostion = GeoUtil.Centroid(room.checkpoints);
+        Vector2 centerPostion = GetCenter(room.checkpoints);
 
         meshCtrl.Initialize(room.ID);
         meshCtrl.GenerateMesh(room.checkpoints);
@@ -731,6 +735,15 @@ public class CheckpointManager : MonoBehaviour
         Debug.Log("FloorGO position: " + floorGO.transform.position);
         RoomFloorMap[room.ID] = floorGO;
 
+        return meshCtrl;
+    }   
+
+    private Vector2 GetCenter(List<Vector2> points)
+    {
+        float avgX = points.Average(p => p.x);
+        float avgY = points.Average(p => p.y);
+
+        return new Vector2(avgX, avgY);
     }
 
     public void DrawWallLineByRoom(Room room)
@@ -1007,9 +1020,10 @@ public class CheckpointManager : MonoBehaviour
         var room = new Room(roomSnapShot); // copy
         RoomStorage.UpdateOrAddRoom(room);
 
-        CreateRoomMeshCtrl(room);
+        var roomMesh = CreateRoomMeshCtrl(room);
         DrawWallLineByRoom(room);
         AddGameObjectCheckPointToGlobalVariable(room);
+        //roomMesh.GenerateMesh(room.checkpoints);
         RedrawAllRooms();
     }
 }

@@ -6210,7 +6210,7 @@ MonoBehaviour:
   commitCooldownMs: 150
   minProminenceDeg: 8
   rightAngleSnap: 1
-  rightAngleToleranceDeg: 10
+  rightAngleToleranceDeg: 30
   rightAngleMinLength: 0.15
   axisSnap: 1
   axisToleranceDeg: 8
@@ -18664,6 +18664,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1968594456397282447, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2319553893729095936, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: registerEvent
@@ -18832,7 +18837,7 @@ PrefabInstance:
     - target: {fileID: 4129887634145913736, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 245
       objectReference: {fileID: 0}
     - target: {fileID: 4129887634145913736, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
@@ -19167,7 +19172,7 @@ PrefabInstance:
     - target: {fileID: 6943439551855547025, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0.0001810812
+      value: -0.00030517578
       objectReference: {fileID: 0}
     - target: {fileID: 6958884702670208778, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
@@ -19249,6 +19254,11 @@ PrefabInstance:
       propertyPath: drawingTool
       value: 
       objectReference: {fileID: 667801198}
+    - target: {fileID: 7701313060611842619, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7779852643023058504, guid: 3714c6f9abf74fc469066e9fe76ecfbf,
         type: 3}
       propertyPath: m_AnchorMax.y

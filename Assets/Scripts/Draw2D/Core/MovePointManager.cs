@@ -25,6 +25,7 @@ public class MovePointManager : MonoBehaviour
 
     void Start()
     {
+        Instance = this;
         checkPointManager = FindFirstObjectByType<CheckpointManager>();
         splitRoomManager = FindFirstObjectByType<SplitRoomManager>();
     }
@@ -32,6 +33,8 @@ public class MovePointManager : MonoBehaviour
     //  WELD CLUSTER (nhiều-điểm)
     // 1 điểm có thể dính với n điểm khác
     private readonly Dictionary<GameObject, HashSet<GameObject>> _weldAdj = new();
+
+    public static MovePointManager Instance;
 
     private void AddEdge(GameObject a, GameObject b)
     {
@@ -1109,6 +1112,15 @@ public class MovePointManager : MonoBehaviour
         checkPointManager.RedrawAllRooms();
     }
 
+
+    public void RebuildRoomMeshh(string roomID)
+    {
+        var loop = GetLoopByRoomID(roomID);
+
+        FastRebuildPerimeter(roomID, loop);
+        checkPointManager.ClearAllLines();
+        checkPointManager.RedrawAllRooms();
+    }
 
     private void FastRebuildPerimeter(string roomID, List<GameObject> loop)
     {

@@ -422,7 +422,7 @@ public class HandleCheckpointManger : MonoBehaviour
 
         bool anyRoomUpdated = false;
         List<Room> roomsToSplit = new();
-
+        Debug.Log("Bắt đầu tạo tường");
         foreach (Room room in RoomStorage.rooms.ToList())
         {
             var map = checkPointManager.loopMappings.FirstOrDefault(m => m.RoomID == room.ID);
@@ -626,9 +626,11 @@ public class HandleCheckpointManger : MonoBehaviour
         {
             checkPointManager.firstPoint.transform.position = endWorld;
         }
+        Debug.Log("Kết thúc tạo tường");
+
     }
 
-private IEnumerator WaitAndSplitRooms(List<Room> rooms)
+    private IEnumerator WaitAndSplitRooms(List<Room> rooms)
 {
     yield return null;
 

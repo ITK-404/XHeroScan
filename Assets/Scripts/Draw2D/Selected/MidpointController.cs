@@ -36,7 +36,7 @@ public class MidpointController : MonoBehaviour
         if (!checkPointManager)
             checkPointManager = FindFirstObjectByType<CheckpointManager>();
     }
-
+    private EditoRoomCommandCreator EditoRoomCommandCreator = new ();
     void Update()
     {
         // Nếu có external room -> khóa theo đó, không tự resolve nữa
@@ -67,6 +67,8 @@ public class MidpointController : MonoBehaviour
             _isDragging = true;
             _activeEdge = idx;
             IsDraggingMidpoint = true;
+            EditoRoomCommandCreator.Init(_externalRoomId);
+            Debug.Log("Đang chọn room và show midpoint với room ID là " + _externalRoomId);
         }
 
         if (_isDragging && Input.GetMouseButton(0))
@@ -80,6 +82,8 @@ public class MidpointController : MonoBehaviour
 
         if (_isDragging && Input.GetMouseButtonUp(0))
         {
+            Debug.Log("Đả bỏ chọn room và show midpoint với room ID là " + _externalRoomId);
+            EditoRoomCommandCreator.CreateCommand();
             _isDragging = false;
             _activeEdge = -1;
             IsDraggingMidpoint = false;
