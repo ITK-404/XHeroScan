@@ -715,6 +715,13 @@ public class CheckpointManager : MonoBehaviour
             var cp = Instantiate(checkpointPrefab, wp, Quaternion.identity);
             loopGO.Add(cp);
         }
+        //foreach (var p in room.extraCheckpoints)
+        //{
+        //    var wp = new Vector3(p.x, roomIndexY, p.y);
+        //    var cp = Instantiate(checkpointPrefab, wp, Quaternion.identity);
+        //    cp.tag = "CheckpointExtra";
+        //    loopGO.Add(cp);
+        //}
         loopMappings.Add(new LoopMap(room.ID, loopGO));
         allCheckpoints.Add(loopGO);
     }

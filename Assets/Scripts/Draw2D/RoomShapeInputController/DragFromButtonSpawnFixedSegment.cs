@@ -39,6 +39,7 @@ public class DragFromButtonSpawnFixedSegment_Passthrough : MonoBehaviour, IBegin
     LineType _oldLineType;
     RectTransform _bottomRect;
 
+    private SplitRoomCommand splitRoomCommand;
     Camera UiCamForPanel
     {
         get
@@ -76,6 +77,8 @@ public class DragFromButtonSpawnFixedSegment_Passthrough : MonoBehaviour, IBegin
             UpdatePlacement(eventData.position);
         }
         if (verboseLogs) Debug.Log("[DragPassthrough] Begin.");
+
+        splitRoomCommand = new SplitRoomCommand();
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -112,7 +115,8 @@ public class DragFromButtonSpawnFixedSegment_Passthrough : MonoBehaviour, IBegin
 
             // tắt ngay để không chain p1->p2...
             _hcm.StopPlacing();
-
+            splitRoomCommand.InitNewRoomsData();
+            UndoRedoController.Instance.AddToUndo(splitRoomCommand);
             if (verboseLogs) Debug.Log($"[DragPassthrough] Dropped: {_p0} -> {_p1}");
         }
 

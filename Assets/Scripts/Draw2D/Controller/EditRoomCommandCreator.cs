@@ -114,3 +114,64 @@ public class EditRoomCommandCreator
             roomIDChanged.Add(roomID);
     }
 }
+
+public class SplitRoomCommand : IUndoRedoCommand
+{
+    private List<Room> oldRooms = new();
+    private List<Room> newRooms = new();
+
+    private List<DrawingInstanced> oldDrawingInstanced = new();
+    private List<DrawingInstanced> newDrawingInstanced = new();
+    
+    public SplitRoomCommand()
+    {
+        foreach(var room in RoomStorage.rooms)
+        {
+            oldRooms.Add(new Room(room));
+        }
+        oldDrawingInstanced = FurnitureManager.GetAllFurnitureData();
+    }
+
+    public void InitNewRoomsData()
+    {
+        foreach (var room in RoomStorage.rooms)
+        {
+            newRooms.Add(new Room(room));
+        }
+
+        newDrawingInstanced = FurnitureManager.GetAllFurnitureData();
+    }
+
+
+
+    public void Redo()
+    {
+        foreach (var item in oldRooms)
+        {
+            CheckpointManager.Instance.ClearRoomById(item.ID);
+        }
+
+        foreach (var item in newRooms)
+        {
+            CheckpointManager.Instance.RestoreRoom(item);
+        }
+
+        FurnitureManager.Instance.UpdateFurnitureState(newDrawingInstanced);
+    }
+
+    public void Undo()
+    {
+        foreach(var item in newRooms)
+        {
+            CheckpointManager.Instance.ClearRoomById(item.ID);
+        }
+
+        foreach(var item in oldRooms)
+        {
+            CheckpointManager.Instance.RestoreRoom(item);
+        }
+
+        FurnitureManager.Instance.UpdateFurnitureState(oldDrawingInstanced);
+
+    }
+}

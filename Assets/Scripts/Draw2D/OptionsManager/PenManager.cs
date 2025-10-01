@@ -81,7 +81,7 @@ public class PenManager : MonoBehaviour
             {
                 checkpointManager.SelectCheckpoint();
                 checkpointManager.InitAndClearData();
-
+                splitRoomCommand = new();
                 // if (checkpointManager.selectedCheckpoint != null)
                 // {
                 //     _dragRoom = false;
@@ -113,12 +113,13 @@ public class PenManager : MonoBehaviour
                 var cur = GetWorldOnXZ(Input.mousePosition);
                 var delta = cur - _lastWorld;
                 _lastWorld = cur;
-
+                canCreateCommand = false;
                 if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
                 {
                     if (InteractionFlags.IsOpenBottomSheetUI) return;
                     Debug.Log("Dragging room floor " + _dragRoomID);
                     movePointManager.MoveRoomSnap(_dragRoomID, delta);
+                    canCreateCommand = true;
 
                 }
                 else if (checkpointManager.selectedCheckpoint != null)
@@ -129,6 +130,7 @@ public class PenManager : MonoBehaviour
 
                     // đang kéo checkpoint/handle -> giữ cờ
                     InteractionFlags.IsFloorHandleDragging = true;
+                    canCreateCommand = true;
                 }
             }
             else if (Input.GetMouseButtonUp(0))
@@ -148,10 +150,17 @@ public class PenManager : MonoBehaviour
 
                 checkpointManager.CreateCommandHere();
 
+                splitRoomCommand.InitNewRoomsData();
+                if (canCreateCommand)
+                {
+                    UndoRedoController.Instance.AddToUndo(splitRoomCommand);
+                }
+
             }
         }
     }
-
+    private bool canCreateCommand = false;
+    SplitRoomCommand splitRoomCommand;
     // Raycast trúng mesh sàn phòng -> lấy roomID từ tên "RoomFloor_<id>" hoặc component
     private bool TryHitRoomFloor(out string roomID)
     {

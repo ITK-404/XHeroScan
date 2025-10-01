@@ -65,8 +65,8 @@ public class ClearAllRoomsButton : MonoBehaviour
             Debug.Log($"Người dùng xác nhận: Xóa phòng {displayName} ({currentRoomID})");
             UndoRedoController.Instance.AddToUndo(new DeleteRoomCommand(new Room(room)));
             checkpointManager.ClearRoomById(currentRoomID);
-            checkpointManager?.ClearSelectedRoom();
             FurnitureManager.Instance.ClearItemInRoom(currentRoomID);
+            checkpointManager?.ClearSelectedRoom();
 
 
             // Reset UI
