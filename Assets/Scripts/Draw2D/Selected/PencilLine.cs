@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -41,15 +42,15 @@ public class PencilLine : MonoBehaviour
     public float minProminenceDeg = 8f;
     // — Right-angle snap (vuông góc với đoạn trước) —
     [Header("Right-angle Snap (90° to previous)")]
-    public bool  rightAngleSnap = true;
+    public bool rightAngleSnap = true;
     [Range(1f, 30f)]
     public float rightAngleToleranceDeg = 10f;  // cho phép lệch quanh 90°
-    public float rightAngleMinLength    = 0.15f; // tối thiểu để snap (m)
+    public float rightAngleMinLength = 0.15f; // tối thiểu để snap (m)
     [Header("Axis Snap (horizontal/vertical)")]
-    public bool  axisSnap = true;
+    public bool axisSnap = true;
     [Range(1f, 30f)]
     public float axisToleranceDeg = 8f;  // cho phép lệch với trục
-    public float axisMinLength    = 0.12f; // tối thiểu để snap (m)
+    public float axisMinLength = 0.12f; // tối thiểu để snap (m)
 
     private LineRenderer line;
     private Plane drawPlane;
@@ -74,7 +75,7 @@ public class PencilLine : MonoBehaviour
     {
         handler = FindFirstObjectByType<HandleCheckpointManger>();
         cm = FindFirstObjectByType<CheckpointManager>();
-        focusFunctionField= FindFirstObjectByType<FocusFunctionFieldUI>();
+        focusFunctionField = FindFirstObjectByType<FocusFunctionFieldUI>();
         if (handler == null) Debug.LogError("[Pencil] Không thấy HandleCheckpointManger.");
         if (cm == null) Debug.LogError("[Pencil] Không thấy CheckpointManager.");
     }
@@ -152,7 +153,7 @@ public class PencilLine : MonoBehaviour
         {
             if (commitMode == CommitMode.OnRelease)
             {
-                CommitStrokeOnRelease(); 
+                CommitStrokeOnRelease();
             }
             else
             {
@@ -229,11 +230,25 @@ public class PencilLine : MonoBehaviour
         }
 
         // điểm cho 1 cung
+        Debug.Log($"Bắt state và lưu lại: " + RoomStorage.rooms.Count);
+        var splitRoomCommand = new SplitRoomCommand();
+        
         handler.HandleSingleWallPlacement(simplified[0]); // set firstPoint
         for (int i = 1; i < simplified.Count; i++)
             handler.HandleSingleWallPlacement(simplified[i]); // chốt đoạn
-
+       
+        StartCoroutine(WaitForDelay(splitRoomCommand));
         handler.StopPlacing();
+    }
+
+
+    private IEnumerator WaitForDelay(SplitRoomCommand splitRoomCommand)
+    {
+        yield return new WaitForSeconds(0.1f);
+        Debug.Log($"Lấy state đã lưu và thêm vào Undo Redo Controller " + RoomStorage.rooms.Count);
+        splitRoomCommand.InitNewRoomsData();
+
+        UndoRedoController.Instance.AddToUndo(splitRoomCommand);
     }
 
     // Ramer–Douglas–Peucker 3D (dùng khoảng cách vuông góc tới đoạn)
@@ -445,10 +460,10 @@ public class PencilLine : MonoBehaviour
         float dToH = Mathf.Abs(Mathf.DeltaAngle(ang, 0f));   // ngang
         float dToV = Mathf.Abs(Mathf.DeltaAngle(ang, 90f));  // dọc
 
-        if (dToH <= axisToleranceDeg)  { snapped = new Vector3(raw.x, raw.y, prev.z); return true; }
-        if (dToV <= axisToleranceDeg)  { snapped = new Vector3(prev.x, raw.y, raw.z); return true; }
+        if (dToH <= axisToleranceDeg) { snapped = new Vector3(raw.x, raw.y, prev.z); return true; }
+        if (dToV <= axisToleranceDeg) { snapped = new Vector3(prev.x, raw.y, raw.z); return true; }
 
-        snapped = raw; 
+        snapped = raw;
         return false;
     }
     // Snap cho (prev1 -> raw) vuông với hướng 'đoạn trước' đã làm mượt.
@@ -488,7 +503,7 @@ public class PencilLine : MonoBehaviour
         // Chiếu 'b' lên pháp tuyến của 'a'
         Vector2 n = new(-a.y, a.x);                   // pháp tuyến đơn vị vì 'a' đã normalized
         float t = Vector2.Dot(b, n);
-            // Vector2 snapped2 = new(prev1.x, prev1.z) + t * n;
+        // Vector2 snapped2 = new(prev1.x, prev1.z) + t * n;
         Vector2 snapped2 = new Vector2(prev1.x, prev1.z) + n * t;
 
 
@@ -507,8 +522,8 @@ public class PencilLine : MonoBehaviour
         Vector2 acc = Vector2.zero;
         for (int i = start + 1; i < n; i++)
         {
-            Vector2 u = new(points[i-1].x, points[i-1].z);
-            Vector2 v = new(points[i].x,   points[i].z);
+            Vector2 u = new(points[i - 1].x, points[i - 1].z);
+            Vector2 v = new(points[i].x, points[i].z);
             Vector2 d = v - u;
             if (d.sqrMagnitude > 1e-8f) acc += d.normalized;
         }

@@ -213,6 +213,7 @@ public class MovePointManager : MonoBehaviour
         // === Nếu là checkpoint phụ (CheckpointExtra) ===
         if (checkPointManager.selectedCheckpoint.CompareTag("CheckpointExtra"))
         {
+            Debug.Log("Đang chọn extra point");
             if (MoveSelectedCheckpointExtra()) return;
         }
 
@@ -555,6 +556,9 @@ public class MovePointManager : MonoBehaviour
 
         if (insertIndex != -1)
         {
+            Debug.Log("Tích trữ wall line");
+            SplitRoomCommand splitRoomCommand = new();
+
             // TÍCH TRỮ TẤT CẢ MANUAL LINES TRƯỚC KHI REBUILD
             var manualBefore = new List<WallLine>();
             foreach (var w in room.wallLines)
@@ -612,6 +616,11 @@ public class MovePointManager : MonoBehaviour
             floorGO.GetComponent<RoomMeshController>()?.GenerateMesh(room.checkpoints);
             checkPointManager.ClearAllLines();
             checkPointManager.RedrawAllRooms();
+            Debug.Log("Tích trữ wall line hoàn tấc");
+
+
+            splitRoomCommand.InitNewRoomsData();
+            UndoRedoController.Instance.AddToUndo(splitRoomCommand);
             return true;
         }
 

@@ -150,9 +150,10 @@ public partial class FurnitureManager : MonoBehaviour
 
         return furniture;
     }
-
+    [SerializeField] private int roomCount;
     private void LateUpdate()
     {
+        roomCount = RoomStorage.rooms.Count;
         if(InteractionFlags.IsEdit)
         {
             SelectFurniture(null);

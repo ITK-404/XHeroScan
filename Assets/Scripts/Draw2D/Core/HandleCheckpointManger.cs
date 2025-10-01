@@ -482,7 +482,7 @@ public class HandleCheckpointManger : MonoBehaviour
                 Vector2 extra2D = A_onB ? B : A;
                 Vector3 main3D = new(main2D.x, 0, main2D.y);
                 Vector3 extra3D = new(extra2D.x, 0, extra2D.y);
-
+                // local method
                 bool Nearly(Vector3 u, Vector3 v, float eps) => (u - v).sqrMagnitude <= eps * eps;
                 bool SameLine(WallLine a, WallLine b, float eps) =>
                     (Nearly(a.start, b.start, EDGE_EPS) && Nearly(a.end, b.end, EDGE_EPS)) ||
@@ -493,7 +493,7 @@ public class HandleCheckpointManger : MonoBehaviour
                     if (!r.wallLines.Any(x => SameLine(x, m, EDGE_EPS)))
                         r.wallLines.Add(m);
                 }
-
+                // backup
                 var manualBefore = room.wallLines?
                     .Where(w => w.isManualConnection && (w.isVisible))
                     .ToList() ?? new List<WallLine>();
