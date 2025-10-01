@@ -133,7 +133,7 @@ public class SplitRoomManager : MonoBehaviour
         for (int i = 0; i < rooms.Count; i++)
         {
             var room = rooms[i];
-
+            
             // Xoá line/distance cũ của room này (nếu còn sót)
             ClearRoomLinesAndDistances(room.ID);
 
@@ -194,13 +194,15 @@ public class SplitRoomManager : MonoBehaviour
                 // extra cho tường nội bộ (không trên biên)
                 void TrySpawnExtra(Vector3 pos)
                 {
-                    string key = $"{Mathf.Round(pos.x*1000f)}|{Mathf.Round(pos.z*1000f)}";
+                    string key = $"{Mathf.Round(pos.x * 1000f)}|{Mathf.Round(pos.z * 1000f)}";
                     if (seen.Contains(key)) return;
                     seen.Add(key);
-
-                    var go = Instantiate(checkPointManager.checkpointPrefab, pos, Quaternion.identity);
-                    go.tag = "CheckpointExtra";
-                    extras.Add(go);
+                    
+                    // vẽ và add lại vào room
+                    Vector2 pos2D = new Vector2(pos.x, pos.z);
+                    if (room.extraCheckpoints == null) room.extraCheckpoints = new List<Vector2>();
+                    if (!room.extraCheckpoints.Any(p => (p - pos2D).sqrMagnitude < 1e-6f))
+                        room.extraCheckpoints.Add(pos2D);
                 }
 
                 if (sInsideStrict) TrySpawnExtra(wl.start);
