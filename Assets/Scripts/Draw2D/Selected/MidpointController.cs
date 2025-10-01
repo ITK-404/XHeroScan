@@ -60,7 +60,14 @@ public class MidpointController : MonoBehaviour
         }
 
         if (_editingRoom == null) return;
-        
+        if (_isDragging && Input.touchCount >= 2)
+        {
+            _isDragging = false;
+            _activeEdge = -1;
+            IsDraggingMidpoint = false;
+            InteractionFlags.IsRoomFloorDragging = false;
+            return;
+        }
         if (!_isDragging && Input.GetMouseButtonDown(0) && TryPickHandle(out int idx))
         {
             InteractionFlags.IsRoomFloorDragging = true; // dùng tạm khoa khóa để đặt

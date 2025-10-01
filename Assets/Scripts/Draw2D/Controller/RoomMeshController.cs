@@ -23,7 +23,7 @@ public class RoomMeshController : MonoBehaviour
     [SerializeField] public float layerStepY = 0.002f; // bước cao độ mỗi layer (2mm) 
 
     private EditoRoomCommandCreator editRoomCommandCreator = new();
-
+    private bool _cancelMultitouch = false;
     private void Awake()
     {
         if (mainCam == null)
@@ -39,29 +39,47 @@ public class RoomMeshController : MonoBehaviour
     void LateUpdate()
     {
         if (!PenManager.isPenActive) return;
+
+        // Nếu trước đó đã hủy do đa chạm, chờ nhả hết tay
+        if (_cancelMultitouch)
+        {
+            if (Input.touchCount == 0) _cancelMultitouch = false;
+            else return;
+        }
+
+        // đang kéo mà có >= 2 ngón -> hủy ngay, yêu cầu chọn lại
+        if (isDragging && Input.touchCount >= 2)
+        {
+            isDragging = false;
+            PenManager.isRoomFloorBeingDragged = false;
+            if (checkPointManager != null) checkPointManager.IsDraggingRoom = false;
+
+            furnitureDraggingByRoom.EndDrag();
+            furnitureDraggingByRoom.Clear();
+
+            _cancelMultitouch = true; // khóa cho đến khi nhả hết tay
+            return;
+        }
+
         if (Input.touchCount == 1)
         {
             if (InteractionFlags.IsOpenBottomSheetUI) return;
             if (InteractionFlags.OnDragFurniture) return;
             if (InteractionFlags.OnDragMovePoint) return;
             if (InteractionFlags.OnDragRotatePoint) return;
-            
-            if(PencilLine.isDragging) return;
+            if (PencilLine.isDragging) return;
 
             Touch touch = Input.GetTouch(0);
             switch (touch.phase)
             {
                 case TouchPhase.Began:
                     if (CheckTouchHitThisObject(touch.position))
-                    {
                         OnStartDrag(touch.position);
-                    }
                     break;
 
                 case TouchPhase.Moved:
                     if (!isDragging) return;
-                    Debug.Log("Dang drag mesh controller");
-                    DragRoom(touch.position); // nếu muốn bật drag trên mobile, bỏ comment
+                    DragRoom(touch.position);
                     break;
 
                 case TouchPhase.Ended:
@@ -89,7 +107,19 @@ public class RoomMeshController : MonoBehaviour
     // Hàm di chuyển Room theo vị trí chạm for Android
     void DragRoom(Vector2 screenPos)
     {
+        if(checkPointManager.selectedCheckpoint != null) return;
+        if (Input.touchCount >= 2 && isDragging)
+        {
+            isDragging = false;
+            InteractionFlags.IsRoomFloorDragging = false;
+            if (checkPointManager != null) checkPointManager.IsDraggingRoom = false;
 
+            furnitureDraggingByRoom.EndDrag();
+            furnitureDraggingByRoom.Clear();
+
+            _cancelMultitouch = true;
+            return;
+        }
         if (EventSystem.current.IsPointerOverGameObject()) return;
         if (CreateRoomOnFloor.IsCreateRooom) return;
         if (ConnectManager.isConnectActive) return;
@@ -110,94 +140,94 @@ public class RoomMeshController : MonoBehaviour
         }
 
 
-    Ray ray = mainCam.ScreenPointToRay(screenPos);
+        Ray ray = mainCam.ScreenPointToRay(screenPos);
 
-    Plane planeAtIndex = new Plane(Vector3.up, new Vector3(0f, index * layerStepY, 0f));
+        Plane planeAtIndex = new Plane(Vector3.up, new Vector3(0f, index * layerStepY, 0f));
 
-    if (planeAtIndex.Raycast(ray, out float distance))
-    {
-        Vector3 currentPos = ray.GetPoint(distance);
-        Vector3 deltaRaw = currentPos - dragStartWorldPos;
-
-        // Lấy dữ liệu room & floor
-        Room room = RoomStorage.GetRoomByID(RoomID);
-        Vector3 delta = deltaRaw;
-
-        if (room != null)
+        if (planeAtIndex.Raycast(ray, out float distance))
         {
-            Floor floor = FindFloorById(room.floorID);
-            if (floor != null)
-            {
-                // Kẹp delta để các đỉnh phòng không vượt polygon sàn
-                delta = ClampDeltaToFloorBinarySearch(room, deltaRaw, floor, index * layerStepY, 1e-3f);
-            }
-        }
+            Vector3 currentPos = ray.GetPoint(distance);
+            Vector3 deltaRaw = currentPos - dragStartWorldPos;
 
-        // Nếu delta ~ 0 thì thôi
-        if (delta.sqrMagnitude <= 1e-12f) return;
+            // Lấy dữ liệu room & floor
+            Room room = RoomStorage.GetRoomByID(RoomID);
+            Vector3 delta = deltaRaw;
 
-        // Cập nhật mốc kéo theo delta thật sự di chuyển
-        dragStartWorldPos += delta;
-
-        // Move sàn (mesh)
-        transform.position += delta;
-        furnitureDraggingByRoom.Dragging(delta);
-
-        // Update DATA của room (world-space)
-        if (room != null)
-        {
-            for (int i = 0; i < room.checkpoints.Count; i++)
+            if (room != null)
             {
-                Vector2 old = room.checkpoints[i];
-                room.checkpoints[i] = new Vector2(old.x + delta.x, old.y + delta.z);
-            }
-            for (int i = 0; i < room.extraCheckpoints.Count; i++)
-            {
-                Vector2 old = room.extraCheckpoints[i];
-                room.extraCheckpoints[i] = new Vector2(old.x + delta.x, old.y + delta.z);
-            }
-            for (int i = 0; i < room.wallLines.Count; i++)
-            {
-                room.wallLines[i].start += delta;
-                room.wallLines[i].end   += delta;
-            }
-
-            // Update các GameObject hiển thị (KHÔNG vẽ lại)
-            if (checkPointManager != null)
-            {
-                var mapping = checkPointManager.AllCheckpoints.Find(loop =>
-                    checkPointManager.FindRoomIDForLoop(loop) == RoomID);
-                if (mapping != null)
+                Floor floor = FindFloorById(room.floorID);
+                if (floor != null)
                 {
-                    foreach (var cp in mapping)
-                        if (cp) cp.transform.position += delta;
+                    // Kẹp delta để các đỉnh phòng không vượt polygon sàn
+                    delta = ClampDeltaToFloorBinarySearch(room, deltaRaw, floor, index * layerStepY, 1e-3f);
+                }
+            }
+
+            // Nếu delta ~ 0 thì thôi
+            if (delta.sqrMagnitude <= 1e-12f) return;
+
+            // Cập nhật mốc kéo theo delta thật sự di chuyển
+            dragStartWorldPos += delta;
+
+            // Move sàn (mesh)
+            transform.position += delta;
+            furnitureDraggingByRoom.Dragging(delta);
+
+            // Update DATA của room (world-space)
+            if (room != null)
+            {
+                for (int i = 0; i < room.checkpoints.Count; i++)
+                {
+                    Vector2 old = room.checkpoints[i];
+                    room.checkpoints[i] = new Vector2(old.x + delta.x, old.y + delta.z);
+                }
+                for (int i = 0; i < room.extraCheckpoints.Count; i++)
+                {
+                    Vector2 old = room.extraCheckpoints[i];
+                    room.extraCheckpoints[i] = new Vector2(old.x + delta.x, old.y + delta.z);
+                }
+                for (int i = 0; i < room.wallLines.Count; i++)
+                {
+                    room.wallLines[i].start += delta;
+                    room.wallLines[i].end   += delta;
                 }
 
-                if (checkPointManager.tempDoorWindowPoints.TryGetValue(RoomID, out var doorsInRoom))
+                // Update các GameObject hiển thị (KHÔNG vẽ lại)
+                if (checkPointManager != null)
                 {
-                    foreach (var (line, p1GO, p2GO) in doorsInRoom)
+                    var mapping = checkPointManager.AllCheckpoints.Find(loop =>
+                        checkPointManager.FindRoomIDForLoop(loop) == RoomID);
+                    if (mapping != null)
                     {
-                        if (p1GO) p1GO.transform.position += delta;
-                        if (p2GO) p2GO.transform.position += delta;
+                        foreach (var cp in mapping)
+                            if (cp) cp.transform.position += delta;
+                    }
+
+                    if (checkPointManager.tempDoorWindowPoints.TryGetValue(RoomID, out var doorsInRoom))
+                    {
+                        foreach (var (line, p1GO, p2GO) in doorsInRoom)
+                        {
+                            if (p1GO) p1GO.transform.position += delta;
+                            if (p2GO) p2GO.transform.position += delta;
+                        }
+                    }
+
+                    var extras = GameObject.FindGameObjectsWithTag("CheckpointExtra");
+                    for (int i = 0; i < extras.Length; i++)
+                    {
+                        var go = extras[i];
+                        if (!go) continue;
+
+                        Vector3 projected = go.transform.position + delta;
+                        string rid = checkPointManager.FindRoomIDByPoint(projected);
+                        if (!string.IsNullOrEmpty(rid) && rid == RoomID)
+                            go.transform.position += delta;
                     }
                 }
-
-                var extras = GameObject.FindGameObjectsWithTag("CheckpointExtra");
-                for (int i = 0; i < extras.Length; i++)
-                {
-                    var go = extras[i];
-                    if (!go) continue;
-
-                    Vector3 projected = go.transform.position + delta;
-                    string rid = checkPointManager.FindRoomIDByPoint(projected);
-                    if (!string.IsNullOrEmpty(rid) && rid == RoomID)
-                        go.transform.position += delta;
-                }
             }
         }
-    }
 
-    checkPointManager.RedrawAllRooms();
+        checkPointManager.RedrawAllRooms();
     }
 
     public void Initialize(string roomID, Color color = default)

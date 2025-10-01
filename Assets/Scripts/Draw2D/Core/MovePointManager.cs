@@ -215,7 +215,12 @@ public class MovePointManager : MonoBehaviour
         {
             if (MoveSelectedCheckpointExtra()) return;
         }
-
+        if (Input.touchCount >= 2)
+        {
+            if (checkPointManager.selectedCheckpoint != null)
+                checkPointManager.DeselectCheckpoint();
+            return;
+        }
         // Lấy checkpoint được chọn + vị trí mới theo chuột
         var selected = checkPointManager.selectedCheckpoint;
 
@@ -496,6 +501,12 @@ public class MovePointManager : MonoBehaviour
 
     public bool MoveSelectedCheckpointExtra()
     {
+        if (Input.touchCount >= 2)
+        {
+            if (checkPointManager.selectedCheckpoint != null)
+                checkPointManager.DeselectCheckpoint();
+            return false;
+        }
         Vector3 newPosition = checkPointManager.GetWorldPositionFromScreen(Input.mousePosition);
         Vector3 oldWorldPos = checkPointManager.selectedCheckpoint.transform.position;
 
@@ -959,10 +970,139 @@ public class MovePointManager : MonoBehaviour
         if (shouldSplit)
         {
             splitRoomManager?.DetectAndSplitRoomIfNecessary(room);
+
+        int removed = DeleteLonelyExtras(
+            room, floorGO,
+            tolConnect: 0.08f,
+            includePerimeter: false,   // chỉ tính manual nếu bạn muốn giữ extra sát tường
+            useAllRoomsLines: true     // QUAN TRỌNG: kiểm tra với toàn bộ line trong scene
+        );
             return true;
         }
 
         return false;
+    }
+    
+    private static bool NearlySameXZ(Vector3 a, Vector3 b, float tol)
+        => (new Vector2(a.x - b.x, a.z - b.z)).sqrMagnitude <= tol * tol;
+
+    private static Vector3 ToWorld(Vector2 local, GameObject floorGO, float planeY)
+        => new Vector3(local.x + floorGO.transform.position.x, planeY, local.y + floorGO.transform.position.z);
+
+    private static float DistancePointToSegmentXZ(Vector3 a, Vector3 b, Vector3 p)
+    {
+        Vector2 A = new Vector2(a.x, a.z);
+        Vector2 B = new Vector2(b.x, b.z);
+        Vector2 P = new Vector2(p.x, p.z);
+        var AB = B - A;
+        float denom = Vector2.Dot(AB, AB);
+        if (denom <= Mathf.Epsilon) return Vector2.Distance(P, A);
+        float t = Mathf.Clamp01(Vector2.Dot(P - A, AB) / denom);
+        Vector2 proj = A + t * AB;
+        return Vector2.Distance(P, proj);
+    }
+
+    // Kiểm tra "có dính line" (endpoints hoặc nằm sát đoạn) — có thể chọn có/không tính perimeter
+    private static bool IsConnectedToAnyLine(Vector3 eWorld, IEnumerable<WallLine> lines, float tol, bool includePerimeter)
+    {
+        if (lines == null) return false;
+        foreach (var wl in lines)
+        {
+            if (!includePerimeter && !wl.isManualConnection) continue; // chỉ tính manual khi includePerimeter=false
+            Vector3 s = wl.start, t = wl.end;
+
+            // gần đầu mút
+            if (Vector2.Distance(new Vector2(eWorld.x, eWorld.z), new Vector2(s.x, s.z)) <= tol) return true;
+            if (Vector2.Distance(new Vector2(eWorld.x, eWorld.z), new Vector2(t.x, t.z)) <= tol) return true;
+
+            // gần đoạn
+            if (DistancePointToSegmentXZ(s, t, eWorld) <= tol) return true;
+        }
+        return false;
+    }
+    public int DeleteLonelyExtras(
+        Room room,
+        GameObject floorGO,
+        float tolConnect = 0.08f,
+        bool includePerimeter = false,
+        bool useAllRoomsLines = true   // NEW: kiểm tra với mọi room
+    )
+    {
+        if (room == null || floorGO == null) return 0;
+
+        float planeY = floorGO.transform.position.y;
+
+        // 0) Chọn pool line để kiểm tra kết nối
+        IEnumerable<WallLine> linePool;
+        if (useAllRoomsLines)
+        {
+            var allRooms = RoomStorage.GetAllRooms() ?? new List<Room>();
+            linePool = allRooms.SelectMany(r => r.wallLines ?? Enumerable.Empty<WallLine>());
+        }
+        else
+        {
+            linePool = room.wallLines ?? Enumerable.Empty<WallLine>();
+        }
+
+        // Nếu chưa có line nào (rebuild chưa xong) => không dọn để tránh xóa nhầm
+        if (!linePool.Any())
+            return 0;
+
+        // 1) Gom tất cả EXTRA ở WORLD (data + GO)
+        var extraWorld = new List<Vector3>();
+        if (room.extraCheckpoints != null)
+            foreach (var e in room.extraCheckpoints)
+                extraWorld.Add(ToWorld(e, floorGO, planeY));
+
+        if (placedPointsByRoom != null && placedPointsByRoom.TryGetValue(room.ID, out var goList) && goList != null)
+            foreach (var go in goList)
+                if (go && go.CompareTag("CheckpointExtra"))
+                {
+                    var pw = new Vector3(go.transform.position.x, planeY, go.transform.position.z);
+                    if (!extraWorld.Any(p => NearlySameXZ(p, pw, 1e-4f))) extraWorld.Add(pw);
+                }
+
+        if (extraWorld.Count == 0) return 0;
+
+        // 2) Tìm các extra thật sự "đứng một mình" trong TOÀN SCENE
+        var lonely = new List<Vector3>();
+        foreach (var eW in extraWorld)
+        {
+            bool connected = IsConnectedToAnyLine(eW, linePool, tolConnect, includePerimeter);
+            if (!connected) lonely.Add(eW);
+        }
+        if (lonely.Count == 0) return 0;
+
+        // 3) Xóa trong DATA (local)
+        if (room.extraCheckpoints != null)
+        {
+            for (int i = room.extraCheckpoints.Count - 1; i >= 0; i--)
+            {
+                var lw = ToWorld(room.extraCheckpoints[i], floorGO, planeY);
+                if (lonely.Any(p => NearlySameXZ(p, lw, tolConnect)))
+                    room.extraCheckpoints.RemoveAt(i);
+            }
+        }
+
+        // 4) Xóa GO
+        if (placedPointsByRoom != null && placedPointsByRoom.TryGetValue(room.ID, out var listGO) && listGO != null)
+        {
+            for (int i = listGO.Count - 1; i >= 0; i--)
+            {
+                var go = listGO[i];
+                if (!go || !go.CompareTag("CheckpointExtra")) continue;
+
+                var gw = new Vector3(go.transform.position.x, planeY, go.transform.position.z);
+                if (lonely.Any(p => NearlySameXZ(p, gw, tolConnect)))
+                {
+                    Destroy(go);
+                    listGO.RemoveAt(i);
+                }
+            }
+            if (listGO.Count == 0) placedPointsByRoom.Remove(room.ID);
+        }
+
+        return lonely.Count;
     }
 
     Vector3 RoomToWorld(Vector2 localPos, GameObject floorGO)
@@ -1024,8 +1164,7 @@ public class MovePointManager : MonoBehaviour
         checkPointManager.ClearAllLines();
         checkPointManager.RedrawAllRooms();
     }
-    // Tìm tất cả cặp (a trong movingLoop, b ở phòng khác) với d <= WELD_ON
-    // Mỗi a và b chỉ bắt cặp 1 lần để tránh mâu thuẫn vị trí (giữ shape tốt hơn)
+    
     private List<(GameObject a, GameObject b, Vector3 mid)> CollectSnapPairs(List<GameObject> movingLoop)
     {
         var pairs = new List<(GameObject a, GameObject b, Vector3 mid)>();
@@ -1094,9 +1233,7 @@ public class MovePointManager : MonoBehaviour
                 if (!string.IsNullOrEmpty(rid)) affectedRoomIDs.Add(rid);
             }
         }
-
-        // Rebuild moving room
-        // FastRebuildPerimeter(roomID, movingLoop);
+        
         FastRebuildPerimeter(roomID, movingLoop);
 
         // Rebuild all rooms
