@@ -106,19 +106,19 @@ public class FurnitureMergeToWall
 
     public void TryToMergeAndSnapInAllWall()
     {
-        //if (furnitureItem.lineType == LineType.None)
-        //{
-        //    return;
-        //}
+        if (furnitureItem.lineType == LineType.None)
+        {
+            return;
+        }
         SnapTemp(allowSnap);
     }
 
     public void ForceSnapToWall()
     {
-        //if(furnitureItem.lineType == LineType.None)
-        //{
-        //    return;
-        //}
+        if (furnitureItem.lineType == LineType.None)
+        {
+            return;
+        }
         SnapTemp(true);
     }
 

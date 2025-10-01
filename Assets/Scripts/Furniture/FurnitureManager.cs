@@ -250,10 +250,10 @@ public partial class FurnitureManager : MonoBehaviour
         Debug.Log("Bắt đầu hoàn lại furniture: "+drawingInstanceds.Count);
         foreach (var instacedData in drawingInstanceds)
         {
-            var furniture = InitItemByID(instacedData.itemTemplateID);
+            //var furniture = InitItemByID(instacedData.itemTemplateID);
+            var furniture = SpawnFurniture(instacedData.itemTemplateID, instacedData.worldPosition);
             if (furniture == null) continue;
             furniture.FetchData(instacedData);
-            runtimeFurnitures.Add(furniture);
             Debug.Log($"World Position: {furniture.data.worldPosition}",gameObject);
             Debug.Log($"Hoàn lại furniture {furniture.data.instanceID}");
         }
@@ -410,7 +410,8 @@ public partial class FurnitureManager : MonoBehaviour
         List<FurnitureItem> itemInsideRoom = new();
         foreach (var item in runtimeFurnitures)
         {
-            itemInsideRoom.Add(item);
+            if(item.data.roomID == roomID)
+                itemInsideRoom.Add(item);
         }
         return itemInsideRoom;
     }
@@ -465,6 +466,7 @@ public partial class FurnitureManager : MonoBehaviour
         foreach(var item in destroyList)
         {
             item.Destroy();
+            runtimeFurnitures.Remove(item);
         }
     }
 }
