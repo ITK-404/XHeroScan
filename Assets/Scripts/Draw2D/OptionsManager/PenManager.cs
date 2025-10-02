@@ -154,13 +154,23 @@ public class PenManager : MonoBehaviour
                 if (canCreateCommand)
                 {
                     UndoRedoController.Instance.AddToUndo(splitRoomCommand);
+                    canCreateCommand = false;
                 }
 
             }
         }
     }
-    private bool canCreateCommand = false;
-    SplitRoomCommand splitRoomCommand;
+    private static bool canCreateCommand = false;
+    static SplitRoomCommand splitRoomCommand;
+
+    public static void CreateUndoCommandHere()
+    {
+        if (canCreateCommand == false) return;
+        canCreateCommand = false;
+        splitRoomCommand.InitNewRoomsData();
+        UndoRedoController.Instance.AddToUndo((splitRoomCommand));
+    }
+    
     // Raycast trúng mesh sàn phòng -> lấy roomID từ tên "RoomFloor_<id>" hoặc component
     private bool TryHitRoomFloor(out string roomID)
     {

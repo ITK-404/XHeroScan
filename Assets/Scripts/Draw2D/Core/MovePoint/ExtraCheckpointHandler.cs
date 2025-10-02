@@ -84,8 +84,6 @@ public class ExtraCheckpointHandler
         if (insertIndex != -1)
         {
             Debug.Log("Tích trữ wall line");
-            SplitRoomCommand splitRoomCommand = new();
-
             // TÍCH TRỮ TẤT CẢ MANUAL LINES TRƯỚC KHI REBUILD
             var manualBefore = new List<WallLine>();
             foreach (var w in room.wallLines)
@@ -145,9 +143,10 @@ public class ExtraCheckpointHandler
             checkPointManager.RedrawAllRooms();
             Debug.Log("Tích trữ wall line hoàn tấc");
 
-
-            splitRoomCommand.InitNewRoomsData();
-            UndoRedoController.Instance.AddToUndo(splitRoomCommand);
+            
+            PenManager.CreateUndoCommandHere();
+            // splitRoomCommand.InitNewRoomsData();
+            // UndoRedoController.Instance.AddToUndo(splitRoomCommand);
             return true;
         }
 
