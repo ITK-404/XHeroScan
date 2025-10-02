@@ -165,7 +165,6 @@ public class PenManager : MonoBehaviour
 
     public static void CreateUndoCommandHere()
     {
-        if (canCreateCommand == false) return;
         canCreateCommand = false;
         splitRoomCommand.InitNewRoomsData();
         UndoRedoController.Instance.AddToUndo((splitRoomCommand));
