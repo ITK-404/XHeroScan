@@ -107,7 +107,8 @@ public class RoomMeshController : MonoBehaviour
     // Hàm di chuyển Room theo vị trí chạm for Android
     void DragRoom(Vector2 screenPos)
     {
-        if(checkPointManager.selectedCheckpoint != null) return;
+        if (!RoomInfoDisplay.IsConfirm) return;
+        if (checkPointManager.selectedCheckpoint != null) return;
         if (Input.touchCount >= 2 && isDragging)
         {
             isDragging = false;

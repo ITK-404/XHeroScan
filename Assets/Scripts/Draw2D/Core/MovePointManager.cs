@@ -266,5 +266,4 @@ public bool MoveSelectedCheckpointExtra()
             go.transform.position = p;
         }
     }
-
 }
