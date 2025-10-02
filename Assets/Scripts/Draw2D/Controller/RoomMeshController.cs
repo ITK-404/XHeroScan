@@ -10,7 +10,6 @@ public class RoomMeshController : MonoBehaviour
     private static Camera mainCam;
     public string RoomID;
     private Vector3 dragStartWorldPos;
-    private Vector3 roomOriginalOffset;
     public bool isDragging = false;
     private Room oldRoom;
     private CheckpointManager checkPointManager;

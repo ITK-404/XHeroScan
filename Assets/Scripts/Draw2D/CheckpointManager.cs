@@ -704,9 +704,10 @@ public class CheckpointManager : MonoBehaviour
 
         _alignedRooms.Add(room.ID);
     }
-    public void AddGameObjectCheckPointToGlobalVariable(Room room)
+public void AddGameObjectCheckPointToGlobalVariable(Room room)
     {
         var loopGO = new List<GameObject>();
+        var loopMap = new LoopMap(room.ID, loopGO);
         var center = GeoUtil.Centroid(room.checkpoints);
 
         foreach (var p in room.checkpoints)
@@ -715,16 +716,19 @@ public class CheckpointManager : MonoBehaviour
             var cp = Instantiate(checkpointPrefab, wp, Quaternion.identity);
             loopGO.Add(cp);
         }
-        //foreach (var p in room.extraCheckpoints)
-        //{
-        //    var wp = new Vector3(p.x, roomIndexY, p.y);
-        //    var cp = Instantiate(checkpointPrefab, wp, Quaternion.identity);
-        //    cp.tag = "CheckpointExtra";
-        //    loopGO.Add(cp);
-        //}
-        loopMappings.Add(new LoopMap(room.ID, loopGO));
+        
+        foreach (var p in room.extraCheckpoints)
+        {
+            var wp = new Vector3(p.x, roomIndexY, p.y);
+            var cp = Instantiate(checkpointPrefab, wp, Quaternion.identity);
+            cp.tag = "CheckpointExtra";
+            // HandleCheckpointManger.Instance.InsertBoundaryVertex(room, loopMap, wp, cp, 0.001f);
+            currentCheckpoints.Add(cp);
+        }
+        loopMappings.Add(loopMap);
         allCheckpoints.Add(loopGO);
     }
+
 
     public RoomMeshController CreateRoomMeshCtrl(Room room)
     {

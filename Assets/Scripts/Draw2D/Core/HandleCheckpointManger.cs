@@ -627,28 +627,26 @@ public class HandleCheckpointManger : MonoBehaviour
             checkPointManager.firstPoint.transform.position = endWorld;
         }
         Debug.Log("Kết thúc tạo tường");
-
     }
 
     private IEnumerator WaitAndSplitRooms(List<Room> rooms)
-{
-    yield return null;
-
-    foreach (var r in rooms)
     {
-        splitRoomManager.DetectAndSplitRoomIfNecessary(r);
+        yield return null;
 
-        // DỌN EXTRA SAU KHI CHIA
-        CleanupExtrasForRoom(r);
+        foreach (var r in rooms)
+        {
+            splitRoomManager.DetectAndSplitRoomIfNecessary(r);
+
+            // DỌN EXTRA SAU KHI CHIA
+            CleanupExtrasForRoom(r);
+        }
+
+        // DỌN TOÀN CỤC LẦN NỮA (phòng mới sinh ra)
+        foreach (var r in RoomStorage.rooms) CleanupExtrasForRoom(r);
+
+        checkPointManager.RedrawAllRooms();
+        FurnitureManager.Instance.ForceSnapAllToNearestRoom();
     }
-
-    // DỌN TOÀN CỤC LẦN NỮA (phòng mới sinh ra)
-    foreach (var r in RoomStorage.rooms) CleanupExtrasForRoom(r);
-
-    checkPointManager.RedrawAllRooms();
-    FurnitureManager.Instance.ForceSnapAllToNearestRoom();
-}
-
 
     private bool PointInPolygon(Vector2 point, List<Vector2> polygon)
     {
