@@ -619,6 +619,8 @@ public class ExtraCheckpointHandler
                 var gw = new Vector3(go.transform.position.x, planeY, go.transform.position.z);
                 if (lonely.Any(p => NearlySameXZ(p, gw, tolConnect)))
                 {
+                    if (checkPointManager != null && checkPointManager.selectedCheckpoint == go)
+                        checkPointManager.selectedCheckpoint = null;
                     UnityEngine.Object.Destroy(go);
                     listGO.RemoveAt(i);
                 }

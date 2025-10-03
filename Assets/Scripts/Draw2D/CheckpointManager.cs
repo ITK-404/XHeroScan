@@ -349,7 +349,17 @@ public class CheckpointManager : MonoBehaviour
                 }
             }
         }
+        
+        foreach (var kv in placedPointsByRoom)
+                foreach (var cp in kv.Value)
+                    Check(cp);
 
+        void Check(GameObject cp)
+        {
+            if (!cp) return;
+            float d = Vector3.Distance(cp.transform.position, position);
+            if (d < minDistance) { minDistance = d; nearestCheckpoint = cp; }
+        }
         if (nearestCheckpoint != null)
         {
             selectedCheckpoint = nearestCheckpoint;
@@ -717,14 +727,20 @@ public void AddGameObjectCheckPointToGlobalVariable(Room room)
             loopGO.Add(cp);
         }
         
+        // EXTRA checkpoints -> per-room
+        if (!placedPointsByRoom.TryGetValue(room.ID, out var extrasGO) || extrasGO == null)
+        {
+            extrasGO = new List<GameObject>();
+            placedPointsByRoom[room.ID] = extrasGO;
+        }
         foreach (var p in room.extraCheckpoints)
         {
             var wp = new Vector3(p.x, roomIndexY, p.y);
             var cp = Instantiate(checkpointPrefab, wp, Quaternion.identity);
             cp.tag = "CheckpointExtra";
-            // HandleCheckpointManger.Instance.InsertBoundaryVertex(room, loopMap, wp, cp, 0.001f);
-            currentCheckpoints.Add(cp);
+            extrasGO.Add(cp);                 
         }
+
         loopMappings.Add(loopMap);
         allCheckpoints.Add(loopGO);
     }
@@ -951,6 +967,8 @@ public void AddGameObjectCheckPointToGlobalVariable(Room room)
         var room = RoomStorage.GetRoomByID(roomID);
         if (room == null) { Debug.LogWarning($"[ClearRoomById] Không tìm thấy phòng: {roomID}"); return; }
 
+        CleanupRoomEphemera(roomID);
+
         // XÓA EXTRA GOs theo roomID (placedPointsByRoom)
         var mpm = FindFirstObjectByType<MovePointManager>();
         if (mpm != null && mpm.placedPointsByRoom != null &&
@@ -1025,10 +1043,20 @@ public void AddGameObjectCheckPointToGlobalVariable(Room room)
             if (FindRoomIDForLoop(lp) == roomID) return lp;
         return null;
     }
+    private void CleanupRoomEphemera(string roomID)
+    {
+        // Extra checkpoints (per-room) do CheckpointManager quản lý
+        if (placedPointsByRoom.TryGetValue(roomID, out var extras) && extras != null)
+        {
+            foreach (var go in extras) if (go) Destroy(go);
+            placedPointsByRoom.Remove(roomID);
+        }
+    }
 
     public void RestoreRoom(Room roomSnapShot)
     {
         var room = new Room(roomSnapShot); // copy
+        CleanupRoomEphemera(room.ID);
         RoomStorage.UpdateOrAddRoom(room);
 
         var roomMesh = CreateRoomMeshCtrl(room);

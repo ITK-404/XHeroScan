@@ -30,7 +30,6 @@ public class PenManager : MonoBehaviour
     private string _dragRoomID = null;
     private Vector3 _lastWorld; // world pos frame trước khi drag
 
-    // public bool IsPenActive => isPenActive;  // Getter để cung cấp trạng thái Pen
     [SerializeField] private ToggleGroupUI toggleGroupUI;
 
     [SerializeField] DrawingTool drawingTool;
