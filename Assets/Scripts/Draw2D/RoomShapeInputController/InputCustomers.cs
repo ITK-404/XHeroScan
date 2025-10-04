@@ -219,9 +219,7 @@ public class InputCustomers : MonoBehaviour
             Debug.Log("This is same, does not create it againt");
             return;
         }
-        var oldRoom = new Room(room);
-        var oldList = FurnitureManager.Instance.GetFurnitureInsideRoom(room.ID);
-
+        EditoRoomCommandCreator.Init(roomId);
 
         if (room == null)
         {
@@ -323,8 +321,8 @@ public class InputCustomers : MonoBehaviour
         //CameraResizeByFloor.Instance.Resize(room.checkpoints);
         // === HEIGHT update ===
         room.heights.Clear(); // xóa cũ để tránh dư
-
-        UndoRedoController.Instance.AddToUndo(new EditRoomCommand(oldRoom, oldList, new Room(room)));
+        EditoRoomCommandCreator.CreateCommand();
+        //UndoRedoController.Instance.AddToUndo(new EditRoomCommand(oldRoom, oldList, new Room(room)));
 
         for (int i = 0; i < room.wallLines.Count; i++)
         {
@@ -333,6 +331,8 @@ public class InputCustomers : MonoBehaviour
         }
 
     }
+
+    private EditoRoomCommandCreator EditoRoomCommandCreator = new();
 
     private List<GameObject> TryGetCheckpointListForRoom(string id)
     {

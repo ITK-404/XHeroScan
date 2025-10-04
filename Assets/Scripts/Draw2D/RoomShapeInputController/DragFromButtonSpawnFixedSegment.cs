@@ -39,6 +39,7 @@ public class DragFromButtonSpawnFixedSegment_Passthrough : MonoBehaviour, IBegin
     LineType _oldLineType;
     RectTransform _bottomRect;
 
+    private SplitRoomCommand splitRoomCommand;
     Camera UiCamForPanel
     {
         get
@@ -76,6 +77,8 @@ public class DragFromButtonSpawnFixedSegment_Passthrough : MonoBehaviour, IBegin
             UpdatePlacement(eventData.position);
         }
         if (verboseLogs) Debug.Log("[DragPassthrough] Begin.");
+
+        splitRoomCommand = new SplitRoomCommand();
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -89,8 +92,10 @@ public class DragFromButtonSpawnFixedSegment_Passthrough : MonoBehaviour, IBegin
     {
         if (!_dragging) return;
 
+        // Hủy kéo: đảm bảo không còn firstPoint treo
         if (!_armed || IsInsideBottomPanel(eventData.position))
         {
+            _hcm?.StopPlacing();
             CleanupAndRestore();
             _dragging = false;
             if (verboseLogs) Debug.Log("[DragPassthrough] Cancelled (inside panel/not armed).");
@@ -98,10 +103,20 @@ public class DragFromButtonSpawnFixedSegment_Passthrough : MonoBehaviour, IBegin
         }
 
         UpdatePlacement(eventData.position);
+
         if (_hasValidPlacement && _cm && _hcm)
         {
+            // bật đặt point cho lượt này
+            _hcm.ResumePlacing();
+
+            // đúng 2 point: p0 -> p1
             _hcm.HandleSingleWallPlacement(_p0);
             _hcm.HandleSingleWallPlacement(_p1);
+
+            // tắt ngay để không chain p1->p2...
+            _hcm.StopPlacing();
+            splitRoomCommand.InitNewRoomsData();
+            UndoRedoController.Instance.AddToUndo(splitRoomCommand);
             if (verboseLogs) Debug.Log($"[DragPassthrough] Dropped: {_p0} -> {_p1}");
         }
 
@@ -113,6 +128,9 @@ public class DragFromButtonSpawnFixedSegment_Passthrough : MonoBehaviour, IBegin
     {
         _armed = true;
         if (_cm) { _cm.currentLineType = lineTypeOnDrop; _changedType = true; }
+
+        // bật đặt point cho phiên kéo này (phòng trường hợp flagOff đang true)
+        _hcm?.ResumePlacing();    
 
         _prevP0Mesh = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         _prevP1Mesh = GameObject.CreatePrimitive(PrimitiveType.Sphere);

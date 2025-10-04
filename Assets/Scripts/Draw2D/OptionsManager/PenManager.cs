@@ -30,7 +30,6 @@ public class PenManager : MonoBehaviour
     private string _dragRoomID = null;
     private Vector3 _lastWorld; // world pos frame trước khi drag
 
-    // public bool IsPenActive => isPenActive;  // Getter để cung cấp trạng thái Pen
     [SerializeField] private ToggleGroupUI toggleGroupUI;
 
     [SerializeField] DrawingTool drawingTool;
@@ -62,6 +61,7 @@ public class PenManager : MonoBehaviour
         if (InteractionFlags.OnDragFurniture) return;
         if (InteractionFlags.OnDragMovePoint) return;
 
+        if(PencilLine.isDragging) return;
 
         // KHÔNG bật zoom/pan nếu đang kéo room HOẶC đang kéo point floor
         bool blockZoomPan = InteractionFlags.IsRoomFloorDragging || InteractionFlags.IsFloorHandleDragging;
@@ -80,7 +80,7 @@ public class PenManager : MonoBehaviour
             {
                 checkpointManager.SelectCheckpoint();
                 checkpointManager.InitAndClearData();
-
+                splitRoomCommand = new();
                 // if (checkpointManager.selectedCheckpoint != null)
                 // {
                 //     _dragRoom = false;
@@ -112,12 +112,13 @@ public class PenManager : MonoBehaviour
                 var cur = GetWorldOnXZ(Input.mousePosition);
                 var delta = cur - _lastWorld;
                 _lastWorld = cur;
-
+                canCreateCommand = false;
                 if (_dragRoom && !string.IsNullOrEmpty(_dragRoomID))
                 {
                     if (InteractionFlags.IsOpenBottomSheetUI) return;
                     Debug.Log("Dragging room floor " + _dragRoomID);
                     movePointManager.MoveRoomSnap(_dragRoomID, delta);
+                    canCreateCommand = true;
 
                 }
                 else if (checkpointManager.selectedCheckpoint != null)
@@ -128,6 +129,7 @@ public class PenManager : MonoBehaviour
 
                     // đang kéo checkpoint/handle -> giữ cờ
                     InteractionFlags.IsFloorHandleDragging = true;
+                    canCreateCommand = true;
                 }
             }
             else if (Input.GetMouseButtonUp(0))
@@ -147,10 +149,26 @@ public class PenManager : MonoBehaviour
 
                 checkpointManager.CreateCommandHere();
 
+                splitRoomCommand.InitNewRoomsData();
+                if (canCreateCommand)
+                {
+                    UndoRedoController.Instance.AddToUndo(splitRoomCommand);
+                    canCreateCommand = false;
+                }
+
             }
         }
     }
+    private static bool canCreateCommand = false;
+    static SplitRoomCommand splitRoomCommand;
 
+    public static void CreateUndoCommandHere()
+    {
+        canCreateCommand = false;
+        splitRoomCommand.InitNewRoomsData();
+        UndoRedoController.Instance.AddToUndo((splitRoomCommand));
+    }
+    
     // Raycast trúng mesh sàn phòng -> lấy roomID từ tên "RoomFloor_<id>" hoặc component
     private bool TryHitRoomFloor(out string roomID)
     {

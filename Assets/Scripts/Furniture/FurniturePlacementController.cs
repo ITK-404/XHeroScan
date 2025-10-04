@@ -28,7 +28,7 @@ public partial class FurnitureManager : MonoBehaviour
             furnitureDrag = tempDragItem.furnitureDrag;
             furnitureDrag.SetCanMove(canMove: true);
             furnitureDrag.StartMoveSetup();
-
+            furnitureDrag.offsetPosition = Vector3.zero;
             furnitureManager.SelectFurniture(tempDragItem);
             if (tempDragItem == null)
             {

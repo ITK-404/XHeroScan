@@ -23,7 +23,22 @@ public class HandleCheckpointManger : MonoBehaviour
     private const float SNAP_EPS = 0.01f;   // ~ 1cm
     static float Dist2(Vector2 a, Vector2 b) => (a - b).magnitude;
     #endregion
+    public bool flagOff = false; // nếu true: không đặt point / dừng chain
 
+    public void StopPlacing()
+    {
+        flagOff = true;
+        if (checkPointManager != null && checkPointManager.firstPoint != null)
+        {
+            Destroy(checkPointManager.firstPoint);
+            checkPointManager.firstPoint = null;
+        }
+    }
+
+    public void ResumePlacing()
+    {
+        flagOff = false;
+    }
     void Start()
     {
         splitRoomManager = FindFirstObjectByType<SplitRoomManager>();
@@ -372,9 +387,21 @@ public class HandleCheckpointManger : MonoBehaviour
     // ============ Wall placement ============
     public void HandleSingleWallPlacement(Vector3 position)
     {
+        // --- Tắt hoàn toàn khi flagOff ---
+        if (flagOff)
+        {
+            if (checkPointManager.firstPoint)
+            {
+                Destroy(checkPointManager.firstPoint);
+                checkPointManager.firstPoint = null;
+            }
+            return;
+        }
+
         List<GameObject> tempCreatedPoints = new();
         if (ConnectManager.isConnectActive) return;
 
+        // --- Nếu chưa có firstPoint: tạo p1 rồi thoát (đợi p2) ---
         if (checkPointManager.firstPoint == null)
         {
             Vector2 p2 = new(position.x, position.z);
@@ -386,16 +413,16 @@ public class HandleCheckpointManger : MonoBehaviour
             return;
         }
 
+        // --- Có firstPoint: xử lý đoạn firstPoint -> position ---
         Vector3 startWorld = checkPointManager.firstPoint.transform.position;
         Vector3 endWorld = position;
 
         Vector2 aOrig = new(startWorld.x, startWorld.z);
         Vector2 bOrig = new(endWorld.x, endWorld.z);
 
-        bool reusedFirstPoint = false;
         bool anyRoomUpdated = false;
         List<Room> roomsToSplit = new();
-
+        Debug.Log("Bắt đầu tạo tường");
         foreach (Room room in RoomStorage.rooms.ToList())
         {
             var map = checkPointManager.loopMappings.FirstOrDefault(m => m.RoomID == room.ID);
@@ -420,16 +447,14 @@ public class HandleCheckpointManger : MonoBehaviour
             bool A_onB = OnBoundary(room, A, EDGE_EPS);
             bool B_onB = OnBoundary(room, B, EDGE_EPS);
 
-            // ===== CASE 1: Biên–Biên -> chèn 2 đỉnh vào polygon (đúng cạnh) + line =====
+            // ===== CASE 1: Biên–Biên =====
             if (A_onB && B_onB)
             {
                 Vector3 start = new(A.x, 0, A.y);
                 Vector3 end = new(B.x, 0, B.y);
 
-                // đồng bộ trước khi insert
                 EnsureLoopGoSyncedInPlace(room, map, checkPointManager, checkPointManager.checkpointPrefab);
 
-                // nếu chưa có vertex A/B -> tạo GO & insert-in-place
                 if (!room.checkpoints.Any(p => Vector2.Distance(p, A) < EDGE_EPS))
                     tempCreatedPoints.Add(SpawnEdgeCheckpoint(room, map, start, A));
                 if (!room.checkpoints.Any(p => Vector2.Distance(p, B) < EDGE_EPS))
@@ -450,14 +475,14 @@ public class HandleCheckpointManger : MonoBehaviour
                 continue;
             }
 
-            // ===== CASE 2: Một trên biên + một trong -> Main + Extra =====
+            // ===== CASE 2: Một trên biên + một trong =====
             if ((A_onB && B_inside) || (B_onB && A_inside))
             {
                 Vector2 main2D = A_onB ? A : B;
                 Vector2 extra2D = A_onB ? B : A;
                 Vector3 main3D = new(main2D.x, 0, main2D.y);
                 Vector3 extra3D = new(extra2D.x, 0, extra2D.y);
-
+                // local method
                 bool Nearly(Vector3 u, Vector3 v, float eps) => (u - v).sqrMagnitude <= eps * eps;
                 bool SameLine(WallLine a, WallLine b, float eps) =>
                     (Nearly(a.start, b.start, EDGE_EPS) && Nearly(a.end, b.end, EDGE_EPS)) ||
@@ -468,32 +493,28 @@ public class HandleCheckpointManger : MonoBehaviour
                     if (!r.wallLines.Any(x => SameLine(x, m, EDGE_EPS)))
                         r.wallLines.Add(m);
                 }
-
+                // backup
                 var manualBefore = room.wallLines?
                     .Where(w => w.isManualConnection && (w.isVisible))
                     .ToList() ?? new List<WallLine>();
 
                 EnsureLoopGoSyncedInPlace(room, map, checkPointManager, checkPointManager.checkpointPrefab);
 
-                // tạo/reuse GO cho main
                 GameObject mainGO;
                 if ((checkPointManager.firstPoint.transform.position - main3D).sqrMagnitude <= 1e-6f)
-                { mainGO = checkPointManager.firstPoint; reusedFirstPoint = true; }
+                { mainGO = checkPointManager.firstPoint; }
                 else
                 {
                     mainGO = Instantiate(checkPointManager.checkpointPrefab, main3D, Quaternion.identity);
                     mainGO.transform.SetParent(null, true);
                 }
 
-                // chèn main vào đúng cạnh + cắt wall tại main
                 InsertBoundaryVertex(room, map, main2D, mainGO, EDGE_EPS);
                 SplitWallLinesAtPoint(room, main2D, EDGE_EPS);
 
-                // rebuild + trả lại manual
                 RoomStorage.UpdateOrAddRoom(room);
                 foreach (var m in manualBefore) AddManualIfMissing(room, m);
 
-                // extra (KHÔNG vào loop)
                 GameObject extraGO = Instantiate(checkPointManager.checkpointPrefab, extra3D, Quaternion.identity);
                 extraGO.transform.SetParent(null, true);
                 extraGO.tag = "CheckpointExtra";
@@ -528,10 +549,15 @@ public class HandleCheckpointManger : MonoBehaviour
 
                 RoomStorage.UpdateOrAddRoom(room);
                 anyRoomUpdated = true;
+
+                // NEW: xét split cho Biên–Trong
+                if (ShouldSplitSegment(room, main2D, extra2D, A_onB, B_onB))
+                    roomsToSplit.Add(room);
+
                 continue;
             }
 
-            // ===== CASE 3: Cả hai ở trong -> 2 Extra + line phụ =====
+            // ===== CASE 3: Cả hai ở trong =====
             if (A_inside && B_inside)
             {
                 Vector3 a3 = new(A.x, 0, A.y);
@@ -572,33 +598,35 @@ public class HandleCheckpointManger : MonoBehaviour
 
                 RoomStorage.UpdateOrAddRoom(room);
                 anyRoomUpdated = true;
+
+                // NEW: xét split cho Trong–Trong
+                if (ShouldSplitSegment(room, A, B, A_onB, B_onB))
+                    roomsToSplit.Add(room);
+
                 continue;
             }
         }
 
-        if (!anyRoomUpdated)
+        // ===== Sau vòng lặp: cập nhật/split/redraw =====
+        if (anyRoomUpdated)
         {
-            if (!reusedFirstPoint && checkPointManager.firstPoint) Destroy(checkPointManager.firstPoint);
+            foreach (var r in RoomStorage.rooms) CleanupExtrasForRoom(r);
+            if (roomsToSplit.Count > 0)
+                StartCoroutine(WaitAndSplitRooms(roomsToSplit.Distinct().ToList()));
+            checkPointManager.RedrawAllRooms();
+        }
+
+        // ===== Chuỗi nối tiếp: giữ/move firstPoint tới điểm cuối =====
+        if (checkPointManager.firstPoint == null)
+        {
+            checkPointManager.firstPoint = Instantiate(checkPointManager.checkpointPrefab, endWorld, Quaternion.identity);
+            checkPointManager.firstPoint.transform.SetParent(null);
         }
         else
         {
-            if (!reusedFirstPoint && checkPointManager.firstPoint) Destroy(checkPointManager.firstPoint);
-
-            if (roomsToSplit.Count > 0)
-                StartCoroutine(WaitAndSplitRooms(roomsToSplit.Distinct().ToList()));
-
-            checkPointManager.RedrawAllRooms();
+            checkPointManager.firstPoint.transform.position = endWorld;
         }
-
-        if (anyRoomUpdated && roomsToSplit.Count > 0)
-        {
-            StartCoroutine(WaitAndSplitRooms(roomsToSplit.Distinct().ToList()));
-            checkPointManager.RedrawAllRooms();
-        }
-
-        if (!reusedFirstPoint && checkPointManager.firstPoint)
-            Destroy(checkPointManager.firstPoint);
-        checkPointManager.firstPoint = null;
+        Debug.Log("Kết thúc tạo tường");
     }
 
     private IEnumerator WaitAndSplitRooms(List<Room> rooms)
@@ -606,10 +634,17 @@ public class HandleCheckpointManger : MonoBehaviour
         yield return null;
 
         foreach (var r in rooms)
+        {
             splitRoomManager.DetectAndSplitRoomIfNecessary(r);
 
-        checkPointManager.RedrawAllRooms();
+            // DỌN EXTRA SAU KHI CHIA
+            CleanupExtrasForRoom(r);
+        }
 
+        // DỌN TOÀN CỤC LẦN NỮA (phòng mới sinh ra)
+        foreach (var r in RoomStorage.rooms) CleanupExtrasForRoom(r);
+
+        checkPointManager.RedrawAllRooms();
         FurnitureManager.Instance.ForceSnapAllToNearestRoom();
     }
 
@@ -690,7 +725,7 @@ public class HandleCheckpointManger : MonoBehaviour
 
         return true;
     }
-        private bool ShouldSplitSegment(Room room, Vector2 A, Vector2 B, bool A_onBoundary, bool B_onBoundary)
+    private bool ShouldSplitSegment(Room room, Vector2 A, Vector2 B, bool A_onBoundary, bool B_onBoundary)
     {
         var (compsHit, compAnchored) = BuildWallsGraphAndHits(room, A, B);
         bool hitAnyAnchoredComp = compsHit.Any(c => compAnchored[c]);
@@ -770,4 +805,80 @@ public class HandleCheckpointManger : MonoBehaviour
 
         return (hitComps, compHasAnchor.ToArray());
     }
+    // Sai số cho so khớp điểm↔điểm & điểm↔cạnh khi dọn
+const float CLEAN_EPS = 0.002f; // 2 mm
+const float CLEAN_EPS2 = CLEAN_EPS * CLEAN_EPS;
+
+private void CleanupExtrasForRoom(Room room)
+{
+    if (room == null) return;
+
+    // 1) Tìm các extra cần xoá (trùng đỉnh hoặc nằm trên biên)
+    var toRemove = new List<Vector2>();
+    foreach (var p in room.extraCheckpoints)
+    {
+        bool hitVertex = room.checkpoints.Any(v => (v - p).sqrMagnitude <= CLEAN_EPS2);
+        bool hitEdge = !hitVertex && OnBoundary(room, p, CLEAN_EPS);
+        if (hitVertex || hitEdge) toRemove.Add(p);
+    }
+
+    if (toRemove.Count == 0) return;
+
+    // 2) Xoá các GameObject extra tương ứng + gỡ khỏi mọi list
+    //    - checkPointManager.currentCheckpoints
+    //    - MovePointManager.placedPointsByRoom[room.ID]
+    var mpm = FindFirstObjectByType<MovePointManager>();
+
+    // Xoá theo vị trí gần (2D)
+    bool Near2D(Vector3 a, Vector2 b, float eps2)
+    {
+        float dx = a.x - b.x; float dz = a.z - b.y;
+        return (dx * dx + dz * dz) <= eps2;
+    }
+
+    // currentCheckpoints
+    for (int i = checkPointManager.currentCheckpoints.Count - 1; i >= 0; i--)
+    {
+        var go = checkPointManager.currentCheckpoints[i];
+        if (go == null) { checkPointManager.currentCheckpoints.RemoveAt(i); continue; }
+        if (go.CompareTag("CheckpointExtra"))
+        {
+            Vector3 pos = go.transform.position;
+            if (toRemove.Any(p => Near2D(pos, p, CLEAN_EPS2)))
+            {
+                checkPointManager.currentCheckpoints.RemoveAt(i);
+                Destroy(go);
+            }
+        }
+    }
+
+    // placedPointsByRoom
+    if (mpm != null && mpm.placedPointsByRoom.TryGetValue(room.ID, out var list) && list != null)
+    {
+        for (int i = list.Count - 1; i >= 0; i--)
+        {
+            var go = list[i];
+            if (go == null) { list.RemoveAt(i); continue; }
+            if (go.CompareTag("CheckpointExtra"))
+            {
+                Vector3 pos = go.transform.position;
+                if (toRemove.Any(p => Near2D(pos, p, CLEAN_EPS2)))
+                {
+                    list.RemoveAt(i);
+                    Destroy(go);
+                }
+            }
+        }
+    }
+
+    // 3) Xoá các Vector2 trong room.extraCheckpoints
+    room.extraCheckpoints.RemoveAll(p => toRemove.Any(rem => (rem - p).sqrMagnitude <= CLEAN_EPS2));
+
+    // 4) (Tuỳ chọn) Khử trùng lặp còn sót
+    var dedup = new List<Vector2>();
+    foreach (var p in room.extraCheckpoints)
+        if (!dedup.Any(q => (q - p).sqrMagnitude <= CLEAN_EPS2)) dedup.Add(p);
+    room.extraCheckpoints = dedup;
+}
+
 }

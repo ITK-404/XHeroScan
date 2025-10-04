@@ -9,33 +9,41 @@ public class MidpointController : MonoBehaviour
 {
     [Header("Refs")]
     private CheckpointManager checkPointManager;
+
     public static bool IsDraggingMidpoint { get; private set; }
 
     [Header("Midpoint Handles")]
-    [SerializeField] private GameObject handlePrefab;   // nếu null thì tạo sphere primitive
+    [SerializeField] private GameObject handlePrefab; // nếu null thì tạo sphere primitive
+
     [SerializeField] private float handleSize = 0.25f;
     [SerializeField] private float pickMaxDistance = 3000f;
 
     [Header("Room Constraints & Elevation")]
-    [SerializeField] private float minRoomSide = 0.20f;       // không cho co < 20cm
-    [SerializeField] private int roomIndex = 2;               // cùng logic cao độ với CreateRoomOnFloor
-    [SerializeField] private float layerStepY = 0.002f;
-    [SerializeField] private float roomWallLift = 0.003f;     // nhô nhẹ cho line/marker
+    [SerializeField] private float minRoomSide = 0.20f; // không cho co < 20cm
 
-    private GameObject[] _handles = new GameObject[4];        // 0=Left,1=Top,2=Right,3=Bottom
+    [SerializeField] private int roomIndex = 2; // cùng logic cao độ với CreateRoomOnFloor
+    [SerializeField] private float layerStepY = 0.002f;
+    [SerializeField] private float roomWallLift = 0.003f; // nhô nhẹ cho line/marker
+
+    private GameObject[] _handles = new GameObject[4]; // 0=Left,1=Top,2=Right,3=Bottom
     private Room _editingRoom = null;
     private float _baseRoomY;
     private bool _isDragging = false;
     private int _activeEdge = -1;
 
     // helper gắn index cho handle
-    private class EdgeTag : MonoBehaviour { public int edgeIndex; }
+    private class EdgeTag : MonoBehaviour
+    {
+        public int edgeIndex;
+    }
 
     void Awake()
     {
         if (!checkPointManager)
             checkPointManager = FindFirstObjectByType<CheckpointManager>();
     }
+
+    private EditoRoomCommandCreator EditoRoomCommandCreator = new();
 
     void Update()
     {
@@ -45,7 +53,12 @@ public class MidpointController : MonoBehaviour
             var r = RoomStorage.GetRoomByID(_externalRoomId);
             if (r != _editingRoom)
             {
-                if (r == null) { Hide(); return; }
+                if (r == null)
+                {
+                    Hide();
+                    return;
+                }
+
                 _editingRoom = r;
                 _baseRoomY = roomIndex * layerStepY;
                 BuildHandlesFor(_editingRoom);
@@ -60,13 +73,27 @@ public class MidpointController : MonoBehaviour
         }
 
         if (_editingRoom == null) return;
-        
+        if (_isDragging && Input.touchCount >= 2)
+        {
+            _isDragging = false;
+            _activeEdge = -1;
+            IsDraggingMidpoint = false;
+            InteractionFlags.IsRoomFloorDragging = false;
+            return;
+        }
+
         if (!_isDragging && Input.GetMouseButtonDown(0) && TryPickHandle(out int idx))
         {
             InteractionFlags.IsRoomFloorDragging = true; // dùng tạm khoa khóa để đặt
             _isDragging = true;
             _activeEdge = idx;
             IsDraggingMidpoint = true;
+            EditoRoomCommandCreator.Init(_externalRoomId);
+            Debug.Log("Đang chọn room và show midpoint với room ID là " + _externalRoomId);
+            if (MouseToPlaneY(_baseRoomY, out var worldOnPlane))
+            {
+                previousPosition = worldOnPlane;
+            }
         }
 
         if (_isDragging && Input.GetMouseButton(0))
@@ -80,6 +107,8 @@ public class MidpointController : MonoBehaviour
 
         if (_isDragging && Input.GetMouseButtonUp(0))
         {
+            Debug.Log("Đả bỏ chọn room và show midpoint với room ID là " + _externalRoomId);
+            EditoRoomCommandCreator.CreateCommand();
             _isDragging = false;
             _activeEdge = -1;
             IsDraggingMidpoint = false;
@@ -102,7 +131,8 @@ public class MidpointController : MonoBehaviour
     private void DestroyHandles()
     {
         for (int i = 0; i < _handles.Length; i++)
-            if (_handles[i]) Destroy(_handles[i]);
+            if (_handles[i])
+                Destroy(_handles[i]);
         Array.Clear(_handles, 0, _handles.Length);
         _isDragging = false;
         _activeEdge = -1;
@@ -116,14 +146,51 @@ public class MidpointController : MonoBehaviour
         {
             if (_handles[i])
             {
-                var p = mids[i]; p.y = _baseRoomY + roomWallLift;
+                var p = mids[i];
+                p.y = _baseRoomY + roomWallLift;
                 _handles[i].transform.position = p;
             }
         }
     }
 
+    private (int, int, int) GetAdjacentIndices(int idx, int count)
+    {
+        int left = idx - 1 < 0 ? count - 1 : idx - 1;
+        int right = idx + 1 >= count ? 0 : idx + 1;
+        return (left, idx, right);
+    }
+
     private Vector3[] GetEdgeMidpoints(Room room)
     {
+        Vector3[] midPoints = new Vector3[room.wallLines.Count];
+        int finalIndex = room.wallLines.Count - 1;
+        foreach (var item in room.wallLines)
+        {
+            var indexs = GetAdjacentIndices(room.wallLines.IndexOf(item), room.wallLines.Count);
+            int leftIndex = indexs.Item1;
+            int index = indexs.Item2;
+            int rightIndex = indexs.Item3;
+
+            var leftLine = room.wallLines[leftIndex];
+            var rightLine = room.wallLines[rightIndex];
+
+            var leftDir = (leftLine.end - leftLine.start).normalized;
+            var rightDir = (rightLine.start - rightLine.end).normalized;
+            var midPointPosition = (item.start + item.end) * 0.5f;
+
+            //Debug.DrawRay(midPointPosition, rightDir, Color.green);
+            var normalLeft = midPointPosition + leftDir * 0.1f;
+            var normalRight = midPointPosition + rightDir * 0.1f;
+
+            //rightDir = CheckpointManager.IsPointInPolygon(new Vector2(normalLeft.x, normalLeft.y), room.checkpoints) ? -rightDir : rightDir;
+
+            Debug.DrawRay(item.start, leftDir * 100, Color.red);
+            Debug.DrawRay(item.end, rightDir * 100, Color.green);
+
+            midPoints[index] = midPointPosition;
+        }
+
+        return midPoints;
         var pts = room.checkpoints;
         float y = _baseRoomY + roomWallLift;
         if (pts == null || pts.Count < 4)
@@ -134,8 +201,10 @@ public class MidpointController : MonoBehaviour
         for (int i = 0; i < pts.Count; i++)
         {
             var v = pts[i];
-            if (v.x < minX) minX = v.x; if (v.x > maxX) maxX = v.x;
-            if (v.y < minZ) minZ = v.y; if (v.y > maxZ) maxZ = v.y;
+            if (v.x < minX) minX = v.x;
+            if (v.x > maxX) maxX = v.x;
+            if (v.y < minZ) minZ = v.y;
+            if (v.y > maxZ) maxZ = v.y;
         }
 
         Vector3 bl = new Vector3(minX, y, minZ);
@@ -148,7 +217,7 @@ public class MidpointController : MonoBehaviour
             (bl + tl) * 0.5f, // Left
             (tl + tr) * 0.5f, // Top
             (tr + br) * 0.5f, // Right
-            (br + bl) * 0.5f  // Bottom
+            (br + bl) * 0.5f // Bottom
         };
     }
 
@@ -166,13 +235,15 @@ public class MidpointController : MonoBehaviour
                 var sc = h.AddComponent<SphereCollider>();
                 sc.radius = 0.5f; // tuỳ tỉ lệ prefab
             }
+
             // nếu prefab không có renderer, thêm quả cầu con cho dễ thấy
             if (h.GetComponentInChildren<Renderer>() == null)
             {
                 var vis = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 vis.transform.SetParent(h.transform, false);
                 vis.transform.localScale = Vector3.one * handleSize;
-                var c = vis.GetComponent<Collider>(); if (c) Destroy(c); // chỉ dùng để nhìn, không cần collider phụ
+                var c = vis.GetComponent<Collider>();
+                if (c) Destroy(c); // chỉ dùng để nhìn, không cần collider phụ
             }
         }
         else
@@ -180,7 +251,8 @@ public class MidpointController : MonoBehaviour
             h = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             h.transform.position = pos;
             h.transform.localScale = Vector3.one * handleSize;
-            var c = h.GetComponent<Collider>(); if (c) c.isTrigger = false;
+            var c = h.GetComponent<Collider>();
+            if (c) c.isTrigger = false;
         }
 
         h.name = $"RoomMid_{suffix}";
@@ -188,7 +260,9 @@ public class MidpointController : MonoBehaviour
         tag.edgeIndex = edgeIdx;
 
         // nhô lên khỏi sàn để raycast thấy trước sàn
-        var p = h.transform.position; p.y = _baseRoomY + roomWallLift; h.transform.position = p;
+        var p = h.transform.position;
+        p.y = _baseRoomY + roomWallLift;
+        h.transform.position = p;
 
         return h;
     }
@@ -196,25 +270,37 @@ public class MidpointController : MonoBehaviour
     private bool TryPickHandle(out int edgeIdx)
     {
         edgeIdx = -1;
-        var cam = Camera.main; if (!cam) return false;
+        var cam = Camera.main;
+        if (!cam) return false;
 
         var ray = cam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out var hit, pickMaxDistance))
         {
             // lấy EdgeTag ở parent nếu collider ở child
             var tag = hit.collider ? hit.collider.GetComponentInParent<EdgeTag>() : null;
-            if (tag != null) { edgeIdx = tag.edgeIndex; return true; }
+            if (tag != null)
+            {
+                edgeIdx = tag.edgeIndex;
+                return true;
+            }
         }
+
         return false;
     }
 
     private bool MouseToPlaneY(float y, out Vector3 p)
     {
         p = default;
-        var cam = Camera.main; if (!cam) return false;
+        var cam = Camera.main;
+        if (!cam) return false;
         var ray = cam.ScreenPointToRay(Input.mousePosition);
         var plane = new Plane(Vector3.up, new Vector3(0f, y, 0f));
-        if (plane.Raycast(ray, out float t)) { p = ray.GetPoint(t); return true; }
+        if (plane.Raycast(ray, out float t))
+        {
+            p = ray.GetPoint(t);
+            return true;
+        }
+
         return false;
     }
 
@@ -242,24 +328,126 @@ public class MidpointController : MonoBehaviour
         pts[3] = new Vector2(maxX, minZ); // BR
     }
 
+    private List<Vector3> GetCheckPointsList(Room room)
+    {
+        List<Vector3> points = new();
+        foreach (var item in room.wallLines)
+        {
+            if (!points.Contains(item.start))
+            {
+                points.Add(item.start);
+            }
+
+            if (!points.Contains(item.end))
+            {
+                points.Add(item.end);
+            }
+        }
+
+        Debug.Log($"Check point count: " + points.Count);
+        return points;
+    }
+
     // Resize an toàn theo edgeIdx (0=Left,1=Top,2=Right,3=Bottom)
+    private Vector3 previousPosition;
+
     private void ApplyEdgeDrag(Room room, Vector3 mouseWorld, int edgeIdx)
     {
         if (room == null || room.checkpoints == null || room.checkpoints.Count < 4) return;
 
         // 1) Chuẩn hoá lại thứ tự trước khi tính
-        NormalizeRectOrder(room.checkpoints);
+        //NormalizeRectOrder(room.checkpoints);
+        var delta = mouseWorld - previousPosition;
+        delta.y = 0;
 
+        var indexs = GetAdjacentIndices(edgeIdx, room.wallLines.Count);
+
+
+        int leftIndex = indexs.Item1;
+        int index = indexs.Item2;
+        int rightIndex = indexs.Item3;
+        // get wall line
+        var wallLine = room.wallLines[index];
+        var leftWallLine = room.wallLines[leftIndex];
+        var rightWallLine = room.wallLines[rightIndex];
+
+        var direction = wallLine.end - wallLine.start;
+        direction.y = wallLine.start.y;
+        direction.Normalize();
+        var normal = new Vector3(-direction.z,0, direction.x);
+        // get direction
+        var leftDir = (leftWallLine.end - leftWallLine.start).normalized;
+        var rightDir = (rightWallLine.start - rightWallLine.end).normalized;
+        
+        var deltaAlongLeft = Vector3.Project(delta, leftDir);
+
+        // To move delta along the right direction:
+        var deltaAlongRight = Vector3.Project(delta, rightDir);
+
+        var leftLineNextPos = leftWallLine.end + deltaAlongLeft;
+        var rightLineNextPos = rightWallLine.start + deltaAlongRight;
+
+        var startLineNextPos = wallLine.start + deltaAlongLeft;
+        var endLineNextPos = wallLine.end + deltaAlongRight;
+
+        float distanceBetLeftAndRight = Vector3.Distance(leftLineNextPos, rightLineNextPos);
+        float distanceOffLeftWall = leftWallLine.Distance();
+        float distanceOffRightWall = rightWallLine.Distance();
+        float distanceWallLine = Vector3.Distance(startLineNextPos, endLineNextPos);
+        if (distanceWallLine < 0.2f || distanceBetLeftAndRight < 0.2f || distanceOffLeftWall < 0.2f || distanceOffRightWall < 0.2f)
+        {
+            Debug.Log("Bé hơn không thể di chuyển");
+            return;
+        }
+
+        // check vị trí của các cặp
+        // 
+        
+
+        leftWallLine.end = leftLineNextPos;
+        rightWallLine.start = rightLineNextPos;
+
+        wallLine.start = startLineNextPos;
+        wallLine.end = endLineNextPos;
+
+        
+        previousPosition = mouseWorld;
+        Debug.Log($"Vector pháp tuyến: {normal}");
+        Debug.DrawRay((wallLine.start + wallLine.end) * 0.5f, normal,Color.red);
+        // redraw
+        var list = GetCheckPointsList(room);
+        for (int i = 0; i < room.checkpoints.Count; i++)
+        {
+            room.checkpoints[i] = new Vector2(list[i].x, list[i].z);
+        }
+
+        if (checkPointManager != null)
+        {
+            checkPointManager.DrawWallLineByRoom(room);
+            var meshCtrl = FindMeshCtrl(room.ID);
+            if (meshCtrl != null)
+            {
+                Debug.Log("Mesh khác null");
+                var t = meshCtrl.transform;
+                t.position = new Vector3(t.position.x, roomIndex * layerStepY, t.position.z);
+                meshCtrl.GenerateMesh(room.checkpoints);
+            }
+
+            checkPointManager.RedrawAllRooms();
+        }
+
+        SyncCornerCheckpointGOs(room, list);
+        return;
         var p = room.checkpoints; // BL(0), TL(1), TR(2), BR(3)
-        float leftX   = p[0].x;
-        float rightX  = p[2].x;
+        float leftX = p[0].x;
+        float rightX = p[2].x;
         float bottomZ = p[0].y;
-        float topZ    = p[2].y;
+        float topZ = p[2].y;
 
         // 2) Tính new bounds theo cạnh đang kéo + clamp minRoomSide
-        float newLeftX   = leftX;
-        float newRightX  = rightX;
-        float newTopZ    = topZ;
+        float newLeftX = leftX;
+        float newRightX = rightX;
+        float newTopZ = topZ;
         float newBottomZ = bottomZ;
 
         switch (edgeIdx)
@@ -282,11 +470,11 @@ public class MidpointController : MonoBehaviour
 
         // 3) Guard: không cho width/height <= 0 (phòng co thành line)
         if (newRightX - newLeftX < minRoomSide * 0.999f) return;
-        if (newTopZ   - newBottomZ < minRoomSide * 0.999f) return;
+        if (newTopZ - newBottomZ < minRoomSide * 0.999f) return;
 
         // 4) Gán lại 4 đỉnh theo BL,TL,TR,BR
-        p[0] = new Vector2(newLeftX,  newBottomZ);
-        p[1] = new Vector2(newLeftX,  newTopZ);
+        p[0] = new Vector2(newLeftX, newBottomZ);
+        p[1] = new Vector2(newLeftX, newTopZ);
         p[2] = new Vector2(newRightX, newTopZ);
         p[3] = new Vector2(newRightX, newBottomZ);
 
@@ -310,10 +498,14 @@ public class MidpointController : MonoBehaviour
         else
         {
             var wl = room.wallLines;
-            wl[0].start = v0; wl[0].end = v1;
-            wl[1].start = v1; wl[1].end = v2;
-            wl[2].start = v2; wl[2].end = v3;
-            wl[3].start = v3; wl[3].end = v0;
+            wl[0].start = v0;
+            wl[0].end = v1;
+            wl[1].start = v1;
+            wl[1].end = v2;
+            wl[2].start = v2;
+            wl[2].end = v3;
+            wl[3].start = v3;
+            wl[3].end = v0;
         }
 
         room.center = GeoUtil.Centroid(room.checkpoints);
@@ -328,28 +520,28 @@ public class MidpointController : MonoBehaviour
                 t.position = new Vector3(t.position.x, roomIndex * layerStepY, t.position.z);
                 meshCtrl.GenerateMesh(room.checkpoints);
             }
+
             checkPointManager.RedrawAllRooms();
         }
-
-        SyncCornerCheckpointGOs(room, v0, v1, v2, v3);
     }
-    
+
     private RoomMeshController FindMeshCtrl(string roomId)
     {
         var ctrls = FindObjectsByType<RoomMeshController>(
-            FindObjectsInactive.Include,   // có lấy cả inactive hay không
-            FindObjectsSortMode.None       // không cần sort theo InstanceID
+            FindObjectsInactive.Include, // có lấy cả inactive hay không
+            FindObjectsSortMode.None // không cần sort theo InstanceID
         );
         for (int i = 0; i < ctrls.Length; i++)
         {
             if (ctrls[i] != null && string.Equals(ctrls[i].RoomID, roomId, StringComparison.Ordinal))
                 return ctrls[i];
         }
+
         return null;
     }
 
     // ==== đồng bộ 4 corner checkpoint GameObject của phòng (nếu có) ====
-    private void SyncCornerCheckpointGOs(Room room, Vector3 v0, Vector3 v1, Vector3 v2, Vector3 v3)
+    private void SyncCornerCheckpointGOs(Room room, List<Vector3> list)
     {
         if (checkPointManager == null) return;
 
@@ -359,33 +551,51 @@ public class MidpointController : MonoBehaviour
         {
             if (lp == null) continue;
             var rid = checkPointManager.FindRoomIDForLoop(lp);
-            if (!string.IsNullOrEmpty(rid) && rid == room.ID) { loop = lp; break; }
+            if (!string.IsNullOrEmpty(rid) && rid == room.ID)
+            {
+                loop = lp;
+                break;
+            }
         }
+
         if (loop == null) return;
 
-        Vector3[] targets = { v0, v1, v2, v3 };
+        Vector3[] targets = list.ToArray();
 
         // ưu tiên các GO không phải CheckpointExtra
         var cornerGOs = new List<GameObject>();
         foreach (var go in loop)
-            if (go != null && !go.CompareTag("CheckpointExtra")) cornerGOs.Add(go);
+            if (go != null && !go.CompareTag("CheckpointExtra"))
+                cornerGOs.Add(go);
         if (cornerGOs.Count < 4) cornerGOs = loop; // fallback
 
         if (cornerGOs.Count >= 4)
             for (int i = 0; i < 4; i++)
-                if (cornerGOs[i]) cornerGOs[i].transform.position = targets[i];
+                if (cornerGOs[i])
+                    cornerGOs[i].transform.position = targets[i];
+
+        RoomStorage.UpdateOrAddRoom(room);
     }
-        private string _externalRoomId = null;
+
+    private string _externalRoomId = null;
 
     // Gọi từ RoomInfoDisplay khi chọn room
     public void ShowForRoomID(string roomId)
     {
         _externalRoomId = roomId;
         var r = RoomStorage.GetRoomByID(roomId);
-        if (r == null) { Hide(); return; }
+        if (r == null)
+        {
+            Hide();
+            return;
+        }
 
         // Nếu không đúng HCN 4 đỉnh thì đừng bật editor
-        if (r.checkpoints == null || r.checkpoints.Count != 4) { Hide(); return; }
+        if (r.checkpoints == null || r.checkpoints.Count != 4)
+        {
+            Hide();
+            return;
+        }
 
         NormalizeRectOrder(r.checkpoints); // <-- thêm dòng này
 

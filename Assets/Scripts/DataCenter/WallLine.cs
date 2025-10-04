@@ -58,6 +58,11 @@ public class WallLine
         this.isManualConnection = other.isManualConnection;
         this.headingCompass = other.headingCompass;
     }
+
+    public float Distance()
+    {
+        return Vector3.Distance(start, end);
+    }
 }
 
 /// <summary> 

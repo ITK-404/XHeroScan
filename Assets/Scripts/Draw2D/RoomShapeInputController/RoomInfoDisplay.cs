@@ -57,6 +57,8 @@ public class RoomInfoDisplay : MonoBehaviour
     private Canvas uiCanvas;
     private GameObject popupWS;
 
+    public static bool IsConfirm = false;
+
     [SerializeField] RoomToggleFurnitureVisible roomToggle;
 
     // ===== HIGHLIGHT =====
@@ -98,14 +100,26 @@ public class RoomInfoDisplay : MonoBehaviour
         {
             if (FurnitureManager.Instance.TryPickFurniture())
             {
+                IsConfirm = false;
                 DeselectAll();
                 ResetState();
                 selectionKind = SelectionKind.Furniture;
                 return;
             }
 
+            // Room
             if (TryPickRoomUnderPointer(out var roomId))
             {
+                // Nếu đã chọn room này rồi -> lần chạm thứ 2: confirm
+                if (selectionKind == SelectionKind.Room && selectedRoomID == roomId)
+                {
+                    IsConfirm = true;
+                    // (Optional) bạn có thể gọi hàm/emit event ở đây nếu cần
+                    return;
+                }
+
+                // Chọn room mới (hoặc đang ở None/Floor)
+                IsConfirm = false;              // lần 1 chỉ select, chưa confirm
                 SelectRoom(roomId);
                 return;
             }
@@ -114,10 +128,12 @@ public class RoomInfoDisplay : MonoBehaviour
             // if (canPickFloorNow && TryPickFloorUnderPointer(out var floorId, out var _))
             if (TryPickFloorUnderPointer(out var floorId, out var _))
             {
+                IsConfirm = false;
                 SelectFloor(floorId);
                 return;
             }
 
+            IsConfirm = false;
             DeselectAll();
             return;
         }
@@ -313,6 +329,8 @@ public class RoomInfoDisplay : MonoBehaviour
 
     private void SelectRoom(string roomId)
     {
+        IsConfirm = false;// chọn room mới => chưa confirm
+
         if (selectionKind == SelectionKind.Floor && !string.IsNullOrEmpty(selectedFloorID))
         {
             HideFloorLabel(selectedFloorID);
@@ -349,6 +367,8 @@ public class RoomInfoDisplay : MonoBehaviour
 
     private void SelectFloor(string floorId)
     {
+        IsConfirm = false;
+
         if (selectionKind == SelectionKind.Room && !string.IsNullOrEmpty(selectedRoomID))
         {
             HideRoomLabel(selectedRoomID);
@@ -379,6 +399,7 @@ public class RoomInfoDisplay : MonoBehaviour
 
     private void DeselectAll()
     {
+        IsConfirm = false;
         if (!string.IsNullOrEmpty(highlightedID))
         {
             SetFloorColor(highlightedID, floorDefaultColor);

@@ -150,9 +150,10 @@ public partial class FurnitureManager : MonoBehaviour
 
         return furniture;
     }
-
+    [SerializeField] private int roomCount;
     private void LateUpdate()
     {
+        roomCount = RoomStorage.rooms.Count;
         if(InteractionFlags.IsEdit)
         {
             SelectFurniture(null);
@@ -250,12 +251,25 @@ public partial class FurnitureManager : MonoBehaviour
         Debug.Log("Bắt đầu hoàn lại furniture: "+drawingInstanceds.Count);
         foreach (var instacedData in drawingInstanceds)
         {
-            var furniture = InitItemByID(instacedData.itemTemplateID);
+            //var furniture = InitItemByID(instacedData.itemTemplateID);
+            var furniture = SpawnFurniture(instacedData.itemTemplateID, instacedData.worldPosition);
             if (furniture == null) continue;
             furniture.FetchData(instacedData);
-            runtimeFurnitures.Add(furniture);
             Debug.Log($"World Position: {furniture.data.worldPosition}",gameObject);
             Debug.Log($"Hoàn lại furniture {furniture.data.instanceID}");
+        }
+    }
+
+    public void UpdateFurnitureState(List<DrawingInstanced> drawList)
+    {
+        // restore lại vị trí các furniture bên trong phòng
+        foreach (var instacedData in drawList)
+        {
+            var furniture = FurnitureManager.Instance.GetFurnitureByInstanceID(instacedData.instanceID);
+            if (furniture == null) continue;
+            Debug.Log(furniture.name + $" Restore furniture in room {furniture.GetWorldPosition()} {instacedData.worldPosition}");
+            furniture.furnitureMergeToWall.ResetAttached();
+            furniture.FetchData(instacedData);
         }
     }
 
@@ -360,6 +374,8 @@ public partial class FurnitureManager : MonoBehaviour
 
     public void SetVisibleObjects(string roomID, bool state)
     {
+
+        // Hàm này đang có 2 nhiệm vụ là kiểm tra và set item vào room (nghĩa là set roomID của item nếu nằm trong phòng tương ứng)
         Debug.Log("Set visible objects");
         var room = RoomStorage.GetRoomByID(roomID);
 
@@ -387,8 +403,6 @@ public partial class FurnitureManager : MonoBehaviour
             {
                 item.data.roomID = roomID;
             }
-
-
         }
     }
 
@@ -397,7 +411,8 @@ public partial class FurnitureManager : MonoBehaviour
         List<FurnitureItem> itemInsideRoom = new();
         foreach (var item in runtimeFurnitures)
         {
-            itemInsideRoom.Add(item);
+            if(item.data.roomID == roomID)
+                itemInsideRoom.Add(item);
         }
         return itemInsideRoom;
     }
@@ -423,6 +438,7 @@ public partial class FurnitureManager : MonoBehaviour
         List<DrawingInstanced> furnitures = new List<DrawingInstanced>();
         foreach (var item in runtimeFurnitures)
         {
+            Debug.Log($"Item {item.data.instanceID} {item.data.roomID}", item.gameObject);
             if (item.data.roomID == iD)
             {
                 furnitures.Add(item.data);
@@ -437,24 +453,21 @@ public partial class FurnitureManager : MonoBehaviour
     }
 
 
-    public void ClearWindowAndDoorAttached(string currentRoomID)
+    public void ClearItemInRoom(string currentRoomID)
     {
         List<FurnitureItem> destroyList = new();
         foreach(var item in runtimeFurnitures)
         {
             if(item.data.roomID == currentRoomID)
             {
-                var lineType = item.lineType;
-                if(lineType== LineType.Door || lineType == LineType.Window)
-                {
-                    destroyList.Add(item);
-                }
+                destroyList.Add(item);
             }
         }
 
         foreach(var item in destroyList)
         {
             item.Destroy();
+            runtimeFurnitures.Remove(item);
         }
     }
 }
